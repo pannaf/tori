@@ -133,32 +133,55 @@ def upload_file():
 @app.route("/inventory", methods=["GET", "POST"])
 def inventory():
     try:
+        # Get QuickBooks inventory data
         qb = QuickBooksInventory()
         report = qb.get_inventory_report("InventoryValuationSummary")
-
-        print("DEBUG - Report response:", report)
 
         if not report["success"]:
             return render_template("inventory.html", error=report["error"])
 
-        # Process the report data
+        # Process the QuickBooks report data
         report_data = []
         total_value = 0
 
-        print("DEBUG - Report rows:", report["rows"])
-
         for row in report["rows"]:
-            if isinstance(row, dict):  # Skip header/summary rows
+            if isinstance(row, dict):
                 report_data.append(row)
                 try:
                     total_value += float(row.get("Value", 0))
                 except (ValueError, TypeError):
                     pass
 
-        print("DEBUG - Processed data:", report_data)
-        print("DEBUG - Total value:", total_value)
+        # Get room location data from Neo4j for each item
+        for item in report_data:
+            query = """
+            MATCH (i:InventoryItem)-[r:LOCATED_IN]->(room:Room)
+            WHERE i.name = $item_name
+            RETURN room.name as room_name, r.last_updated as last_updated
+            """
+            try:
+                with neo4j_client.driver.session() as session:
+                    result = session.run(query, item_name=item["Item"]).single()
+                    if result:
+                        item["room"] = result["room_name"]
+                        item["location_updated"] = result["last_updated"]
+                    else:
+                        item["room"] = "Unassigned"
+                        item["location_updated"] = None
+            except Exception as e:
+                logging.error(f"Neo4j query error: {e}")
+                item["room"] = "Error"
+                item["location_updated"] = None
 
-        return render_template("inventory.html", report_data=report_data, total_value=total_value)
+        # Group items by room
+        rooms_data = {}
+        for item in report_data:
+            room_name = item.get("room", "Unassigned")
+            if room_name not in rooms_data:
+                rooms_data[room_name] = []
+            rooms_data[room_name].append(item)
+
+        return render_template("inventory.html", rooms_data=rooms_data, total_value=total_value)
 
     except Exception as e:
         print("DEBUG - Error:", str(e))
