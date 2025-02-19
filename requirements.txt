@@ -1,0 +1,5 @@
+flask
+eyepop
+python-dotenv
+pillow
+matplotlib 
