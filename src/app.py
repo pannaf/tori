@@ -1,50 +1,86 @@
-from flask import Flask, request, render_template
+from flask import Flask, request, render_template, redirect
 from src.vision import ImageAnalyzer
 from src.quickbooks_integration import QuickBooksInventory
 import os
+from PIL import Image, ExifTags
+import io
+import tempfile
 
 app = Flask(__name__)
+
+
+def fix_image_rotation(image):
+    """Fix image rotation based on EXIF data"""
+    try:
+        # Check if image has EXIF data
+        for orientation in ExifTags.TAGS.keys():
+            if ExifTags.TAGS[orientation] == "Orientation":
+                break
+
+        exif = dict(image._getexif().items())
+
+        if orientation in exif:
+            if exif[orientation] == 3:
+                image = image.rotate(180, expand=True)
+            elif exif[orientation] == 6:
+                image = image.rotate(270, expand=True)
+            elif exif[orientation] == 8:
+                image = image.rotate(90, expand=True)
+
+    except (AttributeError, KeyError, IndexError):
+        # No EXIF data or orientation tag, return original image
+        pass
+
+    return image
 
 
 @app.route("/", methods=["GET", "POST"])
 def upload_file():
     if request.method == "POST":
         if "file" not in request.files:
-            return "No file uploaded"
+            return redirect(request.url)
 
         file = request.files["file"]
         if file.filename == "":
-            return "No file selected"
+            return redirect(request.url)
 
-        # Save uploaded file temporarily
-        temp_path = "temp_upload.jpg"
-        file.save(temp_path)
+        if file:
+            # Read the image
+            image_data = file.read()
+            image = Image.open(io.BytesIO(image_data))
 
-        # Analyze image
-        analyzer = ImageAnalyzer(confidence_threshold=0.3)
-        result = analyzer.analyze_image(temp_path)
+            # Fix rotation
+            image = fix_image_rotation(image)
 
-        # Get visualization and cropped objects
-        img_base64 = analyzer.get_base64_plot(temp_path, result)
-        cropped_objects = analyzer.get_cropped_objects(temp_path, result)
+            # Save to temporary file
+            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".jpg")
+            image.save(temp_file.name, format="JPEG")
 
-        # Add detected objects to QuickBooks
-        qb = QuickBooksInventory()
-        inventory_results = []
-        for obj in result["objects"]:
-            qb_result = qb.add_detected_item(obj)
-            inventory_results.append(qb_result)
+            # Analyze image
+            analyzer = ImageAnalyzer(confidence_threshold=0.3)
+            result = analyzer.analyze_image(temp_file.name)
 
-        # Clean up
-        os.remove(temp_path)
+            # Get visualization and cropped objects
+            img_base64 = analyzer.get_base64_plot(temp_file.name, result)
+            cropped_objects = analyzer.get_cropped_objects(temp_file.name, result)
 
-        return render_template(
-            "result.html",
-            image_data=img_base64,
-            detections=result["objects"],
-            cropped_objects=cropped_objects,
-            inventory_results=inventory_results,
-        )
+            # Add detected objects to QuickBooks
+            qb = QuickBooksInventory()
+            inventory_results = []
+            for obj in result["objects"]:
+                qb_result = qb.add_detected_item(obj)
+                inventory_results.append(qb_result)
+
+            # Clean up
+            os.unlink(temp_file.name)
+
+            return render_template(
+                "result.html",
+                image_data=img_base64,
+                detections=result["objects"],
+                cropped_objects=cropped_objects,
+                inventory_results=inventory_results,
+            )
 
     return render_template("upload.html")
 

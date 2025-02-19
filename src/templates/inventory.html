@@ -3,6 +3,7 @@
 
 <head>
     <title>Inventory Report</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         :root {
             --bg-color: #1a1a1a;
@@ -14,25 +15,35 @@
 
         body {
             font-family: 'Segoe UI', system-ui, sans-serif;
-            max-width: 1200px;
+            max-width: 800px;
             margin: 0 auto;
             padding: 20px;
             background-color: var(--bg-color);
             color: var(--text-color);
+            min-height: 100vh;
+            box-sizing: border-box;
         }
 
         .nav-tabs {
             display: flex;
             gap: 10px;
-            margin-bottom: 20px;
+            margin-bottom: 0;
+            position: sticky;
+            top: 0;
+            background: var(--bg-color);
+            padding: 10px 0;
+            z-index: 100;
         }
 
         .nav-tab {
-            padding: 10px 20px;
+            flex: 1;
+            padding: 12px;
             background: var(--card-bg);
             color: var(--text-color);
             text-decoration: none;
-            border-radius: 5px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 500;
             transition: background 0.2s;
         }
 
@@ -44,56 +55,109 @@
             background: #357abd;
         }
 
-        .report-container {
+        .inventory-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            padding-top: 10px;
+        }
+
+        .inventory-card {
             background: var(--card-bg);
-            padding: 20px;
-            border-radius: 10px;
+            border-radius: 12px;
+            padding: 15px;
             border: 1px solid var(--border-color);
         }
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
+        .item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
         }
 
-        th,
-        td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        th {
-            background-color: var(--bg-color);
+        .item-name {
+            font-size: 18px;
+            font-weight: 500;
             color: var(--accent-color);
         }
 
-        tr:hover {
-            background-color: rgba(74, 158, 255, 0.1);
+        .item-sku {
+            color: #aaa;
+            font-size: 14px;
         }
 
-        .total-row {
-            font-weight: bold;
-            background-color: var(--bg-color);
+        .item-details {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            text-align: center;
         }
 
-        .value-cell {
-            text-align: right;
+        .detail-box {
+            background: var(--bg-color);
+            padding: 10px;
+            border-radius: 8px;
         }
 
-        .refresh-button {
-            padding: 10px 20px;
-            background: var(--accent-color);
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            margin-bottom: 20px;
+        .detail-label {
+            font-size: 12px;
+            color: #aaa;
+            margin-bottom: 4px;
         }
 
-        .refresh-button:hover {
-            background: #357abd;
+        .detail-value {
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .total-card {
+            margin: 0;
+            padding: 15px 10px;
+            position: sticky;
+            top: 57px;
+            background: var(--bg-color);
+            z-index: 90;
+        }
+
+        .total-label {
+            font-size: 14px;
+            color: #aaa;
+            margin-bottom: 4px;
+        }
+
+        .total-value {
+            font-size: 42px;
+            font-weight: 600;
+            color: var(--accent-color);
+            letter-spacing: -0.5px;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 12px;
+            }
+
+            .nav-tab {
+                padding: 10px;
+                font-size: 14px;
+            }
+
+            .inventory-card {
+                padding: 12px;
+            }
+
+            .item-name {
+                font-size: 16px;
+            }
+
+            .item-sku {
+                font-size: 12px;
+            }
+
+            .detail-value {
+                font-size: 14px;
+            }
         }
     </style>
 </head>
@@ -104,46 +168,41 @@
         <a href="/inventory" class="nav-tab active">Inventory</a>
     </div>
 
-    <h1>Inventory Valuation Summary</h1>
-
-    <form method="post">
-        <button type="submit" class="refresh-button">Refresh Report</button>
-    </form>
-
-    <div class="report-container">
-        {% if error %}
-        <p>Error loading report: {{ error }}</p>
-        {% else %}
-        <table>
-            <thead>
-                <tr>
-                    <th>Item</th>
-                    <th>SKU</th>
-                    <th>Quantity</th>
-                    <th>Unit Price</th>
-                    <th>Total Value</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for row in report_data %}
-                <tr>
-                    <td>{{ row.Item }}</td>
-                    <td>{{ row.SKU }}</td>
-                    <td class="value-cell">{{ row.QtyOnHand }}</td>
-                    <td class="value-cell">${{ "%.2f"|format(row.UnitPrice) }}</td>
-                    <td class="value-cell">${{ "%.2f"|format(row.Value) }}</td>
-                </tr>
-                {% endfor %}
-                {% if total_value %}
-                <tr class="total-row">
-                    <td colspan="4">Total Inventory Value</td>
-                    <td class="value-cell">${{ "%.2f"|format(total_value) }}</td>
-                </tr>
-                {% endif %}
-            </tbody>
-        </table>
-        {% endif %}
+    {% if error %}
+    <p>Error loading report: {{ error }}</p>
+    {% else %}
+    {% if total_value %}
+    <div class="total-card">
+        <div class="total-label">Total Inventory Value</div>
+        <div class="total-value">${{ "%.2f"|format(total_value) }}</div>
     </div>
+    {% endif %}
+
+    <div class="inventory-grid">
+        {% for row in report_data %}
+        <div class="inventory-card">
+            <div class="item-header">
+                <div class="item-name">{{ row.Item }}</div>
+                <div class="item-sku">SKU: {{ row.SKU }}</div>
+            </div>
+            <div class="item-details">
+                <div class="detail-box">
+                    <div class="detail-label">Quantity</div>
+                    <div class="detail-value">{{ row.QtyOnHand|int }}</div>
+                </div>
+                <div class="detail-box">
+                    <div class="detail-label">Unit Price</div>
+                    <div class="detail-value">${{ "%.2f"|format(row.UnitPrice) }}</div>
+                </div>
+                <div class="detail-box">
+                    <div class="detail-label">Total Value</div>
+                    <div class="detail-value">${{ "%.2f"|format(row.Value) }}</div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
 </body>
 
 </html>

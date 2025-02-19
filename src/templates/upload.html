@@ -2,7 +2,8 @@
 <html>
 
 <head>
-    <title>Object Detection</title>
+    <title>Add to Inventory</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         :root {
             --bg-color: #1a1a1a;
@@ -19,73 +20,30 @@
             padding: 20px;
             background-color: var(--bg-color);
             color: var(--text-color);
-        }
-
-        h1 {
-            color: var(--accent-color);
-            text-align: center;
-        }
-
-        .upload-form {
-            margin: 20px 0;
-            padding: 40px;
-            border: 2px dashed var(--border-color);
-            border-radius: 10px;
-            text-align: center;
-            background: var(--card-bg);
-        }
-
-        input[type="file"] {
-            display: none;
-        }
-
-        .file-label {
-            display: inline-block;
-            padding: 12px 24px;
-            background: var(--accent-color);
-            color: white;
-            border-radius: 5px;
-            cursor: pointer;
-            margin-bottom: 20px;
-            transition: background 0.2s;
-        }
-
-        .file-label:hover {
-            background: #357abd;
-        }
-
-        .submit-button {
-            padding: 12px 24px;
-            background: var(--accent-color);
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-            transition: background 0.2s;
-        }
-
-        .submit-button:hover {
-            background: #357abd;
-        }
-
-        #file-name {
-            margin: 10px 0;
-            color: #888;
+            min-height: 100vh;
+            box-sizing: border-box;
         }
 
         .nav-tabs {
             display: flex;
             gap: 10px;
             margin-bottom: 20px;
+            position: sticky;
+            top: 0;
+            background: var(--bg-color);
+            padding: 10px 0;
+            z-index: 100;
         }
 
         .nav-tab {
-            padding: 10px 20px;
+            flex: 1;
+            padding: 12px;
             background: var(--card-bg);
             color: var(--text-color);
             text-decoration: none;
-            border-radius: 5px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 500;
             transition: background 0.2s;
         }
 
@@ -96,13 +54,123 @@
         .nav-tab:hover {
             background: #357abd;
         }
-    </style>
-    <script>
-        function updateFileName(input) {
-            const fileName = input.files[0]?.name || 'No file chosen';
-            document.getElementById('file-name').textContent = fileName;
+
+        h1 {
+            color: var(--text-color);
+            font-size: 32px;
+            font-weight: 600;
+            margin: 40px 0;
+            text-align: center;
+            letter-spacing: -0.5px;
+            line-height: 1.2;
         }
-    </script>
+
+        .highlight {
+            color: var(--accent-color);
+            position: relative;
+            white-space: nowrap;
+        }
+
+        .upload-zone {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 40px 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .camera-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto;
+            background: var(--accent-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .camera-icon:hover {
+            transform: scale(1.05);
+            background: #357abd;
+        }
+
+        .camera-icon svg {
+            width: 32px;
+            height: 32px;
+            fill: white;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        #file-name {
+            margin: 15px 0;
+            color: #aaa;
+            font-size: 16px;
+        }
+
+        .submit-button {
+            padding: 16px 32px;
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: 500;
+            width: 100%;
+            max-width: 250px;
+            transition: all 0.2s;
+            margin-top: 10px;
+        }
+
+        .submit-button:hover {
+            background: #357abd;
+            transform: translateY(-1px);
+        }
+
+        .submit-button:disabled {
+            background: #666;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 12px;
+            }
+
+            h1 {
+                font-size: 24px;
+                margin: 30px 0;
+            }
+
+            .upload-zone {
+                padding: 30px 15px;
+            }
+
+            .camera-icon {
+                width: 64px;
+                height: 64px;
+            }
+
+            .camera-icon svg {
+                width: 28px;
+                height: 28px;
+            }
+
+            .submit-button {
+                padding: 14px 28px;
+                font-size: 16px;
+            }
+        }
+    </style>
 </head>
 
 <body>
@@ -110,15 +178,32 @@
         <a href="/" class="nav-tab active">Upload</a>
         <a href="/inventory" class="nav-tab">Inventory</a>
     </div>
-    <h1>Object Detection</h1>
-    <div class="upload-form">
+
+    <h1>Add to your <span class="highlight">inventory!</span></h1>
+
+    <div class="upload-zone">
         <form method="post" enctype="multipart/form-data">
-            <label class="file-label" for="file-input">Choose Image</label>
-            <input id="file-input" type="file" name="file" accept="image/*" onchange="updateFileName(this)">
+            <label class="camera-icon" for="file-input">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                    <path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4z" />
+                    <path
+                        d="M9 3L7.17 5H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2h-3.17L15 3H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z" />
+                </svg>
+            </label>
+            <input id="file-input" type="file" name="file" accept="image/*" capture="environment"
+                onchange="updateFileName(this)">
             <div id="file-name">No file chosen</div>
-            <button type="submit" class="submit-button">Analyze Image</button>
+            <button type="submit" class="submit-button" id="submit-button" disabled>Analyze Image</button>
         </form>
     </div>
+
+    <script>
+        function updateFileName(input) {
+            const fileName = input.files[0]?.name || 'No file chosen';
+            document.getElementById('file-name').textContent = fileName;
+            document.getElementById('submit-button').disabled = false;
+        }
+    </script>
 </body>
 
 </html>
