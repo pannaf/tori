@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Object Detection</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .upload-form {
+            margin: 20px 0;
+            padding: 20px;
+            border: 2px dashed #ccc;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <h1>Upload an Image for Object Detection</h1>
+    <div class="upload-form">
+        <form method="post" enctype="multipart/form-data">
+            <input type="file" name="file" accept="image/*">
+            <input type="submit" value="Analyze Image">
+        </form>
+    </div>
+</body>
+</html>

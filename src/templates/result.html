@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Detection Results</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .result-image {
+            max-width: 100%;
+            margin: 20px 0;
+        }
+        .detections {
+            margin: 20px 0;
+        }
+        .detection-item {
+            margin: 5px 0;
+            padding: 5px;
+            background: #f0f0f0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Detection Results</h1>
+    <img class="result-image" src="data:image/png;base64,{{ image_data }}" alt="Detection Result">
+    
+    <div class="detections">
+        <h2>Detected Objects:</h2>
+        {% for obj in detections %}
+        <div class="detection-item">
+            {{ obj.classLabel }} (Confidence: {{ "%.1f"|format(obj.confidence * 100) }}%)
+        </div>
+        {% endfor %}
+    </div>
+    
+    <a href="/">Upload Another Image</a>
+</body>
+</html>
