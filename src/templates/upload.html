@@ -56,13 +56,12 @@
         }
 
         h1 {
-            color: var(--text-color);
-            font-size: 32px;
-            font-weight: 600;
+            font-size: 20px;
+            font-weight: 500;
+            color: #aaa;
             margin: 40px 0;
             text-align: center;
-            letter-spacing: -0.5px;
-            line-height: 1.2;
+            letter-spacing: 0.2px;
         }
 
         .highlight {
@@ -79,9 +78,19 @@
             transition: all 0.3s ease;
             position: relative;
             overflow: hidden;
+            opacity: 0;
+            animation: fadeSlideUp 0.5s ease forwards 0.4s;
         }
 
-        .camera-icon {
+        .icons-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .icon-button {
             width: 80px;
             height: 80px;
             margin: 0 auto;
@@ -94,15 +103,32 @@
             transition: all 0.2s ease;
         }
 
-        .camera-icon:hover {
+        .icon-button.disabled {
+            background: var(--card-bg);
+            cursor: not-allowed;
+            border: 2px solid var(--border-color);
+        }
+
+        .icon-button:not(.disabled):hover {
             transform: scale(1.05);
             background: #357abd;
         }
 
-        .camera-icon svg {
+        .icon-button svg {
             width: 32px;
             height: 32px;
             fill: white;
+        }
+
+        .icon-button.disabled svg {
+            fill: #666;
+        }
+
+        .icon-label {
+            margin-top: 10px;
+            text-align: center;
+            color: #aaa;
+            font-size: 14px;
         }
 
         input[type="file"] {
@@ -147,7 +173,7 @@
             }
 
             h1 {
-                font-size: 24px;
+                font-size: 18px;
                 margin: 30px 0;
             }
 
@@ -155,19 +181,75 @@
                 padding: 30px 15px;
             }
 
-            .camera-icon {
+            .icon-button {
                 width: 64px;
                 height: 64px;
             }
 
-            .camera-icon svg {
+            .icon-button svg {
                 width: 28px;
                 height: 28px;
+            }
+
+            .icon-label {
+                font-size: 12px;
             }
 
             .submit-button {
                 padding: 14px 28px;
                 font-size: 16px;
+            }
+        }
+
+        .welcome-text {
+            margin: 40px auto;
+            text-align: center;
+            max-width: 500px;
+            line-height: 1.4;
+        }
+
+        .welcome-text .small {
+            font-size: 16px;
+            color: #888;
+            font-weight: 400;
+            margin-bottom: 4px;
+            letter-spacing: 0.3px;
+            opacity: 0;
+            animation: fadeSlideUp 0.5s ease forwards;
+        }
+
+        .welcome-text .large {
+            font-size: 28px;
+            color: var(--text-color);
+            font-weight: 600;
+            letter-spacing: -0.5px;
+            opacity: 0;
+            animation: fadeSlideUp 0.5s ease forwards 0.2s;
+        }
+
+        @keyframes fadeSlideUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .welcome-text {
+                margin: 30px auto;
+            }
+
+            .welcome-text .small {
+                font-size: 14px;
+            }
+
+            .welcome-text .large {
+                font-size: 24px;
             }
         }
     </style>
@@ -179,17 +261,43 @@
         <a href="/inventory" class="nav-tab">Inventory</a>
     </div>
 
-    <h1>Add to your <span class="highlight">inventory!</span></h1>
+    <div class="welcome-text">
+        <div class="small">Ready to expand your collection?</div>
+        <div class="large">Add to your inventory</div>
+    </div>
 
     <div class="upload-zone">
         <form method="post" enctype="multipart/form-data">
-            <label class="camera-icon" for="file-input">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                    <path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4z" />
-                    <path
-                        d="M9 3L7.17 5H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2h-3.17L15 3H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z" />
-                </svg>
-            </label>
+            <div class="icons-grid">
+                <div>
+                    <label class="icon-button" for="file-input">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                            <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+                        </svg>
+                    </label>
+                    <div class="icon-label">Upload Photo</div>
+                </div>
+
+                <div>
+                    <div class="icon-button disabled">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                            <path
+                                d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z" />
+                        </svg>
+                    </div>
+                    <div class="icon-label">Scan Receipt</div>
+                </div>
+
+                <div>
+                    <div class="icon-button disabled">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                            <path d="M4 4h16v4H4zm0 6h16v4H4zm0 6h16v4H4z" />
+                        </svg>
+                    </div>
+                    <div class="icon-label">Scan Barcode</div>
+                </div>
+            </div>
+
             <input id="file-input" type="file" name="file" accept="image/*" capture="environment"
                 onchange="updateFileName(this)">
             <div id="file-name">No file chosen</div>
