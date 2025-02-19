@@ -49,5 +49,40 @@ def upload_file():
     return render_template("upload.html")
 
 
+@app.route("/inventory", methods=["GET", "POST"])
+def inventory():
+    try:
+        qb = QuickBooksInventory()
+        report = qb.get_inventory_report("InventoryValuationSummary")
+
+        print("DEBUG - Report response:", report)
+
+        if not report["success"]:
+            return render_template("inventory.html", error=report["error"])
+
+        # Process the report data
+        report_data = []
+        total_value = 0
+
+        print("DEBUG - Report rows:", report["rows"])
+
+        for row in report["rows"]:
+            if isinstance(row, dict):  # Skip header/summary rows
+                report_data.append(row)
+                try:
+                    total_value += float(row.get("Value", 0))
+                except (ValueError, TypeError):
+                    pass
+
+        print("DEBUG - Processed data:", report_data)
+        print("DEBUG - Total value:", total_value)
+
+        return render_template("inventory.html", report_data=report_data, total_value=total_value)
+
+    except Exception as e:
+        print("DEBUG - Error:", str(e))
+        return render_template("inventory.html", error=str(e))
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080)

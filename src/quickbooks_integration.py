@@ -182,6 +182,57 @@ class QuickBooksInventory:
             print(f"DEBUG: Error with account {account_type}: {str(e)}")
             raise Exception(f"Error setting up {account_type} account: {str(e)}")
 
+    def get_inventory_report(self, report_type="InventoryValuationSummary"):
+        """
+        Fetch inventory-related reports from QuickBooks
+        """
+        try:
+            # The Report API endpoint with minorversion
+            report = self.client.get_report(report_type)
+
+            print(f"Fetched {report_type} report")
+
+            # Handle the report as a dictionary
+            if isinstance(report, dict):
+                # Extract relevant data from the dictionary structure
+                header = report.get("Header", {})
+                rows = report.get("Rows", {}).get("Row", [])
+
+                # Process the rows to extract the data we need
+                processed_rows = []
+                for row in rows:
+                    # Skip summary rows (like TOTAL)
+                    if not row.get("group"):
+                        cols = row.get("ColData", [])
+                        if len(cols) >= 5:  # Ensure we have enough columns
+                            # Clean and convert numeric values
+                            # Column order from docs:
+                            # 0: Item name
+                            # 1: SKU
+                            # 2: Qty
+                            # 3: Asset Value (Total Value)
+                            # 4: Avg Cost (Unit Price)
+                            qty = float(cols[2].get("value", "0").replace(",", ""))
+                            total_value = float(cols[3].get("value", "0").replace("$", "").replace(",", ""))
+                            unit_price = float(cols[4].get("value", "0").replace("$", "").replace(",", ""))
+
+                            processed_row = {
+                                "Item": cols[0].get("value", ""),
+                                "SKU": cols[1].get("value", ""),
+                                "QtyOnHand": qty,
+                                "UnitPrice": unit_price,
+                                "Value": total_value,
+                            }
+                            processed_rows.append(processed_row)
+
+                return {"success": True, "rows": processed_rows, "header": header}
+
+            return {"success": False, "error": "Unexpected report format"}
+
+        except Exception as e:
+            print(f"Error fetching report: {str(e)}")
+            return {"success": False, "error": str(e)}
+
 
 if __name__ == "__main__":
     qb = QuickBooksInventory()
