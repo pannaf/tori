@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Tori - Know what you own</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        :root {
+            --bg-color: #1a1a1a;
+            --text-color: #ffffff;
+            --accent-color: #4a9eff;
+            --border-color: #3d3d3d;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+
+        p.tagline {
+            font-size: 1.75rem;
+            margin-bottom: 40px;
+        }
+
+        .start-button {
+            margin-top: 20px;
+            margin-bottom: 40px;
+            padding: 10px 20px;
+            background-color: var(--accent-color);
+            color: var(--bg-color);
+            border: none;
+            border-radius: 8px;
+            font-size: 1.125rem;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background-color 0.2s ease;
+        }
+
+        .start-button:hover {
+            background-color: #357abd;
+        }
+
+        .powered-by {
+            display: inline-block;
+            text-align: left;
+            margin-top: 40px;
+        }
+
+        .powered-by p {
+            margin: 0;
+            font-size: 0.875rem;
+            color: #aaa;
+        }
+
+        .powered-by img {
+            margin-top: 10px;
+            max-width: 150px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Tori</h1>
+    <p class="tagline">Know what you own,<br>with Tori.</p>
+
+    <!-- Get Started Button -->
+    <a href="/upload" class="start-button">Get Started</a>
+
+    <div class="powered-by">
+        <p>Powered by</p>
+        <img src="/static/replit-logo-text.png" alt="Replit Logo">
+    </div>
+</body>
+
+</html>

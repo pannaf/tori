@@ -39,7 +39,12 @@ def fix_image_rotation(image):
     return image
 
 
-@app.route("/", methods=["GET", "POST"])
+@app.route("/", methods=["GET"])
+def landing():
+    return render_template("landing.html")
+
+
+@app.route("/upload", methods=["GET", "POST"])
 def upload_file():
     if request.method == "POST":
         if "file" not in request.files:

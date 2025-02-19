@@ -341,7 +341,7 @@
 
             // Update the form's action based on the type of upload
             const form = input.form;
-            form.action = type === 'receipt' ? '/upload_receipt' : '/';
+            form.action = type === 'receipt' ? '/upload_receipt' : '/upload';
 
             // Change the loading spinner image based on the type.
             if (type === 'receipt') {
