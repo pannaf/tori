@@ -167,6 +167,52 @@
             transform: none;
         }
 
+        /* -- Loading Spinner Styles -- */
+        #loading-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(26, 26, 26, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            z-index: 200;
+        }
+
+        #loading-spinner {
+            width: 80px;
+            animation: pulse 1s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.2);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        @keyframes fadeSlideUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
         @media (max-width: 768px) {
             body {
                 padding: 12px;
@@ -226,32 +272,6 @@
             opacity: 0;
             animation: fadeSlideUp 0.5s ease forwards 0.2s;
         }
-
-        @keyframes fadeSlideUp {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        @media (max-width: 768px) {
-            .welcome-text {
-                margin: 30px auto;
-            }
-
-            .welcome-text .small {
-                font-size: 14px;
-            }
-
-            .welcome-text .large {
-                font-size: 24px;
-            }
-        }
     </style>
 </head>
 
@@ -264,6 +284,12 @@
     <div class="welcome-text">
         <div class="small">Ready to expand your collection?</div>
         <div class="large">Add to your inventory</div>
+    </div>
+
+    <!-- Loading indicator (hidden by default) -->
+    <div id="loading-container">
+        <img id="loading-spinner" src="/static/eyepop-ai-logo.png" alt="Loading">
+        <p style="color:#aaa; margin-top: 10px;">Processing image, please wait...</p>
     </div>
 
     <div class="upload-zone">
@@ -316,7 +342,19 @@
             // Update the form's action based on the type of upload
             const form = input.form;
             form.action = type === 'receipt' ? '/upload_receipt' : '/';
+
+            // Change the loading spinner image based on the type.
+            if (type === 'receipt') {
+                document.getElementById('loading-spinner').src = "/static/unstructured.png";
+            } else {
+                document.getElementById('loading-spinner').src = "/static/eyepop-ai-logo.png";
+            }
         }
+
+        // When the form is submitted, show the loading indicator.
+        document.querySelector("form").addEventListener("submit", function () {
+            document.getElementById("loading-container").style.display = "flex";
+        });
     </script>
 </body>
 
