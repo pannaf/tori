@@ -1,41 +1,131 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>Detection Results</title>
     <style>
+        :root {
+            --bg-color: #1a1a1a;
+            --text-color: #ffffff;
+            --card-bg: #2d2d2d;
+            --accent-color: #4a9eff;
+            --border-color: #3d3d3d;
+        }
+
         body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
         }
+
+        h1,
+        h2 {
+            color: var(--accent-color);
+        }
+
+        .result-container {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .main-image-container {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+        }
+
         .result-image {
-            max-width: 100%;
-            margin: 20px 0;
+            width: 100%;
+            border-radius: 8px;
         }
-        .detections {
-            margin: 20px 0;
+
+        .objects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+            padding: 20px;
+            background: var(--card-bg);
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
         }
-        .detection-item {
-            margin: 5px 0;
-            padding: 5px;
-            background: #f0f0f0;
+
+        .object-card {
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+            transition: transform 0.2s;
+        }
+
+        .object-card:hover {
+            transform: scale(1.05);
+        }
+
+        .object-card img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+        }
+
+        .object-info {
+            padding: 10px;
+        }
+
+        .object-label {
+            font-weight: bold;
+            color: var(--accent-color);
+        }
+
+        .confidence {
+            font-size: 0.9em;
+            color: #888;
+        }
+
+        .back-button {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 10px 20px;
+            background: var(--accent-color);
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background 0.2s;
+        }
+
+        .back-button:hover {
+            background: #357abd;
         }
     </style>
 </head>
+
 <body>
     <h1>Detection Results</h1>
-    <img class="result-image" src="data:image/png;base64,{{ image_data }}" alt="Detection Result">
-    
-    <div class="detections">
-        <h2>Detected Objects:</h2>
-        {% for obj in detections %}
-        <div class="detection-item">
-            {{ obj.classLabel }} (Confidence: {{ "%.1f"|format(obj.confidence * 100) }}%)
+
+    <div class="result-container">
+        <div class="main-image-container">
+            <img class="result-image" src="data:image/png;base64,{{ image_data }}" alt="Detection Result">
         </div>
-        {% endfor %}
+
+        <div class="objects-grid">
+            {% for obj in cropped_objects %}
+            <div class="object-card">
+                <img src="data:image/png;base64,{{ obj.image }}" alt="{{ obj.label }}">
+                <div class="object-info">
+                    <div class="object-label">{{ obj.label }}</div>
+                    <div class="confidence">{{ "%.1f"|format(obj.confidence * 100) }}%</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
     </div>
-    
-    <a href="/">Upload Another Image</a>
+
+    <a href="/" class="back-button">Upload Another Image</a>
 </body>
+
 </html>

@@ -1,29 +1,97 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>Object Detection</title>
     <style>
+        :root {
+            --bg-color: #1a1a1a;
+            --text-color: #ffffff;
+            --card-bg: #2d2d2d;
+            --accent-color: #4a9eff;
+            --border-color: #3d3d3d;
+        }
+
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', system-ui, sans-serif;
             max-width: 800px;
             margin: 0 auto;
             padding: 20px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
         }
-        .upload-form {
-            margin: 20px 0;
-            padding: 20px;
-            border: 2px dashed #ccc;
+
+        h1 {
+            color: var(--accent-color);
             text-align: center;
         }
+
+        .upload-form {
+            margin: 20px 0;
+            padding: 40px;
+            border: 2px dashed var(--border-color);
+            border-radius: 10px;
+            text-align: center;
+            background: var(--card-bg);
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .file-label {
+            display: inline-block;
+            padding: 12px 24px;
+            background: var(--accent-color);
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-bottom: 20px;
+            transition: background 0.2s;
+        }
+
+        .file-label:hover {
+            background: #357abd;
+        }
+
+        .submit-button {
+            padding: 12px 24px;
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.2s;
+        }
+
+        .submit-button:hover {
+            background: #357abd;
+        }
+
+        #file-name {
+            margin: 10px 0;
+            color: #888;
+        }
     </style>
+    <script>
+        function updateFileName(input) {
+            const fileName = input.files[0]?.name || 'No file chosen';
+            document.getElementById('file-name').textContent = fileName;
+        }
+    </script>
 </head>
+
 <body>
-    <h1>Upload an Image for Object Detection</h1>
+    <h1>Object Detection</h1>
     <div class="upload-form">
         <form method="post" enctype="multipart/form-data">
-            <input type="file" name="file" accept="image/*">
-            <input type="submit" value="Analyze Image">
+            <label class="file-label" for="file-input">Choose Image</label>
+            <input id="file-input" type="file" name="file" accept="image/*" onchange="updateFileName(this)">
+            <div id="file-name">No file chosen</div>
+            <button type="submit" class="submit-button">Analyze Image</button>
         </form>
     </div>
 </body>
+
 </html>

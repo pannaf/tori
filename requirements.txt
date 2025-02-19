@@ -2,4 +2,6 @@ flask
 eyepop
 python-dotenv
 pillow
-matplotlib 
+matplotlib
+python-quickbooks
+intuit-oauth 

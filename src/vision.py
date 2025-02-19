@@ -18,6 +18,49 @@ class ImageAnalyzer:
         self.secret_key = os.getenv("EYEPOP_SECRET_KEY")
         self.confidence_threshold = confidence_threshold
 
+    def compute_iou(self, box1, box2):
+        """
+        Compute Intersection over Union (IoU) between two bounding boxes
+        """
+        # Calculate coordinates of intersection
+        x1 = max(box1["x"], box2["x"])
+        y1 = max(box1["y"], box2["y"])
+        x2 = min(box1["x"] + box1["width"], box2["x"] + box2["width"])
+        y2 = min(box1["y"] + box1["height"], box2["y"] + box2["height"])
+
+        # Calculate area of intersection
+        intersection = max(0, x2 - x1) * max(0, y2 - y1)
+
+        # Calculate area of both boxes
+        box1_area = box1["width"] * box1["height"]
+        box2_area = box2["width"] * box2["height"]
+
+        # Calculate IoU
+        union = box1_area + box2_area - intersection
+        return intersection / union if union > 0 else 0
+
+    def apply_nms(self, objects, iou_threshold=0.5):
+        """
+        Apply Non-Max Suppression to filter overlapping detections
+        """
+        # Sort objects by confidence
+        sorted_objects = sorted(objects, key=lambda x: x["confidence"], reverse=True)
+        kept_objects = []
+
+        while sorted_objects:
+            # Keep the highest confidence detection
+            current = sorted_objects.pop(0)
+            kept_objects.append(current)
+
+            # Filter out overlapping detections with same class
+            sorted_objects = [
+                obj
+                for obj in sorted_objects
+                if (obj["classLabel"] != current["classLabel"] or self.compute_iou(current, obj) < iou_threshold)
+            ]
+
+        return kept_objects
+
     def analyze_image(self, image_path):
         """
         Analyze an image using EyePop SDK and return the prediction result
@@ -52,6 +95,9 @@ class ImageAnalyzer:
 
             # Process the image
             result = endpoint.upload(image_path).predict()
+
+            # Apply NMS to filter overlapping detections
+            result["objects"] = self.apply_nms(result["objects"])
 
             return result
 
@@ -109,6 +155,37 @@ class ImageAnalyzer:
             # Convert to base64
             image_base64 = base64.b64encode(buf.getvalue()).decode("utf-8")
             return image_base64
+
+    def get_cropped_objects(self, image_path, prediction_result):
+        """
+        Create cropped images for each detected object and return them as base64 strings
+        """
+        cropped_objects = []
+        with Image.open(image_path) as image:
+            for obj in prediction_result["objects"]:
+                # Get bounding box coordinates (already in pixels)
+                left = max(0, int(obj["x"]))
+                top = max(0, int(obj["y"]))
+                right = min(image.width, int(obj["x"] + obj["width"]))
+                bottom = min(image.height, int(obj["y"] + obj["height"]))
+
+                # Crop the image
+                try:
+                    cropped = image.crop((left, top, right, bottom))
+
+                    # Convert to base64
+                    buf = io.BytesIO()
+                    cropped.save(buf, format="PNG")
+                    buf.seek(0)
+                    img_base64 = base64.b64encode(buf.getvalue()).decode("utf-8")
+
+                    # Add to results
+                    cropped_objects.append({"label": obj["classLabel"], "confidence": obj["confidence"], "image": img_base64})
+                except Exception as e:
+                    print(f"Error cropping object {obj['classLabel']}: {e}")
+                    continue
+
+        return cropped_objects
 
 
 def main():
