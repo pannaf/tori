@@ -35,9 +35,6 @@ class QuickBooksInventory:
         )
 
     def add_detected_item(self, detection_data):
-        """
-        Add a detected item to QuickBooks inventory or increment existing item if exact match
-        """
         try:
             base_name = detection_data["classLabel"].lower()
 
@@ -45,6 +42,11 @@ class QuickBooksInventory:
             if base_name in ["person", "people", "human", "man", "woman", "child", "baby"]:
                 print(f"Skipping detected {base_name} - people should not be added to inventory")
                 return {"success": False, "error": "Cannot add people to inventory", "detected_type": base_name}
+
+            # Convert price to float if provided as string with '$'
+            provided_price = detection_data.get("price", 10.00)
+            if isinstance(provided_price, str):
+                provided_price = float(provided_price.replace("$", "").strip())
 
             # Default prices for common items (in USD)
             DEFAULT_PRICES = {
@@ -68,8 +70,8 @@ class QuickBooksInventory:
                 "vase": 29.99,
             }
 
-            # Get price from the mapping, fallback to provided price or default 10.00
-            price = DEFAULT_PRICES.get(base_name, detection_data.get("price", 10.00))
+            # Use mapped default price if available, otherwise use provided price
+            price = DEFAULT_PRICES.get(base_name, provided_price)
 
             # Create a unique identifier based on item type and price point
             item_name = f"{base_name} (${price:.2f})"
@@ -77,17 +79,22 @@ class QuickBooksInventory:
 
             # Try to find an existing item with same name
             existing_items = Item.filter(Type="Inventory", Name=item_name, qb=self.client)
-
-            # Filter matching items by price in Python
             matching_items = [item for item in existing_items if float(item.UnitPrice) == float(price)]
+            increment_amount = detection_data.get("quantity", 1)
 
             if matching_items:
-                # Found exact match (same type and price), increment quantity
+                # Found an exact match, increment quantity by the provided amount
                 item = matching_items[0]
-                item.QtyOnHand += 1
-                print(f"Incrementing quantity for existing item: {item.Name}")
+                item.QtyOnHand += increment_amount
+                print(f"Incrementing quantity for existing item: {item.Name} by {increment_amount}")
                 item.save(qb=self.client)
-                return {"success": True, "item_id": item.Id, "name": item.Name, "action": "incremented", "price": price}
+                return {
+                    "success": True,
+                    "item_id": item.Id,
+                    "name": item.Name,
+                    "action": "incremented",
+                    "price": price,
+                }
 
             # If no exact match found, create new item
             print(f"Creating new item: {item_name}")
@@ -107,7 +114,7 @@ class QuickBooksInventory:
             # Set inventory tracking
             item.Type = "Inventory"
             item.TrackQtyOnHand = True
-            item.QtyOnHand = 1
+            item.QtyOnHand = increment_amount
             item.InvStartDate = datetime.now().strftime("%Y-%m-%d")
 
             # Set pricing field (estimated value)
@@ -118,7 +125,7 @@ class QuickBooksInventory:
             expense_account = self._get_or_create_account("Cost of Goods Sold", "CostOfGoodsSold")
             asset_account = self._get_or_create_account("Other Current Asset", "Inventory")
 
-            print(f"Using accounts - Income: {income_account.Name}, " f"Expense: {expense_account.Name}, Asset: {asset_account.Name}")
+            print(f"Using accounts - Income: {income_account.Name}, Expense: {expense_account.Name}, Asset: {asset_account.Name}")
 
             item.IncomeAccountRef = income_account.to_ref()
             item.ExpenseAccountRef = expense_account.to_ref()
@@ -128,7 +135,14 @@ class QuickBooksInventory:
             item.save(qb=self.client)
             print(f"Successfully saved item: {item.Name}")
 
-            return {"success": True, "item_id": item.Id, "name": item.Name, "action": "created", "price": price, "sku": sku}
+            return {
+                "success": True,
+                "item_id": item.Id,
+                "name": item.Name,
+                "action": "created",
+                "price": price,
+                "sku": sku,
+            }
 
         except Exception as e:
             print(f"Error processing item: {str(e)}")
@@ -231,6 +245,31 @@ class QuickBooksInventory:
 
         except Exception as e:
             print(f"Error fetching report: {str(e)}")
+            return {"success": False, "error": str(e)}
+
+    def add_receipt_item(self, item: dict) -> dict:
+        """
+        Adds an item extracted from a receipt to the QuickBooks inventory,
+        processing it in the same manner as detected items from photos.
+        """
+        try:
+            # Get the price value, it might be a string (with a "$") or a float.
+            price_val = item.get("price", "10.00")
+            if isinstance(price_val, str):
+                price = float(price_val.replace("$", "").strip())
+            else:
+                price = float(price_val)
+
+            detection_data = {
+                "classLabel": item.get("name"),
+                "price": price,
+                "quantity": item.get("quantity", 1),
+                "confidence": 1.0,  # Receipt items assume full confidence
+            }
+            # Reuse the same logic as add_detected_item to create or update the item
+            return self.add_detected_item(detection_data)
+        except Exception as e:
+            print(f"Error processing receipt item: {str(e)}")
             return {"success": False, "error": str(e)}
 
 

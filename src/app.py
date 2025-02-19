@@ -5,8 +5,13 @@ import os
 from PIL import Image, ExifTags
 import io
 import tempfile
+from src.unstructured_client import UnstructuredClient
+import base64
 
 app = Flask(__name__)
+
+# Initialize the client
+unstructured = UnstructuredClient()
 
 
 def fix_image_rotation(image):
@@ -118,6 +123,54 @@ def inventory():
     except Exception as e:
         print("DEBUG - Error:", str(e))
         return render_template("inventory.html", error=str(e))
+
+
+@app.route("/upload_receipt", methods=["POST"])
+def upload_receipt():
+    if "receipt" not in request.files:
+        return "No file uploaded", 400
+
+    file = request.files["receipt"]
+    if file.filename == "":
+        return "No file selected", 400
+
+    # Save the uploaded file temporarily
+    temp_path = "temp_receipt.jpg"
+    file.save(temp_path)
+
+    try:
+        # Process with Unstructured.io
+        structured_data = unstructured.process_receipt(temp_path)
+
+        # Extract relevant data from the API response
+        receipt_data = unstructured.extract_receipt_data(structured_data)
+
+        # Update inventory in QuickBooks based on receipt items.
+        qb = QuickBooksInventory()
+        inventory_results = []
+        for item in receipt_data.get("items", []):
+            qb_result = qb.add_receipt_item(item)
+            inventory_results.append(qb_result)
+
+        # Read the receipt image and encode as Base64 for displaying in the template
+        with open(temp_path, "rb") as img_file:
+            receipt_image_base64 = base64.b64encode(img_file.read()).decode("utf-8")
+
+        # Render the receipt result view with the processed image and items found
+        return render_template(
+            "receipt_result.html",
+            receipt_image=receipt_image_base64,
+            items=receipt_data.get("items", []),
+            inventory_results=inventory_results,
+        )
+
+    except Exception as e:
+        return f"Error processing receipt: {str(e)}", 400
+
+    finally:
+        # Clean up the temporary file
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
 
 
 if __name__ == "__main__":

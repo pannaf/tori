@@ -5,3 +5,5 @@ pillow
 matplotlib
 python-quickbooks
 intuit-oauth 
+unstructured
+requests
