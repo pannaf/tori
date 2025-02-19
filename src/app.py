@@ -1,17 +1,29 @@
 from flask import Flask, request, render_template, redirect
-from src.vision import ImageAnalyzer
+from src.vision import ImageAnalyzer, RoomClassifier
 from src.quickbooks_integration import QuickBooksInventory
+from src.neo4j_client import Neo4jClient
 import os
 from PIL import Image, ExifTags
 import io
 import tempfile
 from src.unstructured_client import UnstructuredClient
 import base64
+from datetime import datetime
+import logging
+from dotenv import load_dotenv
 
 app = Flask(__name__)
 
-# Initialize the client
+load_dotenv()
+
+# Initialize the Unstructured client
 unstructured = UnstructuredClient()
+
+# Initialize the Neo4j client using environment variables
+neo4j_uri = os.getenv("NEO4J_URI")
+neo4j_user = os.getenv("NEO4J_USER")
+neo4j_password = os.getenv("NEO4J_PASSWORD")
+neo4j_client = Neo4jClient(neo4j_uri, neo4j_user, neo4j_password)
 
 
 def fix_image_rotation(image):
@@ -66,22 +78,44 @@ def upload_file():
             temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".jpg")
             image.save(temp_file.name, format="JPEG")
 
-            # Analyze image
+            # Analyze image with EyePop
             analyzer = ImageAnalyzer(confidence_threshold=0.3)
             result = analyzer.analyze_image(temp_file.name)
+
+            # Classify room with OpenAI Vision
+            room_classifier = RoomClassifier()
+            room_type = room_classifier.classify_room(temp_file.name)
 
             # Get visualization and cropped objects
             img_base64 = analyzer.get_base64_plot(temp_file.name, result)
             cropped_objects = analyzer.get_cropped_objects(temp_file.name, result)
 
-            # Add detected objects to QuickBooks
+            # Add detected objects to QuickBooks and then to Neo4j
             qb = QuickBooksInventory()
             inventory_results = []
             for obj in result["objects"]:
                 qb_result = qb.add_detected_item(obj)
                 inventory_results.append(qb_result)
 
-            # Clean up
+                # Prepare today's date as the add date for photo uploads.
+                add_date = datetime.now().strftime("%Y-%m-%d")
+
+                neo4j_item_data = {
+                    "item_id": qb_result.get("item_id", qb_result.get("id", "unknown")),
+                    "name": qb_result.get("name", "Unknown Item"),
+                    "sku": qb_result.get("sku", "N/A"),
+                    "price": qb_result.get("price", 0),
+                    "quantity": obj.get("quantity", 1),
+                    "add_date": add_date,
+                    "purchase_date": None,  # No purchase date for photo uploads
+                    "room": room_type,  # Add the room classification
+                }
+                try:
+                    neo4j_client.create_item(neo4j_item_data)
+                except Exception as e:
+                    logging.error("Neo4j create error for photo detection item: %s", e)
+
+            # Clean up the temporary file
             os.unlink(temp_file.name)
 
             return render_template(
@@ -90,6 +124,7 @@ def upload_file():
                 detections=result["objects"],
                 cropped_objects=cropped_objects,
                 inventory_results=inventory_results,
+                room_type=room_type,
             )
 
     return render_template("upload.html")
@@ -156,6 +191,25 @@ def upload_receipt():
         for item in receipt_data.get("items", []):
             qb_result = qb.add_receipt_item(item)
             inventory_results.append(qb_result)
+
+            # Use today's date as the add date and extract the purchase date from the receipt.
+            add_date = datetime.now().strftime("%Y-%m-%d")
+            purchase_date = item.get("purchase_date", add_date)
+
+            neo4j_item_data = {
+                "item_id": qb_result.get("item_id", qb_result.get("id", "unknown")),
+                "name": qb_result.get("name", "Unknown Item"),
+                "sku": qb_result.get("sku", "N/A"),
+                "price": qb_result.get("price", 0),
+                "quantity": qb_result.get("quantity", 1),
+                "add_date": add_date,
+                "purchase_date": purchase_date,
+                "room": "unknown",  # For receipts, we don't know the room
+            }
+            try:
+                neo4j_client.create_item(neo4j_item_data)
+            except Exception as e:
+                logging.error("Neo4j create error for receipt item: %s", e)
 
         # Read the receipt image and encode as Base64 for displaying in the template
         with open(temp_path, "rb") as img_file:

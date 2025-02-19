@@ -132,6 +132,28 @@
             background: #357abd;
         }
 
+        .room-classification {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 15px;
+            margin: -10px 0 20px 0;
+            text-align: center;
+            border: 1px solid var(--border-color);
+        }
+
+        .room-label {
+            color: var(--accent-color);
+            font-weight: bold;
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+
+        .room-value {
+            font-size: 16px;
+            color: var(--text-color);
+            text-transform: capitalize;
+        }
+
         /* Mobile responsive styles */
         @media (max-width: 768px) {
             body {
@@ -176,6 +198,19 @@
                 padding: 10px 20px;
                 font-size: 14px;
             }
+
+            .room-classification {
+                padding: 12px;
+                margin: -5px 0 15px 0;
+            }
+
+            .room-label {
+                font-size: 16px;
+            }
+
+            .room-value {
+                font-size: 14px;
+            }
         }
     </style>
 </head>
@@ -190,6 +225,11 @@
     <div class="result-container">
         <div class="main-image-container">
             <img class="result-image" src="data:image/png;base64,{{ image_data }}" alt="Detection Result">
+        </div>
+
+        <div class="room-classification">
+            <div class="room-label">Room Classification</div>
+            <div class="room-value">{{ room_type }}</div>
         </div>
 
         <div class="objects-grid">

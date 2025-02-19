@@ -7,8 +7,75 @@ import matplotlib.pyplot as plt
 import io
 import base64
 import matplotlib
+from openai import OpenAI
+import logging
 
 matplotlib.use("Agg")  # Set the backend to non-interactive
+
+
+class RoomClassifier:
+    """
+    A class to handle room classification using OpenAI's Vision API.
+    """
+
+    def __init__(self):
+        load_dotenv()
+        self.client = OpenAI()  # This will use OPENAI_API_KEY from environment
+        self.valid_rooms = ["office", "bedroom", "bathroom", "kitchen", "living room", "entry", "dining room", "family room"]
+
+    def classify_room(self, image_path):
+        """
+        Use OpenAI's GPT-4 Vision API to classify which room in a house the image shows.
+
+        Args:
+            image_path (str): Path to the image file
+
+        Returns:
+            str: The classified room type (one of the valid_rooms) or "unknown"
+        """
+        try:
+            # Read and encode the image
+            with open(image_path, "rb") as image_file:
+                base64_image = base64.b64encode(image_file.read()).decode("utf-8")
+
+            # Create the prompt for room classification
+            prompt = (
+                "What room in the house is this? "
+                f"Please respond with exactly one room from these choices: {', '.join(self.valid_rooms)}."
+            )
+
+            response = self.client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": prompt},
+                            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}},
+                        ],
+                    }
+                ],
+                max_tokens=300,
+            )
+
+            room = response.choices[0].message.content.strip().lower()
+            logging.info(f"OpenAI room classification response: {room}")
+
+            # Validate the response is one of our valid room types
+            if room in self.valid_rooms:
+                return room
+            else:
+                # Check if the response contains any of our valid room types
+                for valid_room in self.valid_rooms:
+                    if valid_room in room:
+                        return valid_room
+
+                logging.warning(f"OpenAI returned invalid room type: {room}")
+                return "unknown"
+
+        except Exception as e:
+            logging.error(f"Error in OpenAI vision analysis: {e}")
+            return "unknown"
 
 
 class ImageAnalyzer:
