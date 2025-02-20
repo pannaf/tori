@@ -11,6 +11,7 @@ import base64
 from datetime import datetime
 import logging
 from dotenv import load_dotenv
+from src.embeddings import EmbeddingsClient
 
 app = Flask(__name__)
 
@@ -24,6 +25,7 @@ neo4j_uri = os.getenv("NEO4J_URI")
 neo4j_user = os.getenv("NEO4J_USER")
 neo4j_password = os.getenv("NEO4J_PASSWORD")
 neo4j_client = Neo4jClient(neo4j_uri, neo4j_user, neo4j_password)
+neo4j_client.initialize_database()
 
 
 def fix_image_rotation(image):
@@ -90,30 +92,42 @@ def upload_file():
             img_base64 = analyzer.get_base64_plot(temp_file.name, result)
             cropped_objects = analyzer.get_cropped_objects(temp_file.name, result)
 
+            # Get embeddings for the room image
+            embeddings_client = EmbeddingsClient()
+            room_embedding = embeddings_client.get_image_embedding(temp_file.name)
+
             # Add detected objects to QuickBooks and then to Neo4j
             qb = QuickBooksInventory()
             inventory_results = []
-            for obj in result["objects"]:
+
+            for obj, cropped_data in zip(result["objects"], cropped_objects):
+                # First add to QuickBooks to get the item_id
                 qb_result = qb.add_detected_item(obj)
                 inventory_results.append(qb_result)
 
-                # Prepare today's date as the add date for photo uploads.
-                add_date = datetime.now().strftime("%Y-%m-%d")
+                if qb_result.get("success"):
+                    # Get embedding from the cropped image
+                    cropped_image = base64.b64decode(cropped_data["image"])
+                    obj_embedding = embeddings_client.get_image_embedding(image_data=cropped_image)
 
-                neo4j_item_data = {
-                    "item_id": qb_result.get("item_id", qb_result.get("id", "unknown")),
-                    "name": qb_result.get("name", "Unknown Item"),
-                    "sku": qb_result.get("sku", "N/A"),
-                    "price": qb_result.get("price", 0),
-                    "quantity": obj.get("quantity", 1),
-                    "add_date": add_date,
-                    "purchase_date": None,  # No purchase date for photo uploads
-                    "room": room_type,  # Add the room classification
-                }
-                try:
-                    neo4j_client.create_item(neo4j_item_data)
-                except Exception as e:
-                    logging.error("Neo4j create error for photo detection item: %s", e)
+                    # Add to neo4j_item_data when creating item
+                    neo4j_item_data = {
+                        "item_id": qb_result.get("item_id", "unknown"),
+                        "name": qb_result.get("name", "Unknown Item"),
+                        "sku": qb_result.get("sku", "N/A"),
+                        "price": qb_result.get("price", 0),
+                        "quantity": obj.get("quantity", 1),
+                        "add_date": datetime.now().strftime("%Y-%m-%d"),
+                        "purchase_date": None,  # No purchase date for photo uploads
+                        "room": room_type,  # Add the room classification
+                        "room_embedding": room_embedding,
+                        "embedding": obj_embedding,
+                    }
+
+                    try:
+                        neo4j_client.create_item(neo4j_item_data)
+                    except Exception as e:
+                        logging.error("Neo4j create error: %s", e)
 
             # Clean up the temporary file
             os.unlink(temp_file.name)
