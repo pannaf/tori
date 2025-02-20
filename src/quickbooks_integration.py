@@ -36,13 +36,6 @@ class QuickBooksInventory:
 
     def add_detected_item(self, detection_data):
         try:
-            base_name = detection_data["classLabel"].lower()
-
-            # Skip if the detected item is a person
-            if base_name in ["person", "people", "human", "man", "woman", "child", "baby"]:
-                print(f"Skipping detected {base_name} - people should not be added to inventory")
-                return {"success": False, "error": "Cannot add people to inventory", "detected_type": base_name}
-
             # Convert price to float if provided as string with '$'
             provided_price = detection_data.get("price", 10.00)
             if isinstance(provided_price, str):
@@ -71,11 +64,17 @@ class QuickBooksInventory:
             }
 
             # Use mapped default price if available, otherwise use provided price
+            base_name = detection_data["classLabel"].lower()
             price = DEFAULT_PRICES.get(base_name, provided_price)
 
             # Create a unique identifier based on item type and price point
             item_name = f"{base_name} (${price:.2f})"
             print(f"\nProcessing detected item: {item_name}")
+
+            # Skip if the detected item is a person
+            if base_name in ["person", "people", "human", "man", "woman", "child", "baby"]:
+                print(f"Skipping detected {base_name} - people should not be added to inventory")
+                return {"success": False, "error": "Cannot add people to inventory", "detected_type": base_name}
 
             # Try to find an existing item with same name
             existing_items = Item.filter(Type="Inventory", Name=item_name, qb=self.client)
