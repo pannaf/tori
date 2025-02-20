@@ -9,3 +9,4 @@ unstructured
 requests
 neo4j
 openai
+neo4j

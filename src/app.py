@@ -268,6 +268,21 @@ def upload_receipt():
         if os.path.exists(temp_path):
             os.remove(temp_path)
 
+@app.route("/search", methods=["POST"])
+def search():
+    query = request.json.get("query")
+    if not query:
+        return {"error": "No query provided"}, 400
+        
+    try:
+        results = neo4j_client.search_similar_items(query)
+        return {"results": results}
+    except Exception as e:
+        return {"error": str(e)}, 500
+
+@app.route("/chat")
+def chat():
+    return render_template("chat.html")
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8080)
+    app.run(host="0.0.0.0", port=8080, debug=True)
