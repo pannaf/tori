@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>Chat with Inventory</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -146,6 +147,7 @@
         }
     </style>
 </head>
+
 <body>
     <div class="nav-tabs">
         <a href="/upload" class="nav-tab">Upload</a>
@@ -170,10 +172,20 @@
         </form>
     </div>
 
+    <!-- Footer: Powered by Gravity AI -->
+    <footer style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--border-color);">
+        <div style="display: inline-block; text-align: left;">
+            <p style="margin: 0; font-size: 14px; color: #aaa;">Powered by</p>
+            <div style="display: flex; align-items: center; gap: 15px; margin-top: 10px;">
+                <img src="/static/gravity-ai-logo-white.svg" alt="Gravity AI Logo" style="max-height: 50px;">
+            </div>
+        </div>
+    </footer>
+
     <script>
-        document.getElementById('chat-form').addEventListener('submit', async function(e) {
+        document.getElementById('chat-form').addEventListener('submit', async function (e) {
             e.preventDefault();
-            
+
             const input = document.getElementById('query-input');
             const query = input.value.trim();
             if (!query) return;
@@ -191,7 +203,7 @@
                 });
 
                 const data = await response.json();
-                
+
                 if (data.error) {
                     addMessage('error', data.error);
                 } else {
@@ -215,12 +227,13 @@
             if (!results || results.length === 0) {
                 return "I couldn't find any relevant items in your inventory.";
             }
-            
-            return results.map(item => 
+
+            return results.map(item =>
                 `${item.name} - Located in: ${item.room}\n` +
                 `Price: $${item.price} | Quantity: ${item.quantity}`
             ).join('\n\n');
         }
     </script>
 </body>
-</html> 
+
+</html>
