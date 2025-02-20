@@ -9,6 +9,7 @@ import base64
 import matplotlib
 from openai import OpenAI
 import logging
+from src.embeddings import EmbeddingsClient
 
 matplotlib.use("Agg")  # Set the backend to non-interactive
 
@@ -255,6 +256,38 @@ class ImageAnalyzer:
                     continue
 
         return cropped_objects
+
+    def get_object_embeddings(self, image_path, prediction_result):
+        """Get embeddings and descriptions for detected objects"""
+        embeddings_client = EmbeddingsClient()
+        objects_with_embeddings = []
+
+        cropped_objects = self.get_cropped_objects(image_path, prediction_result)
+
+        for obj, cropped in zip(prediction_result["objects"], cropped_objects):
+            try:
+                image_bytes = base64.b64decode(cropped["image"])
+
+                # Get both embedding and description
+                embedding, description = embeddings_client.get_image_embedding(image_data=image_bytes)
+
+                objects_with_embeddings.append(
+                    {
+                        "classLabel": obj["classLabel"],
+                        "confidence": obj["confidence"],
+                        "embedding": embedding,
+                        "description": description,
+                        "image_data": image_bytes,
+                    }
+                )
+
+                print(f"Generated embedding and description for {obj['classLabel']}: {description}")
+
+            except Exception as e:
+                print(f"Error processing {obj['classLabel']}: {e}")
+                continue
+
+        return objects_with_embeddings
 
 
 def main():

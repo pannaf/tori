@@ -12,6 +12,7 @@ from datetime import datetime
 import logging
 from dotenv import load_dotenv
 from src.embeddings import EmbeddingsClient
+from src.gravity_client import GravityAIClient
 
 app = Flask(__name__)
 
@@ -26,6 +27,28 @@ neo4j_user = os.getenv("NEO4J_USER")
 neo4j_password = os.getenv("NEO4J_PASSWORD")
 neo4j_client = Neo4jClient(neo4j_uri, neo4j_user, neo4j_password)
 neo4j_client.initialize_database()
+
+# Add this near the top of app.py with your other imports and constants
+DEFAULT_PRICES = {
+    "sofa": 499.99,
+    "couch": 499.99,
+    "chair": 149.99,
+    "armchair": 199.99,
+    "dining chair": 89.99,
+    "table": 299.99,
+    "desk": 249.99,
+    "bed": 699.99,
+    "dresser": 399.99,
+    "nightstand": 129.99,
+    "bookshelf": 179.99,
+    "cabinet": 299.99,
+    "potted plant": 39.99,
+    "lamp": 79.99,
+    "rug": 199.99,
+    "mirror": 129.99,
+    "clock": 49.99,
+    "vase": 29.99,
+}
 
 
 def fix_image_rotation(image):
@@ -60,86 +83,75 @@ def landing():
 
 @app.route("/upload", methods=["GET", "POST"])
 def upload_file():
-    if request.method == "POST":
-        if "file" not in request.files:
-            return redirect(request.url)
+    if request.method == "GET":
+        return render_template("upload.html")
 
-        file = request.files["file"]
-        if file.filename == "":
-            return redirect(request.url)
+    if "file" not in request.files:
+        return "No file uploaded", 400
 
-        if file:
-            # Read the image
-            image_data = file.read()
-            image = Image.open(io.BytesIO(image_data))
+    file = request.files["file"]
+    if file.filename == "":
+        return "No file selected", 400
 
-            # Fix rotation
-            image = fix_image_rotation(image)
+    if file:
+        # Save the uploaded file temporarily
+        temp_path = "temp_upload.jpg"
+        file.save(temp_path)
 
-            # Save to temporary file
-            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".jpg")
-            image.save(temp_file.name, format="JPEG")
-
+        try:
             # Analyze image with EyePop
-            analyzer = ImageAnalyzer(confidence_threshold=0.3)
-            result = analyzer.analyze_image(temp_file.name)
+            analyzer = ImageAnalyzer()
+            prediction_result = analyzer.analyze_image(temp_path)
 
-            # Classify room with OpenAI Vision
+            # Get room classification
             room_classifier = RoomClassifier()
-            room_type = room_classifier.classify_room(temp_file.name)
-
-            # Get visualization and cropped objects
-            img_base64 = analyzer.get_base64_plot(temp_file.name, result)
-            cropped_objects = analyzer.get_cropped_objects(temp_file.name, result)
+            room_type = room_classifier.classify_room(temp_path)
 
             # Get embeddings for the room image
             embeddings_client = EmbeddingsClient()
-            room_embedding = embeddings_client.get_image_embedding(temp_file.name)
+            room_embedding, room_description = embeddings_client.get_image_embedding(temp_path)
 
-            # Add detected objects to QuickBooks and then to Neo4j
-            qb = QuickBooksInventory()
-            inventory_results = []
+            # Get embeddings for detected objects
+            objects_with_embeddings = analyzer.get_object_embeddings(temp_path, prediction_result)
 
-            for obj, cropped_data in zip(result["objects"], cropped_objects):
-                # First add to QuickBooks to get the item_id
-                qb_result = qb.add_detected_item(obj)
-                inventory_results.append(qb_result)
+            # Store each detected object in Neo4j with its embedding
+            for obj in objects_with_embeddings:
+                item_data = {
+                    "name": obj["classLabel"],
+                    "room": room_type,
+                    "price": DEFAULT_PRICES.get(obj["classLabel"].lower(), 10.00),
+                    "quantity": 1,
+                    "confidence": obj["confidence"],
+                    "embedding": obj["embedding"],
+                    "description": obj["description"],  # Make sure description is included
+                    "image_data": obj["image_data"],
+                    "item_id": f"{obj['classLabel']}_{room_type}_{datetime.now().strftime('%Y%m%d%H%M%S')}",
+                    "sku": f"SKU_{obj['classLabel']}_{room_type}",
+                    "add_date": datetime.now().strftime("%Y-%m-%d"),
+                    "purchase_date": None,
+                    "room_embedding": room_embedding,
+                }
+                print(f"Storing item with description: {obj['description']}")
+                neo4j_client.create_item(item_data)
 
-                if qb_result.get("success"):
-                    # Get embedding from the cropped image
-                    cropped_image = base64.b64decode(cropped_data["image"])
-                    obj_embedding = embeddings_client.get_image_embedding(image_data=cropped_image)
-
-                    # Add to neo4j_item_data when creating item
-                    neo4j_item_data = {
-                        "item_id": qb_result.get("item_id", "unknown"),
-                        "name": qb_result.get("name", "Unknown Item"),
-                        "sku": qb_result.get("sku", "N/A"),
-                        "price": qb_result.get("price", 0),
-                        "quantity": obj.get("quantity", 1),
-                        "add_date": datetime.now().strftime("%Y-%m-%d"),
-                        "purchase_date": None,  # No purchase date for photo uploads
-                        "room": room_type,  # Add the room classification
-                        "room_embedding": room_embedding,
-                        "embedding": obj_embedding,
-                    }
-
-                    try:
-                        neo4j_client.create_item(neo4j_item_data)
-                    except Exception as e:
-                        logging.error("Neo4j create error: %s", e)
+            # Get visualization and cropped objects
+            img_base64 = analyzer.get_base64_plot(temp_path, prediction_result)
+            cropped_objects = analyzer.get_cropped_objects(temp_path, prediction_result)
 
             # Clean up the temporary file
-            os.unlink(temp_file.name)
+            os.unlink(temp_path)
 
             return render_template(
                 "result.html",
                 image_data=img_base64,
-                detections=result["objects"],
+                detections=prediction_result["objects"],
                 cropped_objects=cropped_objects,
-                inventory_results=inventory_results,
                 room_type=room_type,
             )
+
+        except Exception as e:
+            print(f"Error processing image: {str(e)}")
+            return f"Error processing image: {str(e)}", 400
 
     return render_template("upload.html")
 
@@ -268,21 +280,68 @@ def upload_receipt():
         if os.path.exists(temp_path):
             os.remove(temp_path)
 
+
 @app.route("/search", methods=["POST"])
 def search():
     query = request.json.get("query")
     if not query:
         return {"error": "No query provided"}, 400
-        
+
     try:
         results = neo4j_client.search_similar_items(query)
         return {"results": results}
     except Exception as e:
         return {"error": str(e)}, 500
 
-@app.route("/chat")
+
+@app.route("/chat", methods=["GET", "POST"])
 def chat():
-    return render_template("chat.html")
+    if request.method == "GET":
+        return render_template("chat.html")
+
+    try:
+        data = request.json
+        if not data or "query" not in data:
+            return {"error": "No query provided"}, 400
+
+        query = data["query"]
+
+        # Get similar items from Neo4j using vector similarity
+        similar_items = neo4j_client.search_similar_items(query, limit=5)
+
+        # Format the context in a more natural way, including descriptions
+        context = "Here's what I found in your inventory:\n\n"
+
+        # Group items by room
+        rooms = {}
+        for item in similar_items:
+            room = item["room"]
+            if room not in rooms:
+                rooms[room] = []
+            rooms[room].append(item)
+
+        # Create natural language context with descriptions
+        for room, items in rooms.items():
+            context += f"In the {room}, I found:\n"
+            for item in items:
+                price_str = f"${item['price']:.2f}" if item["price"] else "price not set"
+                context += f"\n- {item['quantity']} {item['name']} (priced at {price_str} each)\n"
+                if item.get("description"):
+                    context += f"  Description: {item['description']}\n"
+            context += "\n"
+
+        print(f"Sending context to GravityAI:\n{context}")
+
+        # Use GravityAI to get response
+        gravity_client = GravityAIClient()
+        response = gravity_client.get_llm_response(context=context, query=query)
+
+        return {"response": response, "context": similar_items}
+
+    except Exception as e:
+        logging.error(f"Chat error: {e}")
+        return {"error": str(e)}, 500
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080, debug=True)
