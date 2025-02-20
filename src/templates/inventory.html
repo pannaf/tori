@@ -58,15 +58,23 @@
         .inventory-grid {
             display: flex;
             flex-direction: column;
-            gap: 15px;
-            padding-top: 10px;
+            gap: 8px;
+            padding-top: 2px;
         }
 
         .inventory-card {
             background: var(--card-bg);
             border-radius: 12px;
-            padding: 15px;
+            padding: 20px;
             border: 1px solid var(--border-color);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-bottom: 16px;
+        }
+
+        .inventory-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
         }
 
         .item-header {
@@ -90,14 +98,31 @@
         .item-details {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
+            gap: 20px;
             text-align: center;
+            margin-top: 16px;
+        }
+
+        .room-info {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--accent-color);
+            font-size: 14px;
+            margin-top: 4px;
+        }
+
+        .room-icon {
+            width: 28px;
+            height: 28px;
+            color: white;
         }
 
         .detail-box {
             background: var(--bg-color);
-            padding: 10px;
+            padding: 16px;
             border-radius: 8px;
+            flex: 1;
         }
 
         .detail-label {
@@ -131,6 +156,28 @@
             font-weight: 600;
             color: var(--accent-color);
             letter-spacing: -0.5px;
+        }
+
+        .room-section {
+            margin: 40px 0;
+        }
+
+        .room-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 25px;
+            padding: 24px;
+            background: linear-gradient(145deg, var(--accent-color), #357abd);
+            border-radius: 16px;
+            border: none;
+            box-shadow: 0 4px 12px rgba(74, 158, 255, 0.2);
+        }
+
+        .room-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: white;
         }
 
         @media (max-width: 768px) {
@@ -179,26 +226,69 @@
     {% endif %}
 
     <div class="inventory-grid">
-        {% for row in report_data %}
-        <div class="inventory-card">
-            <div class="item-header">
-                <div class="item-name">{{ row.Item }}</div>
-                <div class="item-sku">SKU: {{ row.SKU }}</div>
+        {% for room_name, items in rooms_data.items() %}
+        <div class="room-section">
+            <div class="room-header">
+                {% if room_name == "Living Room" %}
+                <svg class="room-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path
+                        d="M20 12v-2c0-1.1-.9-2-2-2H6c-1.1 0-2 .9-2 2v2c-1.1 0-2 .9-2 2v4c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2v-4c0-1.1-.9-2-2-2zm-2-2v2H6v-2h12zM6 16v-2h12v2H6z" />
+                </svg>
+                {% elif room_name == "Bedroom" %}
+                <svg class="room-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path
+                        d="M20 12c0-1.1-.9-2-2-2V7c0-1.1-.9-2-2-2H8c-1.1 0-2 .9-2 2v3c-1.1 0-2 .9-2 2v5h1.33L6 19h1l.67-2h8.67l.66 2h1l.67-2H20v-5zm-4-2H8V7h8v3z" />
+                </svg>
+                {% elif room_name == "Kitchen" %}
+                <svg class="room-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path
+                        d="M18 2.01L6 2c-1.1 0-2 .89-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.11-.9-1.99-2-1.99zM18 20H6v-9.02h12V20zm0-11H6V4h12v5zM8 5h2v3H8zm0 7h2v5H8z" />
+                </svg>
+                {% elif room_name == "Bathroom" %}
+                <svg class="room-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path
+                        d="M7 7m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0M20 13V4.83C20 3.27 18.73 2 17.17 2c-.75 0-1.47.3-2 .83l-1.25 1.25c-.16-.05-.33-.08-.51-.08c-.4 0-.77.12-1.08.32l2.76 2.76c.2-.31.32-.68.32-1.08c0-.18-.03-.34-.07-.51l1.25-1.25c.15-.15.36-.24.58-.24c.46 0 .83.37.83.83V13h-6.85c-.3-.21-.57-.45-.82-.72l-1.4-1.55c-.19-.21-.43-.38-.69-.5c-.31-.15-.65-.23-1-.23C6 10.01 5 11.01 5 12.25V13H2v6c0 1.1.9 2 2 2c0 .55.45 1 1 1h14c.55 0 1-.45 1-1c1.1 0 2-.9 2-2v-6h-2z" />
+                </svg>
+                {% elif room_name == "Office" %}
+                <svg class="room-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path
+                        d="M20 6h-4V4c0-1.1-.9-2-2-2h-4c-1.1 0-2 .9-2 2v2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-8-2h4v2h-4V4zM6 18V8h12v10H6z" />
+                </svg>
+                {% else %}
+                <svg class="room-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 3L2 12h3v8h6v-6h2v6h6v-8h3L12 3zm0 2.7L17 10v7h-2v-6H9v6H7v-7l5-4.3z" />
+                </svg>
+                {% endif %}
+                <div class="room-title">{{ room_name }}</div>
             </div>
-            <div class="item-details">
-                <div class="detail-box">
-                    <div class="detail-label">Quantity</div>
-                    <div class="detail-value">{{ row.QtyOnHand|int }}</div>
+
+            {% for row in items %}
+            <div class="inventory-card">
+                <div class="item-header">
+                    <div>
+                        <div class="item-name">{{ row.Item }}</div>
+                        {% if row.location_updated %}
+                        <span style="color: #aaa; font-size: 12px;">(Updated: {{ row.location_updated }})</span>
+                        {% endif %}
+                    </div>
+                    <div class="item-sku">SKU: {{ row.SKU }}</div>
                 </div>
-                <div class="detail-box">
-                    <div class="detail-label">Unit Price</div>
-                    <div class="detail-value">${{ "%.2f"|format(row.UnitPrice) }}</div>
-                </div>
-                <div class="detail-box">
-                    <div class="detail-label">Total Value</div>
-                    <div class="detail-value">${{ "%.2f"|format(row.Value) }}</div>
+                <div class="item-details">
+                    <div class="detail-box">
+                        <div class="detail-label">Quantity</div>
+                        <div class="detail-value">{{ row.QtyOnHand|int }}</div>
+                    </div>
+                    <div class="detail-box">
+                        <div class="detail-label">Unit Price</div>
+                        <div class="detail-value">${{ "%.2f"|format(row.UnitPrice) }}</div>
+                    </div>
+                    <div class="detail-box">
+                        <div class="detail-label">Total Value</div>
+                        <div class="detail-value">${{ "%.2f"|format(row.Value) }}</div>
+                    </div>
                 </div>
             </div>
+            {% endfor %}
         </div>
         {% endfor %}
     </div>

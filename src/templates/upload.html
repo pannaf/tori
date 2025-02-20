@@ -325,9 +325,9 @@
             </div>
 
             <input id="file-input" type="file" name="file" accept="image/*" capture="environment"
-                onchange="updateFileName(this, 'photo')">
+                onchange="updateFileName(this, 'photo')" onclick="console.log('Photo input clicked')">
             <input id="receipt-input" type="file" name="receipt" accept="image/*" capture="environment"
-                onchange="updateFileName(this, 'receipt')">
+                onchange="updateFileName(this, 'receipt')" onclick="console.log('Receipt input clicked')">
             <div id="file-name">No file chosen</div>
             <button type="submit" class="submit-button" id="submit-button" disabled>Analyze Image</button>
         </form>
@@ -339,16 +339,18 @@
             document.getElementById('file-name').textContent = fileName;
             document.getElementById('submit-button').disabled = false;
 
+            // Add console logging
+            console.log('Upload type:', type);
+
             // Update the form's action based on the type of upload
             const form = input.form;
             form.action = type === 'receipt' ? '/upload_receipt' : '/upload';
 
-            // Change the loading spinner image based on the type.
-            if (type === 'receipt') {
-                document.getElementById('loading-spinner').src = "/static/unstructured.png";
-            } else {
-                document.getElementById('loading-spinner').src = "/static/eyepop-ai-logo.png";
-            }
+            // Add console logging for image path
+            const spinnerPath = type === 'receipt' ? "/static/unstructured.png" : "/static/eyepop-ai-logo.png";
+            console.log('Setting spinner image to:', spinnerPath);
+
+            document.getElementById('loading-spinner').src = spinnerPath;
         }
 
         // When the form is submitted, show the loading indicator.

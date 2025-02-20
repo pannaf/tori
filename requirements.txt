@@ -7,3 +7,5 @@ python-quickbooks
 intuit-oauth 
 unstructured
 requests
+neo4j
+openai
