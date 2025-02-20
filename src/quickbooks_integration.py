@@ -6,6 +6,7 @@ from datetime import datetime
 import os
 from dotenv import load_dotenv
 import logging
+import re
 
 logging.basicConfig(level=logging.INFO)
 
@@ -218,19 +219,19 @@ class QuickBooksInventory:
                     if not row.get("group"):
                         cols = row.get("ColData", [])
                         if len(cols) >= 5:  # Ensure we have enough columns
+                            # Extract the price from the item name (e.g., "sink ($10.00)")
+                            item_name = cols[0].get("value", "")
+                            price_match = re.search(r'\(\$(\d+\.\d+)\)', item_name)
+                            unit_price = float(price_match.group(1)) if price_match else 0.0
+
                             # Clean and convert numeric values
-                            # Column order from docs:
-                            # 0: Item name
-                            # 1: SKU
-                            # 2: Qty
-                            # 3: Asset Value (Total Value)
-                            # 4: Avg Cost (Unit Price)
                             qty = float(cols[2].get("value", "0").replace(",", ""))
-                            total_value = float(cols[3].get("value", "0").replace("$", "").replace(",", ""))
-                            unit_price = float(cols[4].get("value", "0").replace("$", "").replace(",", ""))
+                            
+                            # Calculate total value based on our unit price
+                            total_value = qty * unit_price
 
                             processed_row = {
-                                "Item": cols[0].get("value", ""),
+                                "Item": item_name,
                                 "SKU": cols[1].get("value", ""),
                                 "QtyOnHand": qty,
                                 "UnitPrice": unit_price,
