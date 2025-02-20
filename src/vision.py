@@ -179,17 +179,18 @@ class ImageAnalyzer:
             plot.prediction(prediction_result)
 
             # Add confidence scores for each detection
-            for obj in prediction_result["objects"]:  # Changed from prediction_result.detections
-                # Get bounding box coordinates
-                x = obj["x"]  # Changed from detection.boundingBox.x
-                y = obj["y"]  # Changed from detection.boundingBox.y
+            if False:  # don't show the confidence on the images for now
+                for obj in prediction_result["objects"]:  # Changed from prediction_result.detections
+                    # Get bounding box coordinates
+                    x = obj["x"]  # Changed from detection.boundingBox.x
+                    y = obj["y"]  # Changed from detection.boundingBox.y
 
-                # Format confidence score as percentage
-                confidence = f"{obj['confidence']:.1%}"
-                label = f"{obj['classLabel']} ({confidence})"
+                    # Format confidence score as percentage
+                    confidence = f"{obj['confidence']:.1%}"
+                    label = f"{obj['classLabel']} ({confidence})"
 
-                # Add text above the bounding box
-                plt.text(x, y - 10, label, color="white", bbox=dict(facecolor="red", alpha=0.7), fontsize=8)
+                    # Add text above the bounding box
+                    plt.text(x, y - 10, label, color="white", bbox=dict(facecolor="red", alpha=0.7), fontsize=8)
 
             plt.axis("off")  # Hide axes
             plt.show()
@@ -204,12 +205,13 @@ class ImageAnalyzer:
             plot = EyePopSdk.plot(plt.gca())
             plot.prediction(prediction_result)
 
-            for obj in prediction_result["objects"]:
-                x = obj["x"]
-                y = obj["y"]
-                confidence = f"{obj['confidence']:.1%}"
-                label = f"{obj['classLabel']} ({confidence})"
-                plt.text(x, y - 10, label, color="white", bbox=dict(facecolor="red", alpha=0.7), fontsize=8)
+            # Remove or comment out this block to match visualize_prediction behavior
+            # for obj in prediction_result["objects"]:
+            #     x = obj["x"]
+            #     y = obj["y"]
+            #     confidence = f"{obj['confidence']:.1%}"
+            #     label = f"{obj['classLabel']} ({confidence})"
+            #     plt.text(x, y - 10, label, color="white", bbox=dict(facecolor="red", alpha=0.7), fontsize=8)
 
             plt.axis("off")
 
