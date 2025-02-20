@@ -13,6 +13,7 @@ import logging
 from dotenv import load_dotenv
 from src.embeddings import EmbeddingsClient
 from src.chat_client import ChatClient
+from src.gravity_client import GravityAIClient
 
 app = Flask(__name__)
 
@@ -99,6 +100,11 @@ def upload_file():
         file.save(temp_path)
 
         try:
+            # Open and fix image rotation before analysis
+            with Image.open(temp_path) as img:
+                img = fix_image_rotation(img)
+                img.save(temp_path)
+
             # Analyze image with EyePop
             analyzer = ImageAnalyzer()
             prediction_result = analyzer.analyze_image(temp_path)
@@ -106,6 +112,7 @@ def upload_file():
             # Get room classification
             room_classifier = RoomClassifier()
             room_type = room_classifier.classify_room(temp_path)
+            print(f"\nDEBUG - Classified room type: {room_type}")
 
             # Get embeddings for the room image
             embeddings_client = EmbeddingsClient()
@@ -114,8 +121,11 @@ def upload_file():
             # Get embeddings for detected objects
             objects_with_embeddings = analyzer.get_object_embeddings(temp_path, prediction_result)
 
+            print(f"\nDEBUG - Storing {len(objects_with_embeddings)} objects in room: {room_type}")
+
             # Store each detected object in Neo4j with its embedding
             for obj in objects_with_embeddings:
+                print(f"\nDEBUG - Storing item '{obj['classLabel']}' in room: {room_type}")
                 item_data = {
                     "name": obj["classLabel"],
                     "room": room_type,
@@ -123,15 +133,15 @@ def upload_file():
                     "quantity": 1,
                     "confidence": obj["confidence"],
                     "embedding": obj["embedding"],
-                    "description": obj["description"],  # Make sure description is included
-                    "image_data": obj["image_data"],
+                    "description": obj.get("description", ""),  # Use get() with default empty string
+                    "image_data": obj.get("image_data", ""),
                     "item_id": f"{obj['classLabel']}_{room_type}_{datetime.now().strftime('%Y%m%d%H%M%S')}",
                     "sku": f"SKU_{obj['classLabel']}_{room_type}",
                     "add_date": datetime.now().strftime("%Y-%m-%d"),
                     "purchase_date": None,
                     "room_embedding": room_embedding,
                 }
-                print(f"Storing item with description: {obj['description']}")
+                print(f"Storing item with description: {item_data['description']}")
                 neo4j_client.create_item(item_data)
 
             # Get visualization and cropped objects
@@ -166,51 +176,54 @@ def inventory():
         if not report["success"]:
             return render_template("inventory.html", error=report["error"])
 
+        # Get all room assignments from Neo4j in one query
+        query = """
+        MATCH (i:InventoryItem)-[r:LOCATED_IN]->(room:Room)
+        RETURN i.name as item_name, room.name as room_name, r.last_updated as last_updated
+        """
+
+        # Create a mapping of item names to rooms
+        item_rooms = {}
+        try:
+            with neo4j_client.driver.session() as session:
+                results = session.run(query)
+                for result in results:
+                    item_name = result["item_name"].lower()
+                    if item_name not in item_rooms:
+                        item_rooms[item_name] = []
+                    item_rooms[item_name].append({"room": result["room_name"], "updated": result["last_updated"]})
+        except Exception as e:
+            logging.error(f"Neo4j query error: {e}")
+
         # Process the QuickBooks report data
-        report_data = []
+        rooms_data = {}
         total_value = 0
 
         for row in report["rows"]:
             if isinstance(row, dict):
-                report_data.append(row)
+                item_name = row["Item"].lower()
+                # Find room assignments for this item
+                rooms = item_rooms.get(item_name, [{"room": "Unassigned", "updated": None}])
+
+                for room_info in rooms:
+                    room_name = room_info["room"]
+                    if room_name not in rooms_data:
+                        rooms_data[room_name] = []
+
+                    # Create a copy of the row for this room
+                    room_item = row.copy()
+                    room_item["location_updated"] = room_info["updated"]
+                    rooms_data[room_name].append(room_item)
+
                 try:
                     total_value += float(row.get("Value", 0))
                 except (ValueError, TypeError):
                     pass
 
-        # Get room location data from Neo4j for each item
-        for item in report_data:
-            query = """
-            MATCH (i:InventoryItem)-[r:LOCATED_IN]->(room:Room)
-            WHERE i.name = $item_name
-            RETURN room.name as room_name, r.last_updated as last_updated
-            """
-            try:
-                with neo4j_client.driver.session() as session:
-                    result = session.run(query, item_name=item["Item"]).single()
-                    if result:
-                        item["room"] = result["room_name"]
-                        item["location_updated"] = result["last_updated"]
-                    else:
-                        item["room"] = "Unassigned"
-                        item["location_updated"] = None
-            except Exception as e:
-                logging.error(f"Neo4j query error: {e}")
-                item["room"] = "Error"
-                item["location_updated"] = None
-
-        # Group items by room
-        rooms_data = {}
-        for item in report_data:
-            room_name = item.get("room", "Unassigned")
-            if room_name not in rooms_data:
-                rooms_data[room_name] = []
-            rooms_data[room_name].append(item)
-
         return render_template("inventory.html", rooms_data=rooms_data, total_value=total_value)
 
     except Exception as e:
-        print("DEBUG - Error:", str(e))
+        logging.error(f"Error in inventory route: {e}")
         return render_template("inventory.html", error=str(e))
 
 

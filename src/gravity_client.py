@@ -140,65 +140,63 @@ class GravityAIClient:
                 "top_p": 0.9,
             }
 
-            # Write to a temporary input file
-            with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+            # Write to a temporary file
+            temp_path = "temp_input.json"
+            with open(temp_path, "w") as f:
                 json.dump(input_data, f, indent=2)
-                input_path = f.name
 
-            output_path = input_path + ".out"
+            # Use exact same code as working example
+            input_file = open(temp_path, "rb")
+            files = {"file": input_file}
 
-            try:
-                # Keep the file open during the entire request, just like the example
-                input_file = open(input_path, "rb")
-                files = {
-                    "file": input_file,
-                }
+            data = {"data": json.dumps(self.config)}
 
-                data = {"data": json.dumps(self.config)}
+            print("Creating job...")
+            r = requests.request("POST", self.API_CREATE_JOB_URL, headers=self.headers, data=data, files=files)
+            print(r.status_code)
+            result = r.json()
 
-                response = requests.request("POST", self.API_CREATE_JOB_URL, headers=self.headers, data=data, files=files)
+            # Close file after request
+            input_file.close()
 
-                # Close the file after the request is done
-                input_file.close()
+            if result.get("isError", False):
+                print("Error: " + result.get("errorMessage"))
+            if result.get("data", {}).get("statusMessage") != "success":
+                print("Job Failed: " + result.get("data", {}).get("errorMessage"))
+                raise Exception("Job Failed: " + result.get("data", {}).get("errorMessage"))
 
-                result = response.json()
-                if result.get("isError", False):
-                    raise Exception(f"Error: {result.get('errorMessage')}")
-                if result.get("data", {}).get("statusMessage") != "success":
-                    raise Exception(f"Job Failed: {result.get('data', {}).get('errorMessage')}")
+            job_id = result.get("data", {}).get("id")
 
-                job_id = result.get("data", {}).get("id")
+            # Get result exactly like working example
+            url = f"{self.API_GET_JOB_RESULT_URL}/{job_id}"
+            r = requests.request("GET", url, headers=self.headers)
+            link = r.json()
 
-                # Get result and write to output file exactly like the example
-                url = f"{self.API_GET_JOB_RESULT_URL}/{job_id}"
-                response = requests.request("GET", url, headers=self.headers)
-                link = response.json()
+            if link.get("isError"):
+                print("Error: " + link.get("errorMessage"))
+                raise Exception("Error: " + link.get("errorMessage"))
 
-                if link.get("isError"):
-                    raise Exception(f"Error: {link.get('errorMessage')}")
+            result = requests.request("GET", link.get("data"))
 
-                result = requests.request("GET", link.get("data"))
+            # Write to output file
+            output_path = "temp_output.json"
+            with open(output_path, "wb") as f:
+                f.write(result.content)
 
-                # Write to output file like the example
-                with open(output_path, "wb") as f:
-                    f.write(result.content)
-
-                # Read the response
-                with open(output_path, "r") as f:
-                    response_data = json.load(f)
-                    print(f"API Response: {response_data}")
-                    return str(response_data)
-
-            finally:
-                # Clean up temp files
-                if os.path.exists(input_path):
-                    os.unlink(input_path)
-                if os.path.exists(output_path):
-                    os.unlink(output_path)
+            # Read and return the response
+            with open(output_path, "r") as f:
+                response_data = json.load(f)
+                return str(response_data)
 
         except Exception as e:
             print(f"Error in chat completion: {str(e)}")
             return f"Error: {str(e)}"
+        finally:
+            # Clean up temp files
+            if os.path.exists(temp_path):
+                os.unlink(temp_path)
+            if os.path.exists(output_path):
+                os.unlink(output_path)
 
     def process_image(self, image_data: Union[str, bytes], is_base64: bool = False) -> dict:
         """Process an image and return embeddings or analysis"""

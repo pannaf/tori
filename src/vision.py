@@ -258,7 +258,9 @@ class ImageAnalyzer:
         return cropped_objects
 
     def get_object_embeddings(self, image_path, prediction_result):
-        """Get embeddings and descriptions for detected objects"""
+        """
+        Get embeddings for each detected object using their cropped images
+        """
         embeddings_client = EmbeddingsClient()
         objects_with_embeddings = []
 
@@ -266,25 +268,25 @@ class ImageAnalyzer:
 
         for obj, cropped in zip(prediction_result["objects"], cropped_objects):
             try:
+                # Convert base64 back to bytes
                 image_bytes = base64.b64decode(cropped["image"])
 
-                # Get both embedding and description
-                embedding, description = embeddings_client.get_image_embedding(image_data=image_bytes)
+                # Get embedding for the cropped object image
+                embedding = embeddings_client.get_image_embedding(image_data=image_bytes)
 
                 objects_with_embeddings.append(
                     {
                         "classLabel": obj["classLabel"],
                         "confidence": obj["confidence"],
                         "embedding": embedding,
-                        "description": description,
                         "image_data": image_bytes,
                     }
                 )
 
-                print(f"Generated embedding and description for {obj['classLabel']}: {description}")
+                print(f"Generated embedding for {obj['classLabel']}")
 
             except Exception as e:
-                print(f"Error processing {obj['classLabel']}: {e}")
+                print(f"Error getting embedding for {obj['classLabel']}: {e}")
                 continue
 
         return objects_with_embeddings
