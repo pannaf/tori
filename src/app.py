@@ -12,7 +12,7 @@ from datetime import datetime
 import logging
 from dotenv import load_dotenv
 from src.embeddings import EmbeddingsClient
-from src.gravity_client import GravityAIClient
+from src.chat_client import ChatClient
 
 app = Flask(__name__)
 
@@ -300,6 +300,7 @@ def chat():
         return render_template("chat.html")
 
     try:
+        print("DEBUG - Chat request received")
         data = request.json
         if not data or "query" not in data:
             return {"error": "No query provided"}, 400
@@ -307,17 +308,24 @@ def chat():
         query = data["query"]
 
         # Get similar items from Neo4j using vector similarity
+        print("DEBUG - Searching for similar items")
         similar_items = neo4j_client.search_similar_items(query, limit=5)
+        print(f"DEBUG - Found {len(similar_items)} similar items")
 
         # Format the context in a more natural way, including descriptions
         context = "Here's what I found in your inventory:\n\n"
+        print("DEBUG - Context: ", context)
 
         # Group items by room
         rooms = {}
         for item in similar_items:
+            print("DEBUG - Item: ", item)
             room = item["room"]
+            print("DEBUG - Room: ", room)
             if room not in rooms:
+                print("DEBUG - Adding room to rooms: ", room)
                 rooms[room] = []
+            print("DEBUG - Adding item to room: ", item)
             rooms[room].append(item)
 
         # Create natural language context with descriptions
@@ -330,11 +338,18 @@ def chat():
                     context += f"  Description: {item['description']}\n"
             context += "\n"
 
-        print(f"Sending context to GravityAI:\n{context}")
+        print(f"Sending context to ChatAI:\n{context}")
 
         # Use GravityAI to get response
-        gravity_client = GravityAIClient()
-        response = gravity_client.get_llm_response(context=context, query=query)
+        # gravity_client = GravityAIClient()
+        # prompt = f"Context:\n{context}\n\nQuestion: {query}\n\nPlease answer based on the context provided."
+        # response = gravity_client.chat_completion(prompt)
+
+        chat_client = ChatClient()
+        response = chat_client.get_llm_response(context, query)
+
+        if not response:
+            return {"error": "No response from AI"}, 500
 
         return {"response": response, "context": similar_items}
 

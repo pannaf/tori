@@ -3,6 +3,8 @@ import json
 import io
 import base64
 from typing import List, Union, Optional
+import tempfile
+import os
 
 
 class GravityAIClient:
@@ -130,24 +132,73 @@ class GravityAIClient:
     def chat_completion(self, prompt: str) -> str:
         """Get a chat completion response"""
         try:
-            print(f"Getting chat completion for prompt: {prompt}")
+            # Create input data in the exact format that worked
             input_data = {
-                "inputs": [{"role": "system", "content": "You are a helpful AI assistant."}, {"role": "user", "content": prompt}]
+                "dialog": [{"role": "system", "content": "You are a helpful assistant."}, {"role": "user", "content": prompt}],
+                "max_gen_len": None,
+                "temperature": 0.7,
+                "top_p": 0.9,
             }
-            json_data = json.dumps(input_data, indent=2)
-            data_bytes = io.BytesIO(json_data.encode("utf-8"))
 
-            job_id = self.create_job(data_bytes)
-            result = self.get_job_result(job_id)
-            result_dict = json.loads(result)
+            # Write to a temporary input file
+            with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+                json.dump(input_data, f, indent=2)
+                input_path = f.name
 
-            print(f"Raw completion result: {result_dict}")
-            if not result_dict.get("response"):
-                raise Exception("No response in result")
-            return result_dict.get("response", "")
+            output_path = input_path + ".out"
+
+            try:
+                # Keep the file open during the entire request, just like the example
+                input_file = open(input_path, "rb")
+                files = {
+                    "file": input_file,
+                }
+
+                data = {"data": json.dumps(self.config)}
+
+                response = requests.request("POST", self.API_CREATE_JOB_URL, headers=self.headers, data=data, files=files)
+
+                # Close the file after the request is done
+                input_file.close()
+
+                result = response.json()
+                if result.get("isError", False):
+                    raise Exception(f"Error: {result.get('errorMessage')}")
+                if result.get("data", {}).get("statusMessage") != "success":
+                    raise Exception(f"Job Failed: {result.get('data', {}).get('errorMessage')}")
+
+                job_id = result.get("data", {}).get("id")
+
+                # Get result and write to output file exactly like the example
+                url = f"{self.API_GET_JOB_RESULT_URL}/{job_id}"
+                response = requests.request("GET", url, headers=self.headers)
+                link = response.json()
+
+                if link.get("isError"):
+                    raise Exception(f"Error: {link.get('errorMessage')}")
+
+                result = requests.request("GET", link.get("data"))
+
+                # Write to output file like the example
+                with open(output_path, "wb") as f:
+                    f.write(result.content)
+
+                # Read the response
+                with open(output_path, "r") as f:
+                    response_data = json.load(f)
+                    print(f"API Response: {response_data}")
+                    return str(response_data)
+
+            finally:
+                # Clean up temp files
+                if os.path.exists(input_path):
+                    os.unlink(input_path)
+                if os.path.exists(output_path):
+                    os.unlink(output_path)
+
         except Exception as e:
-            print(f"Failed to get chat completion: {str(e)}")
-            raise Exception(f"Failed to get chat completion: {str(e)}")
+            print(f"Error in chat completion: {str(e)}")
+            return f"Error: {str(e)}"
 
     def process_image(self, image_data: Union[str, bytes], is_base64: bool = False) -> dict:
         """Process an image and return embeddings or analysis"""
@@ -175,49 +226,33 @@ class GravityAIClient:
             raise Exception(f"Failed to process image: {str(e)}")
 
     def get_llm_response(self, context: str, query: str) -> str:
-        """Get a RAG-based response using context and query"""
+        """Get a response using OpenAI's API"""
         try:
-            # Parse the context string into a list of items
-            items = eval(context)  # This contains the search results
+            print("\n=== DEBUG: Starting get_llm_response ===")
 
-            # Get the most relevant item's description (highest similarity)
-            most_relevant = max(items, key=lambda x: x.get("similarity", 0))
-            description = most_relevant.get("description", "")
+            # Import OpenAI here to avoid potential circular imports
+            from openai import OpenAI
 
-            input_data = {
-                "inputs": [
-                    {
-                        "role": "system",
-                        "content": """You are a helpful and friendly home inventory assistant. 
-                        Use the provided item description to answer questions naturally and conversationally.
-                        Focus on the specific details provided in the description.""",
-                    },
-                    {
-                        "role": "user",
-                        "content": f"""Here is a detailed description of the item:
+            # Initialize OpenAI client
+            client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-{description}
+            # Format the prompt
+            messages = [
+                {"role": "system", "content": "You are a helpful inventory assistant. Answer questions based on the provided context."},
+                {
+                    "role": "user",
+                    "content": f"Context:\n{context}\n\nQuestion: {query}\n\nPlease answer based on the context provided.",
+                },
+            ]
 
-Question: {query}
+            # Get completion from OpenAI
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo", messages=messages, temperature=0.7, max_tokens=500  # or "gpt-4" if you have access
+            )
 
-Please provide a natural, conversational response that incorporates specific details from the description.""",
-                    },
-                ]
-            }
-
-            json_data = json.dumps(input_data, indent=2)
-            data_bytes = io.BytesIO(json_data.encode("utf-8"))
-
-            print(f"Sending RAG prompt to GravityAI")
-            job_id = self.create_job(data_bytes)
-            result = self.get_job_result(job_id)
-            result_dict = json.loads(result)
-
-            print(f"Raw completion result: {result_dict}")
-            if not result_dict.get("response"):
-                raise Exception("No response in result")
-            return result_dict.get("response", "")
+            # Extract the response text
+            return response.choices[0].message.content
 
         except Exception as e:
-            print(f"Failed to get RAG response: {str(e)}")
-            raise Exception(f"Failed to get RAG response: {str(e)}")
+            print(f"Failed to get response: {str(e)}")
+            raise Exception(f"Failed to get response: {str(e)}")

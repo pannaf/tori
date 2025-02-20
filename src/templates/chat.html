@@ -200,7 +200,7 @@
             input.value = '';
 
             try {
-                const response = await fetch('/search', {
+                const response = await fetch('/chat', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -213,7 +213,7 @@
                 if (data.error) {
                     addMessage('error', data.error);
                 } else {
-                    addMessage('assistant', formatResults(data.results));
+                    addMessage('assistant', data.response);
                 }
             } catch (error) {
                 addMessage('error', 'Failed to get response. Please try again.');
@@ -227,17 +227,6 @@
             messageDiv.textContent = content;
             messagesDiv.appendChild(messageDiv);
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
-        }
-
-        function formatResults(results) {
-            if (!results || results.length === 0) {
-                return "I couldn't find any relevant items in your inventory.";
-            }
-
-            return results.map(item =>
-                `${item.name} - Located in: ${item.room}\n` +
-                `Price: $${item.price} | Quantity: ${item.quantity}`
-            ).join('\n\n');
         }
     </script>
 </body>
