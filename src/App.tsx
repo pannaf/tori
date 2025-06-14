@@ -38,7 +38,7 @@ function App() {
         return (
           <div className="space-y-8">
             <div className="text-center py-8">
-              <div className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 rounded-full text-white font-bold mb-6 shadow-lg shadow-violet-500/25">
+              <div className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-full text-white font-bold mb-6 shadow-lg shadow-indigo-500/25">
                 <Zap size={20} />
                 Tori
               </div>
@@ -47,7 +47,7 @@ function App() {
                 {items.length === 0 ? (
                   <>Tori. Know what you own.</>
                 ) : (
-                  <>Your home, effortless organization</>
+                  <>Your home, organized beautifully</>
                 )}
               </h1>
               
@@ -63,8 +63,8 @@ function App() {
 
             {items.length === 0 ? (
               <div className="text-center py-12">
-                <div className="w-24 h-24 bg-gradient-to-br from-violet-50 to-indigo-50 rounded-3xl flex items-center justify-center mx-auto mb-6 border border-violet-100">
-                  <Plus className="text-violet-600" size={36} />
+                <div className="w-24 h-24 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-3xl flex items-center justify-center mx-auto mb-6 border border-indigo-100">
+                  <Plus className="text-indigo-600" size={36} />
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 mb-3">Ready to get organized?</h3>
                 <p className="text-gray-600 mb-8 max-w-sm mx-auto leading-relaxed">
@@ -72,7 +72,7 @@ function App() {
                 </p>
                 <button
                   onClick={() => setShowAddModal(true)}
-                  className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white px-8 py-4 rounded-full font-bold hover:shadow-xl hover:shadow-violet-500/25 transition-all duration-300 hover:scale-105"
+                  className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-8 py-4 rounded-full font-bold hover:shadow-xl hover:shadow-indigo-500/25 transition-all duration-300 hover:scale-105"
                 >
                   Add Your First Item
                 </button>
@@ -84,7 +84,7 @@ function App() {
                   {recentItems.length > 0 && (
                     <button
                       onClick={() => setActiveTab('search')}
-                      className="text-violet-600 hover:text-violet-800 transition-colors font-semibold"
+                      className="text-indigo-600 hover:text-indigo-800 transition-colors font-semibold"
                     >
                       View all →
                     </button>
@@ -173,7 +173,7 @@ function App() {
                           <div className="flex items-center gap-2">
                             <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
                               <div
-                                className="h-full bg-gradient-to-r from-violet-500 to-indigo-600 transition-all duration-300"
+                                className="h-full bg-gradient-to-r from-indigo-500 to-purple-600 transition-all duration-300"
                                 style={{ width: `${percentage}%` }}
                               />
                             </div>
@@ -220,7 +220,7 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-violet-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50">
       <div className="max-w-md mx-auto bg-white min-h-screen relative shadow-xl shadow-slate-200/50">
         {/* Main Content */}
         <div className="pb-20">
@@ -241,7 +241,7 @@ function App() {
 
           <button
             onClick={() => setShowAddModal(true)}
-            className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white p-5 rounded-full shadow-xl shadow-violet-500/25 hover:shadow-violet-500/40 transition-all duration-300 hover:scale-110"
+            className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-5 rounded-full shadow-xl shadow-indigo-500/25 hover:shadow-indigo-500/40 transition-all duration-300 hover:scale-110"
             title="Add new item"
           >
             <Plus size={28} />
@@ -260,7 +260,7 @@ function App() {
                 key={key}
                 onClick={() => setActiveTab(key as TabType)}
                 className={`flex flex-col items-center gap-2 py-3 px-6 rounded-full transition-all duration-300 ${activeTab === key
-                    ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-lg shadow-violet-500/25'
+                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/25'
                     : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
                   }`}
               >

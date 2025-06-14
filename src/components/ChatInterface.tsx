@@ -198,7 +198,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ items, isOpen, onC
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-40 flex items-end justify-center p-4">
       <div className="bg-white rounded-t-3xl w-full max-w-md h-[75vh] flex flex-col shadow-2xl">
-        <div className="flex items-center justify-between p-6 border-b border-gray-100 bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 rounded-t-3xl">
+        <div className="flex items-center justify-between p-6 border-b border-gray-100 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-t-3xl">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 bg-white bg-opacity-20 rounded-2xl flex items-center justify-center">
               <Zap className="text-white" size={24} />
@@ -226,7 +226,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ items, isOpen, onC
                 <div
                   className={`px-5 py-3 rounded-2xl ${
                     message.isUser
-                      ? 'bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 text-white'
+                      ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white'
                       : 'bg-gray-100 text-gray-900'
                   }`}
                 >
@@ -258,10 +258,10 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ items, isOpen, onC
                   }`}
                 >
                   <div className={`w-7 h-7 rounded-xl flex items-center justify-center ${
-                    message.isUser ? 'bg-violet-100' : 'bg-purple-100'
+                    message.isUser ? 'bg-indigo-100' : 'bg-purple-100'
                   }`}>
                     {message.isUser ? (
-                      <User size={14} className="text-violet-600" />
+                      <User size={14} className="text-indigo-600" />
                     ) : (
                       <Zap size={14} className="text-purple-600" />
                     )}
@@ -300,12 +300,12 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ items, isOpen, onC
               onChange={(e) => setInputValue(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="Ask Tori anything about your stuff..."
-              className="flex-1 px-4 py-3 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-colors"
+              className="flex-1 px-4 py-3 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
             />
             <button
               onClick={handleSend}
               disabled={!inputValue.trim()}
-              className="bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 text-white p-3 rounded-2xl hover:shadow-lg hover:shadow-purple-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-3 rounded-2xl hover:shadow-lg hover:shadow-indigo-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Send size={20} />
             </button>

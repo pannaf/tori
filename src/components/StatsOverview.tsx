@@ -21,28 +21,28 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({ items }) => {
       label: 'Total Items',
       value: totalItems.toString(),
       icon: Package,
-      color: 'bg-gradient-to-r from-blue-500 to-blue-600',
+      gradient: 'from-indigo-500 to-purple-600',
       change: `+${recentItems} this week`,
     },
     {
       label: 'Rooms',
       value: totalRooms.toString(),
       icon: Home,
-      color: 'bg-gradient-to-r from-green-500 to-green-600',
+      gradient: 'from-emerald-500 to-teal-600',
       change: 'Across home',
     },
     {
       label: 'Total Value',
       value: `$${totalValue.toFixed(0)}`,
       icon: DollarSign,
-      color: 'bg-gradient-to-r from-purple-500 to-purple-600',
+      gradient: 'from-purple-500 to-pink-600',
       change: 'Estimated',
     },
     {
       label: 'Growth',
       value: recentItems > 0 ? `+${recentItems}` : '0',
       icon: TrendingUp,
-      color: 'bg-gradient-to-r from-pink-500 to-pink-600',
+      gradient: 'from-orange-500 to-red-600',
       change: 'This week',
     },
   ];
@@ -52,16 +52,16 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({ items }) => {
       {stats.map((stat, index) => (
         <div
           key={index}
-          className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
+          className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-lg transition-all duration-300 hover:scale-105"
         >
-          <div className="flex items-center justify-between mb-2">
-            <div className={`${stat.color} p-2 rounded-lg`}>
+          <div className="flex items-center justify-between mb-3">
+            <div className={`bg-gradient-to-r ${stat.gradient} p-3 rounded-xl shadow-lg`}>
               <stat.icon className="text-white" size={20} />
             </div>
           </div>
           <div className="space-y-1">
             <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-            <p className="text-sm font-medium text-gray-900">{stat.label}</p>
+            <p className="text-sm font-semibold text-gray-900">{stat.label}</p>
             <p className="text-xs text-gray-500">{stat.change}</p>
           </div>
         </div>

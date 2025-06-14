@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Camera, X, Zap, Check, AlertCircle, RefreshCw } from 'lucide-react';
+import { Camera, X, Zap, AlertCircle, RefreshCw } from 'lucide-react';
 
 interface CameraCaptureProps {
   onCapture: (imageData: string, recognitionData: any) => void;
@@ -109,7 +109,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
     <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center">
       <div className="w-full max-w-md mx-4">
         <div className="bg-white rounded-3xl overflow-hidden shadow-2xl">
-          <div className="flex items-center justify-between p-6 bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600">
+          <div className="flex items-center justify-between p-6 bg-gradient-to-r from-indigo-600 to-purple-600">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-white bg-opacity-20 rounded-2xl flex items-center justify-center">
                 <Zap className="text-white" size={20} />
@@ -146,22 +146,22 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
             )}
 
             {!error && !isProcessing && (
-              <div className="aspect-square bg-gradient-to-br from-violet-50 via-purple-50 to-indigo-50 flex items-center justify-center p-8">
+              <div className="aspect-square bg-gradient-to-br from-indigo-50 to-purple-50 flex items-center justify-center p-8">
                 <div className="text-center">
                   <button
                     onClick={() => fileInputRef.current?.click()}
-                    className="w-24 h-24 bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 rounded-3xl flex items-center justify-center mb-6 mx-auto hover:shadow-2xl hover:shadow-purple-500/25 transition-all duration-300 hover:scale-105"
+                    className="w-24 h-24 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-3xl flex items-center justify-center mb-6 mx-auto hover:shadow-2xl hover:shadow-indigo-500/25 transition-all duration-300 hover:scale-105"
                   >
                     <Camera size={36} className="text-white" />
                   </button>
-                  <h4 className="text-violet-700 font-bold text-lg mb-2">Take a Photo</h4>
-                  <p className="text-violet-600 text-sm leading-relaxed">Point at any item and Tori will<br />detect it with AI magic ✨</p>
+                  <h4 className="text-indigo-700 font-bold text-lg mb-2">Take a Photo</h4>
+                  <p className="text-indigo-600 text-sm leading-relaxed">Point at any item and Tori will<br />detect it with AI magic ✨</p>
                 </div>
               </div>
             )}
 
             {isProcessing && (
-              <div className="aspect-square bg-gradient-to-br from-violet-50 via-purple-50 to-indigo-50 flex items-center justify-center">
+              <div className="aspect-square bg-gradient-to-br from-indigo-50 to-purple-50 flex items-center justify-center">
                 <div className="text-center">
                   <div className="relative mb-6">
                     <Zap className="animate-pulse mx-auto text-amber-400" size={48} />
