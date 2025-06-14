@@ -10,11 +10,11 @@ interface ChatInterfaceProps {
   embedded?: boolean;
 }
 
-export const ChatInterface: React.FC<ChatInterfaceProps> = ({ 
-  items, 
-  isOpen, 
-  onClose, 
-  embedded = false 
+export const ChatInterface: React.FC<ChatInterfaceProps> = ({
+  items,
+  isOpen,
+  onClose,
+  embedded = false
 }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -38,23 +38,23 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   const generateResponse = (query: string): { content: string; relatedItems?: InventoryItem[] } => {
     const lowerQuery = query.toLowerCase();
-    
+
     if (lowerQuery.includes('how many') || lowerQuery.includes('count')) {
       const totalItems = items.length;
       const rooms = [...new Set(items.map(item => item.room))];
       const categories = [...new Set(items.map(item => item.category))];
-      
+
       return {
         content: `You've got ${totalItems} items organized across ${rooms.length} rooms and ${categories.length} different categories! 📊 Your most popular room is ${rooms[0] || 'N/A'} and you have the most ${categories[0] || 'N/A'} items. Pretty organized! 🎉`
       };
     }
-    
+
     if (lowerQuery.includes('expensive') || lowerQuery.includes('valuable') || lowerQuery.includes('worth')) {
       const valuableItems = items
         .filter(item => item.estimatedValue && item.estimatedValue > 100)
         .sort((a, b) => (b.estimatedValue || 0) - (a.estimatedValue || 0))
         .slice(0, 3);
-      
+
       if (valuableItems.length > 0) {
         return {
           content: `Here are your most valuable treasures! 💎`,
@@ -66,7 +66,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         };
       }
     }
-    
+
     if (lowerQuery.includes('kitchen') || lowerQuery.includes('living') || lowerQuery.includes('bedroom') || lowerQuery.includes('bathroom') || lowerQuery.includes('office') || lowerQuery.includes('garage')) {
       const roomMap: { [key: string]: string } = {
         'kitchen': 'Kitchen',
@@ -76,11 +76,11 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         'office': 'Office',
         'garage': 'Garage'
       };
-      
+
       const detectedRoom = Object.keys(roomMap).find(key => lowerQuery.includes(key));
       const room = detectedRoom ? roomMap[detectedRoom] : 'Unknown';
       const roomItems = items.filter(item => item.room.toLowerCase().includes(room.toLowerCase()));
-      
+
       if (roomItems.length > 0) {
         return {
           content: `Found ${roomItems.length} items in your ${room}! Here's what you've got: 🏠`,
@@ -92,7 +92,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         };
       }
     }
-    
+
     if (lowerQuery.includes('electronics') || lowerQuery.includes('furniture') || lowerQuery.includes('clothing') || lowerQuery.includes('books') || lowerQuery.includes('appliances')) {
       const categoryMap: { [key: string]: string } = {
         'electronics': 'Electronics',
@@ -101,11 +101,11 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         'books': 'Books',
         'appliances': 'Appliances'
       };
-      
+
       const detectedCategory = Object.keys(categoryMap).find(key => lowerQuery.includes(key));
       const category = detectedCategory ? categoryMap[detectedCategory] : 'Unknown';
       const categoryItems = items.filter(item => item.category.toLowerCase().includes(category.toLowerCase()));
-      
+
       if (categoryItems.length > 0) {
         return {
           content: `Here are your ${category.toLowerCase()} items! 📱`,
@@ -117,15 +117,15 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         };
       }
     }
-    
+
     if (lowerQuery.includes('find') || lowerQuery.includes('where') || lowerQuery.includes('search')) {
       const searchTerms = lowerQuery.replace(/find|where|is|are|my|search|for/g, '').trim();
-      const foundItems = items.filter(item => 
+      const foundItems = items.filter(item =>
         item.name.toLowerCase().includes(searchTerms) ||
         item.description?.toLowerCase().includes(searchTerms) ||
         item.tags.some(tag => tag.toLowerCase().includes(searchTerms))
       );
-      
+
       if (foundItems.length > 0) {
         return {
           content: `Found ${foundItems.length} items matching "${searchTerms}"! 🔍`,
@@ -149,14 +149,14 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         content: `Aww, you're so welcome! 🥰 I love helping you stay organized. Feel free to ask me anything else about your stuff!`
       };
     }
-    
+
     const responses = [
       "I'm here to help you with your home inventory! Try asking me things like 'What's in my kitchen?' or 'Find my laptop' or 'How many items do I have?' 🤔",
       "You can ask me about specific rooms, categories, or search for particular items! I'm like your personal home assistant 🏠✨",
       "I love helping you stay organized! Ask me about your most valuable items, room distributions, or search for anything specific 📊💝",
       "Want to know something about your inventory? I can help you find items, get stats, or just chat about your home organization! 😊"
     ];
-    
+
     return {
       content: responses[Math.floor(Math.random() * responses.length)]
     };
@@ -210,15 +210,14 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             >
               <div className={`max-w-[85%] ${message.isUser ? 'order-1' : 'order-2'}`}>
                 <div
-                  className={`px-4 py-3 rounded-2xl ${
-                    message.isUser
-                      ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white'
-                      : 'bg-gray-100 text-gray-900'
-                  }`}
+                  className={`px-4 py-3 rounded-2xl ${message.isUser
+                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white'
+                    : 'bg-gray-100 text-gray-900'
+                    }`}
                 >
                   <p className="text-sm leading-relaxed">{message.content}</p>
                 </div>
-                
+
                 {message.relatedItems && message.relatedItems.length > 0 && (
                   <div className="mt-3 space-y-2">
                     {message.relatedItems.map((item) => (
@@ -240,19 +239,19 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
               </div>
             </div>
           ))}
-          
+
           {isTyping && (
             <div className="flex justify-start">
               <div className="bg-gray-100 rounded-2xl px-4 py-3">
                 <div className="flex items-center gap-1">
                   <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                 </div>
               </div>
             </div>
           )}
-          
+
           <div ref={messagesEndRef} />
         </div>
 
@@ -280,12 +279,12 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-40 flex items-end justify-center p-4">
-      <div className="bg-white rounded-t-3xl w-full max-w-md h-[75vh] flex flex-col shadow-2xl">
-        <div className="flex items-center justify-between p-6 border-b border-gray-100 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-t-3xl">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-white bg-opacity-20 rounded-2xl flex items-center justify-center">
-              <Zap className="text-white" size={24} />
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-40 flex items-center justify-center p-4">
+      <div className="bg-white rounded-3xl w-full max-w-md h-[600px] flex flex-col shadow-2xl">
+        <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-t-3xl">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-white bg-opacity-20 rounded-xl flex items-center justify-center">
+              <Zap className="text-white" size={20} />
             </div>
             <div>
               <h3 className="text-white font-bold text-lg">Chat with Tori</h3>
@@ -300,7 +299,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {messages.map((message) => (
             <div
               key={message.id}
@@ -308,15 +307,14 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             >
               <div className={`max-w-[85%] ${message.isUser ? 'order-1' : 'order-2'}`}>
                 <div
-                  className={`px-5 py-3 rounded-2xl ${
-                    message.isUser
-                      ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white'
-                      : 'bg-gray-100 text-gray-900'
-                  }`}
+                  className={`px-5 py-3 rounded-2xl ${message.isUser
+                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white'
+                    : 'bg-gray-100 text-gray-900'
+                    }`}
                 >
                   <p className="text-sm leading-relaxed">{message.content}</p>
                 </div>
-                
+
                 {message.relatedItems && message.relatedItems.length > 0 && (
                   <div className="mt-3 space-y-2">
                     {message.relatedItems.map((item) => (
@@ -335,15 +333,13 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                     ))}
                   </div>
                 )}
-                
+
                 <div
-                  className={`flex items-center gap-2 mt-2 ${
-                    message.isUser ? 'justify-end' : 'justify-start'
-                  }`}
+                  className={`flex items-center gap-2 mt-2 ${message.isUser ? 'justify-end' : 'justify-start'
+                    }`}
                 >
-                  <div className={`w-7 h-7 rounded-xl flex items-center justify-center ${
-                    message.isUser ? 'bg-indigo-100' : 'bg-purple-100'
-                  }`}>
+                  <div className={`w-7 h-7 rounded-xl flex items-center justify-center ${message.isUser ? 'bg-indigo-100' : 'bg-purple-100'
+                    }`}>
                     {message.isUser ? (
                       <User size={14} className="text-indigo-600" />
                     ) : (
@@ -351,32 +347,32 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                     )}
                   </div>
                   <span className="text-xs text-gray-500">
-                    {new Date(message.timestamp).toLocaleTimeString([], { 
-                      hour: '2-digit', 
-                      minute: '2-digit' 
+                    {new Date(message.timestamp).toLocaleTimeString([], {
+                      hour: '2-digit',
+                      minute: '2-digit'
                     })}
                   </span>
                 </div>
               </div>
             </div>
           ))}
-          
+
           {isTyping && (
             <div className="flex justify-start">
               <div className="bg-gray-100 rounded-2xl px-5 py-3">
                 <div className="flex items-center gap-1">
                   <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                 </div>
               </div>
             </div>
           )}
-          
+
           <div ref={messagesEndRef} />
         </div>
 
-        <div className="p-6 border-t border-gray-100">
+        <div className="p-4 border-t border-gray-100">
           <div className="flex gap-3">
             <input
               type="text"
