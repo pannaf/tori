@@ -54,7 +54,7 @@ function App() {
               <p className="text-gray-600 leading-relaxed">
                 {items.length === 0
                   ? "Let's get started by adding your first item with AI-powered photo recognition"
-                  : `You've got ${items.length} items beautifully organized across your home`
+                  : `You've got ${items.length} items in your home inventory`
                 }
               </p>
             </div>
