@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Mic, MicOff, Zap, Volume2, Sparkles } from 'lucide-react';
+import { Mic, Zap, Volume2 } from 'lucide-react';
 import { ChatMessage } from '../types/inventory';
 import { InventoryItem } from '../types/inventory';
 
@@ -19,7 +19,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: '1',
-      content: "Hey! I'm Tori! 👋 Just tap the microphone and talk to me like you would a friend. Ask me anything about your home inventory - where your stuff is, what you own, how much it's worth. I'm all ears!",
+      content: "Hey! I'm Tori! Just hold the microphone and talk to me. Ask me anything about your home inventory!",
       isUser: false,
       timestamp: new Date().toISOString(),
     }
@@ -28,6 +28,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const [isListening, setIsListening] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const timeoutRef = useRef<NodeJS.Timeout>();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -46,7 +47,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       const categories = [...new Set(items.map(item => item.category))];
 
       return {
-        content: `You've got ${totalItems} items! That's pretty impressive! 🎉 They're spread across ${rooms.length} different rooms, and I can see you have ${categories.length} different types of stuff. Your ${rooms[0] || 'favorite room'} seems to be where you keep most things!`
+        content: `You've got ${totalItems} items! They're spread across ${rooms.length} different rooms. Pretty organized!`
       };
     }
 
@@ -58,12 +59,12 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
       if (valuableItems.length > 0) {
         return {
-          content: `Ooh, let me show you your most valuable stuff! 💎 These are your priciest treasures:`,
+          content: `Here are your most valuable items:`,
           relatedItems: valuableItems
         };
       } else {
         return {
-          content: `Hmm, looks like you haven't added prices to your items yet, or everything's under $100. That's totally fine though! The most valuable things aren't always the most expensive, right? 💝`
+          content: `Looks like you haven't added prices to your items yet, or everything's under $100. That's totally fine!`
         };
       }
     }
@@ -84,37 +85,12 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
       if (roomItems.length > 0) {
         return {
-          content: `Oh nice! I found ${roomItems.length} things in your ${room}! 🏠 Here's what you've got in there:`,
+          content: `Found ${roomItems.length} things in your ${room}:`,
           relatedItems: roomItems.slice(0, 5)
         };
       } else {
         return {
-          content: `Hmm, I don't see anything in your ${room} yet. Maybe it's time to add some stuff? Or maybe it's just super tidy in there! 😄`
-        };
-      }
-    }
-
-    if (lowerQuery.includes('electronics') || lowerQuery.includes('furniture') || lowerQuery.includes('clothing') || lowerQuery.includes('books') || lowerQuery.includes('appliances')) {
-      const categoryMap: { [key: string]: string } = {
-        'electronics': 'Electronics',
-        'furniture': 'Furniture',
-        'clothing': 'Clothing',
-        'books': 'Books',
-        'appliances': 'Appliances'
-      };
-
-      const detectedCategory = Object.keys(categoryMap).find(key => lowerQuery.includes(key));
-      const category = detectedCategory ? categoryMap[detectedCategory] : 'Unknown';
-      const categoryItems = items.filter(item => item.category.toLowerCase().includes(category.toLowerCase()));
-
-      if (categoryItems.length > 0) {
-        return {
-          content: `Here are all your ${category.toLowerCase()}! 📱 You've got some good stuff:`,
-          relatedItems: categoryItems.slice(0, 5)
-        };
-      } else {
-        return {
-          content: `I don't see any ${category.toLowerCase()} items yet. Time for some shopping? 😉 Or maybe you just haven't added them to your inventory!`
+          content: `I don't see anything in your ${room} yet. Maybe it's time to add some stuff?`
         };
       }
     }
@@ -129,39 +105,33 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
       if (foundItems.length > 0) {
         return {
-          content: `Found it! 🔍 Actually, I found ${foundItems.length} things that match "${searchTerms}". Here they are:`,
+          content: `Found ${foundItems.length} items matching "${searchTerms}":`,
           relatedItems: foundItems.slice(0, 5)
         };
       } else {
         return {
-          content: `Hmm, I couldn't find anything matching "${searchTerms}" 🤔 Maybe try describing it differently? Or perhaps you haven't added it to your inventory yet!`
+          content: `Couldn't find anything matching "${searchTerms}". Maybe try a different search term?`
         };
       }
     }
 
     if (lowerQuery.includes('hello') || lowerQuery.includes('hi') || lowerQuery.includes('hey')) {
       return {
-        content: `Hey there! 👋 So good to chat with you! I'm Tori, and I'm basically your home's memory. I know where all your stuff is and can help you find anything. What's on your mind today?`
+        content: `Hey there! I'm Tori, and I know everything about your home inventory. What can I help you find?`
       };
     }
 
     if (lowerQuery.includes('thank') || lowerQuery.includes('thanks')) {
       return {
-        content: `Aww, you're so sweet! 🥰 I absolutely love helping you stay organized. It's literally what I live for! Got anything else you want to know about your stuff?`
-      };
-    }
-
-    if (lowerQuery.includes('help') || lowerQuery.includes('what can you do')) {
-      return {
-        content: `I'm like your home's personal assistant! 🏠✨ I can help you find specific items, tell you what's in any room, show you your most valuable stuff, count your things, or just chat about your home organization. Try asking me things like "What's in my kitchen?" or "Find my laptop" or "How much is my stuff worth?"`
+        content: `You're so welcome! I love helping you stay organized. Anything else?`
       };
     }
 
     const responses = [
-      "I'm not sure I caught that! 🤔 Try asking me about specific rooms, like 'What's in my kitchen?' or search for items like 'Find my laptop'. I'm here to help!",
-      "Hmm, let me think... 💭 You can ask me about your rooms, categories, or search for specific items! I'm like having a friend who remembers where you put everything!",
-      "I love chatting, but I'm best at helping with your inventory! 😊 Ask me about your most valuable items, what's in different rooms, or help finding something specific!",
-      "Not quite sure what you're looking for! 🤷‍♀️ I'm great at finding your stuff though - try asking 'Where is my...' or 'What do I have in my...' and I'll help you out!"
+      "I'm here to help with your inventory! Try asking about specific rooms or items.",
+      "You can ask me about your rooms, categories, or search for specific items!",
+      "I'm great at finding your stuff - try asking 'What's in my kitchen?' or 'Find my laptop'.",
+      "Ask me about your most valuable items, room distributions, or search for anything specific!"
     ];
 
     return {
@@ -182,7 +152,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     setMessages(prev => [...prev, userMessage]);
     setIsTyping(true);
 
-    // Simulate more natural typing delay
     setTimeout(() => {
       const response = generateResponse(transcript);
       const botMessage: ChatMessage = {
@@ -195,66 +164,66 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
       setMessages(prev => [...prev, botMessage]);
       setIsTyping(false);
-    }, 800 + Math.random() * 1200);
+    }, 800);
   };
 
-  const toggleListening = () => {
+  const handleMouseDown = () => {
+    setIsListening(true);
+    // In a real implementation, start Web Speech API here
+  };
+
+  const handleMouseUp = () => {
     if (isListening) {
-      // Stop listening
       setIsListening(false);
       setIsProcessing(true);
       
       // Simulate voice processing
-      setTimeout(() => {
+      timeoutRef.current = setTimeout(() => {
         setIsProcessing(false);
-        // In a real implementation, you'd process the actual voice input here
-        handleVoiceInput("What's in my kitchen?"); // Demo response
+        // Demo response - in real implementation, process actual voice input
+        handleVoiceInput("What's in my kitchen?");
       }, 1500);
-    } else {
-      // Start listening
-      setIsListening(true);
-      // In a real implementation, you'd start Web Speech API here
     }
   };
+
+  const handleMouseLeave = () => {
+    if (isListening) {
+      handleMouseUp();
+    }
+  };
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   if (embedded) {
     return (
       <div className="flex flex-col h-96">
-        {/* Chat Header */}
-        <div className="flex items-center gap-3 mb-6 p-4 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-2xl border border-emerald-100">
-          <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center">
-            <Zap className="text-white" size={20} />
-          </div>
-          <div>
-            <h3 className="font-bold text-gray-900">Tori</h3>
-            <p className="text-sm text-gray-600">Your voice assistant</p>
-          </div>
-          <div className="ml-auto">
-            <div className="flex items-center gap-1">
-              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-              <span className="text-xs text-emerald-600 font-medium">Listening</span>
-            </div>
-          </div>
-        </div>
-
         {/* Voice Interface */}
-        <div className="flex-1 flex flex-col items-center justify-center space-y-6">
+        <div className="flex-1 flex flex-col items-center justify-center space-y-8">
           {/* Big Microphone Button */}
           <div className="relative">
             <button
-              onClick={toggleListening}
-              className={`w-32 h-32 rounded-full flex items-center justify-center transition-all duration-300 shadow-2xl ${
+              onMouseDown={handleMouseDown}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseLeave}
+              onTouchStart={handleMouseDown}
+              onTouchEnd={handleMouseUp}
+              className={`w-32 h-32 rounded-full flex items-center justify-center transition-all duration-300 shadow-2xl select-none ${
                 isListening
-                  ? 'bg-gradient-to-r from-red-500 to-pink-600 animate-pulse scale-110'
+                  ? 'bg-gradient-to-r from-red-500 to-pink-600 scale-110'
                   : isProcessing
                   ? 'bg-gradient-to-r from-amber-500 to-orange-600'
                   : 'bg-gradient-to-r from-emerald-500 to-teal-600 hover:scale-105 hover:shadow-emerald-500/25'
               }`}
             >
               {isProcessing ? (
-                <Sparkles className="text-white animate-spin" size={48} />
-              ) : isListening ? (
-                <MicOff className="text-white" size={48} />
+                <Zap className="text-white animate-spin" size={48} />
               ) : (
                 <Mic className="text-white" size={48} />
               )}
@@ -272,36 +241,11 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
               {isProcessing
                 ? "Processing..."
                 : isListening
-                ? "I'm listening..."
-                : "Tap to talk to Tori"
+                ? "Listening..."
+                : "Hold to talk"
               }
             </h3>
-            <p className="text-gray-600 text-sm max-w-xs">
-              {isProcessing
-                ? "Understanding what you said..."
-                : isListening
-                ? "Go ahead, ask me anything!"
-                : "Ask about your items, rooms, or anything else!"
-              }
-            </p>
           </div>
-
-          {/* Voice Waves Animation */}
-          {isListening && (
-            <div className="flex items-center gap-1">
-              {[...Array(5)].map((_, i) => (
-                <div
-                  key={i}
-                  className="w-1 bg-emerald-500 rounded-full animate-pulse"
-                  style={{
-                    height: `${Math.random() * 20 + 10}px`,
-                    animationDelay: `${i * 0.1}s`,
-                    animationDuration: '0.5s'
-                  }}
-                />
-              ))}
-            </div>
-          )}
         </div>
 
         {/* Recent Messages (Compact) */}
@@ -342,10 +286,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
             </div>
             <div>
               <h3 className="text-white font-bold text-lg">Tori</h3>
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-green-300 rounded-full animate-pulse"></div>
-                <p className="text-white text-opacity-80 text-sm">Ready to listen</p>
-              </div>
+              <p className="text-white text-opacity-80 text-sm">Voice assistant</p>
             </div>
           </div>
           <button
@@ -361,19 +302,21 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
           {/* Big Microphone Button */}
           <div className="relative">
             <button
-              onClick={toggleListening}
-              className={`w-40 h-40 rounded-full flex items-center justify-center transition-all duration-300 shadow-2xl ${
+              onMouseDown={handleMouseDown}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseLeave}
+              onTouchStart={handleMouseDown}
+              onTouchEnd={handleMouseUp}
+              className={`w-40 h-40 rounded-full flex items-center justify-center transition-all duration-300 shadow-2xl select-none ${
                 isListening
-                  ? 'bg-gradient-to-r from-red-500 to-pink-600 animate-pulse scale-110'
+                  ? 'bg-gradient-to-r from-red-500 to-pink-600 scale-110'
                   : isProcessing
                   ? 'bg-gradient-to-r from-amber-500 to-orange-600'
                   : 'bg-gradient-to-r from-emerald-500 to-teal-600 hover:scale-105 hover:shadow-emerald-500/25'
               }`}
             >
               {isProcessing ? (
-                <Sparkles className="text-white animate-spin" size={56} />
-              ) : isListening ? (
-                <MicOff className="text-white" size={56} />
+                <Zap className="text-white animate-spin" size={56} />
               ) : (
                 <Mic className="text-white" size={56} />
               )}
@@ -394,36 +337,11 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
               {isProcessing
                 ? "Processing..."
                 : isListening
-                ? "I'm listening..."
-                : "Tap to talk to Tori"
+                ? "Listening..."
+                : "Hold to talk"
               }
             </h3>
-            <p className="text-gray-600 leading-relaxed max-w-sm">
-              {isProcessing
-                ? "Understanding what you said and finding your answer..."
-                : isListening
-                ? "Go ahead, ask me anything about your home inventory!"
-                : "Just tap the microphone and ask me about your items, rooms, or anything else!"
-              }
-            </p>
           </div>
-
-          {/* Voice Waves Animation */}
-          {isListening && (
-            <div className="flex items-center gap-2">
-              {[...Array(7)].map((_, i) => (
-                <div
-                  key={i}
-                  className="w-1.5 bg-emerald-500 rounded-full animate-pulse"
-                  style={{
-                    height: `${Math.random() * 30 + 15}px`,
-                    animationDelay: `${i * 0.1}s`,
-                    animationDuration: '0.6s'
-                  }}
-                />
-              ))}
-            </div>
-          )}
         </div>
 
         {/* Recent Messages (Scrollable) */}
@@ -435,18 +353,6 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
               >
                 <div className={`max-w-[85%] ${message.isUser ? 'order-1' : 'order-2'}`}>
-                  {!message.isUser && (
-                    <div className="flex items-center gap-2 mb-1">
-                      <div className="w-5 h-5 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full flex items-center justify-center">
-                        <Zap size={10} className="text-white" />
-                      </div>
-                      <span className="text-xs font-medium text-gray-600">Tori</span>
-                      <button className="text-gray-400 hover:text-gray-600 transition-colors">
-                        <Volume2 size={10} />
-                      </button>
-                    </div>
-                  )}
-
                   <div
                     className={`px-3 py-2 rounded-xl text-sm ${
                       message.isUser
@@ -483,19 +389,11 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
             {isTyping && (
               <div className="flex justify-start">
-                <div className="flex flex-col">
-                  <div className="flex items-center gap-2 mb-1">
-                    <div className="w-5 h-5 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full flex items-center justify-center">
-                      <Zap size={10} className="text-white" />
-                    </div>
-                    <span className="text-xs font-medium text-gray-600">Tori is thinking...</span>
-                  </div>
-                  <div className="bg-gray-100 rounded-xl rounded-bl-md px-3 py-2">
-                    <div className="flex items-center gap-1">
-                      <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce"></div>
-                      <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                      <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                    </div>
+                <div className="bg-gray-100 rounded-xl rounded-bl-md px-3 py-2">
+                  <div className="flex items-center gap-1">
+                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce"></div>
+                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                   </div>
                 </div>
               </div>
