@@ -201,11 +201,14 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     };
   }, []);
 
+  // Check if we have actual conversation (more than just the initial greeting)
+  const hasConversation = messages.length > 1;
+
   if (embedded) {
     return (
       <div className="flex flex-col h-full min-h-[500px]">
-        {/* Voice Interface - Main Focus */}
-        <div className="flex-1 flex flex-col items-center justify-center py-8">
+        {/* Voice Interface - Positioned based on conversation state */}
+        <div className={`flex flex-col items-center justify-center ${hasConversation ? 'py-6' : 'flex-1 py-12'}`}>
           {/* Big Microphone Button */}
           <div className="relative mb-6">
             <button
@@ -239,7 +242,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
           </div>
 
           {/* Status Text */}
-          <div className="text-center mb-6">
+          <div className="text-center mb-4">
             <h3 className="text-2xl font-bold text-gray-900 mb-2">
               {isProcessing
                 ? "Processing..."
@@ -259,8 +262,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
           </div>
         </div>
 
-        {/* Recent Messages - Compact at Bottom */}
-        {messages.length > 1 && (
+        {/* Recent Messages - Only show if there's actual conversation */}
+        {hasConversation && (
           <div className="border-t border-gray-100 pt-4">
             <h4 className="text-sm font-semibold text-gray-500 mb-3 text-center">Recent conversation</h4>
             <div className="max-h-48 overflow-y-auto space-y-3">
@@ -404,7 +407,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         </div>
 
         {/* Recent Messages (Scrollable) */}
-        {messages.length > 1 && (
+        {hasConversation && (
           <div className="max-h-40 overflow-y-auto px-4 pb-4 space-y-3">
             {messages.slice(-3).map((message) => (
               <div
