@@ -152,7 +152,7 @@ function App() {
           <div className="space-y-6">
             <div className="text-center py-6">
               <h1 className="text-2xl font-bold text-gray-900 mb-2">Your Home Stats</h1>
-              <p className="text-gray-600">See how organized you are! 📊</p>
+              <p className="text-gray-600">See how organized you are!</p>
             </div>
 
             <StatsOverview items={items} />
