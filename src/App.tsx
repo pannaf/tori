@@ -255,10 +255,10 @@ function App() {
         <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-40">
           <div className="bg-white/95 backdrop-blur-xl rounded-full shadow-2xl shadow-gray-900/10 border border-gray-200/50 p-2">
             <div className="flex items-center">
-              {/* Navigation Items */}
+              {/* Left Navigation Items */}
               {[
                 { key: 'home', icon: Home, label: 'Home' },
-                { key: 'search', icon: Search, label: 'Search' },
+                { key: 'stats', icon: BarChart3, label: 'Stats' },
               ].map(({ key, icon: Icon, label }) => (
                 <button
                   key={key}
@@ -278,7 +278,7 @@ function App() {
                 </button>
               ))}
 
-              {/* Center Add Button - Now Outlined */}
+              {/* Center Add Button - Outlined */}
               <button
                 onClick={() => setShowAddModal(true)}
                 className="flex items-center justify-center w-14 h-14 mx-2 border-2 border-indigo-600 text-indigo-600 rounded-full hover:bg-indigo-600 hover:text-white hover:shadow-xl hover:shadow-indigo-500/25 hover:scale-110 transition-all duration-300"
@@ -289,8 +289,8 @@ function App() {
 
               {/* Right Navigation Items */}
               {[
+                { key: 'search', icon: Search, label: 'Search' },
                 { key: 'chat', icon: MessageSquare, label: 'Chat' },
-                { key: 'stats', icon: BarChart3, label: 'Stats' },
               ].map(({ key, icon: Icon, label }) => (
                 <button
                   key={key}
