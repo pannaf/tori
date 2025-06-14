@@ -7,9 +7,15 @@ interface ChatInterfaceProps {
   items: InventoryItem[];
   isOpen: boolean;
   onClose: () => void;
+  embedded?: boolean;
 }
 
-export const ChatInterface: React.FC<ChatInterfaceProps> = ({ items, isOpen, onClose }) => {
+export const ChatInterface: React.FC<ChatInterfaceProps> = ({ 
+  items, 
+  isOpen, 
+  onClose, 
+  embedded = false 
+}) => {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: '1',
@@ -192,6 +198,84 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ items, isOpen, onC
       handleSend();
     }
   };
+
+  if (embedded) {
+    return (
+      <div className="flex flex-col h-96">
+        <div className="flex-1 overflow-y-auto space-y-4 mb-4">
+          {messages.map((message) => (
+            <div
+              key={message.id}
+              className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
+            >
+              <div className={`max-w-[85%] ${message.isUser ? 'order-1' : 'order-2'}`}>
+                <div
+                  className={`px-4 py-3 rounded-2xl ${
+                    message.isUser
+                      ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white'
+                      : 'bg-gray-100 text-gray-900'
+                  }`}
+                >
+                  <p className="text-sm leading-relaxed">{message.content}</p>
+                </div>
+                
+                {message.relatedItems && message.relatedItems.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    {message.relatedItems.map((item) => (
+                      <div
+                        key={item.id}
+                        className="bg-white border border-gray-200 rounded-xl p-3 text-sm shadow-sm"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-semibold text-gray-900">{item.name}</span>
+                          <span className="text-gray-500 text-xs">{item.room}</span>
+                        </div>
+                        {item.estimatedValue && (
+                          <span className="text-emerald-600 font-semibold">${item.estimatedValue}</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+          
+          {isTyping && (
+            <div className="flex justify-start">
+              <div className="bg-gray-100 rounded-2xl px-4 py-3">
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          <div ref={messagesEndRef} />
+        </div>
+
+        <div className="flex gap-3">
+          <input
+            type="text"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyPress={handleKeyPress}
+            placeholder="Ask Tori anything about your stuff..."
+            className="flex-1 px-4 py-3 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
+          />
+          <button
+            onClick={handleSend}
+            disabled={!inputValue.trim()}
+            className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white p-3 rounded-2xl hover:shadow-lg hover:shadow-emerald-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Send size={20} />
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (!isOpen) return null;
 

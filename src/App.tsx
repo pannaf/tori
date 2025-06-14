@@ -7,7 +7,7 @@ import { SearchAndFilters } from './components/SearchAndFilters';
 import { ChatInterface } from './components/ChatInterface';
 import { StatsOverview } from './components/StatsOverview';
 
-type TabType = 'home' | 'search' | 'stats';
+type TabType = 'home' | 'search' | 'stats' | 'chat';
 
 function App() {
   const {
@@ -22,7 +22,6 @@ function App() {
 
   const [activeTab, setActiveTab] = useState<TabType>('home');
   const [showAddModal, setShowAddModal] = useState(false);
-  const [showChat, setShowChat] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRoom, setSelectedRoom] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -109,18 +108,9 @@ function App() {
       case 'search':
         return (
           <div className="space-y-6">
-            <div className="flex items-center justify-between py-6">
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900 mb-2">Find Your Stuff</h1>
-                <p className="text-gray-600">Search through your organized home inventory</p>
-              </div>
-              <button
-                onClick={() => setShowChat(true)}
-                className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white p-3 rounded-2xl hover:shadow-lg hover:shadow-emerald-500/25 transition-all duration-300 hover:scale-105"
-                title="Chat with Tori"
-              >
-                <MessageSquare size={20} />
-              </button>
+            <div className="text-center py-6">
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">Find Your Stuff</h1>
+              <p className="text-gray-600">Search through your organized home inventory</p>
             </div>
 
             <SearchAndFilters
@@ -223,6 +213,29 @@ function App() {
           </div>
         );
 
+      case 'chat':
+        return (
+          <div className="space-y-6">
+            <div className="text-center py-6">
+              <div className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full text-white font-bold mb-4 shadow-lg shadow-emerald-500/25">
+                <MessageSquare size={20} />
+                Chat with Tori
+              </div>
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">Ask me anything!</h1>
+              <p className="text-gray-600">I can help you find items, get stats, or organize your home</p>
+            </div>
+
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+              <ChatInterface
+                items={items}
+                isOpen={true}
+                onClose={() => setActiveTab('home')}
+                embedded={true}
+              />
+            </div>
+          </div>
+        );
+
       default:
         return null;
     }
@@ -242,7 +255,7 @@ function App() {
         <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-40">
           <div className="bg-white/95 backdrop-blur-xl rounded-full shadow-2xl shadow-gray-900/10 border border-gray-200/50 p-2">
             <div className="flex items-center">
-              {/* Left Navigation Items */}
+              {/* Navigation Items */}
               {[
                 { key: 'home', icon: Home, label: 'Home' },
                 { key: 'search', icon: Search, label: 'Search' },
@@ -265,31 +278,39 @@ function App() {
                 </button>
               ))}
 
-              {/* Center Add Button */}
+              {/* Center Add Button - Now Outlined */}
               <button
                 onClick={() => setShowAddModal(true)}
-                className="flex items-center justify-center w-14 h-14 mx-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-full shadow-xl shadow-indigo-500/25 hover:shadow-indigo-500/40 hover:scale-110 transition-all duration-300"
+                className="flex items-center justify-center w-14 h-14 mx-2 border-2 border-indigo-600 text-indigo-600 rounded-full hover:bg-indigo-600 hover:text-white hover:shadow-xl hover:shadow-indigo-500/25 hover:scale-110 transition-all duration-300"
                 title="Add new item"
               >
                 <Plus size={24} />
               </button>
 
-              {/* Right Navigation Item */}
-              <button
-                onClick={() => setActiveTab('stats')}
-                className={`relative flex items-center gap-2 px-4 py-3 rounded-full transition-all duration-300 ${
-                  activeTab === 'stats'
-                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/25'
-                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                <BarChart3 size={20} />
-                {activeTab === 'stats' && (
-                  <span className="text-sm font-semibold whitespace-nowrap">
-                    Stats
-                  </span>
-                )}
-              </button>
+              {/* Right Navigation Items */}
+              {[
+                { key: 'chat', icon: MessageSquare, label: 'Chat' },
+                { key: 'stats', icon: BarChart3, label: 'Stats' },
+              ].map(({ key, icon: Icon, label }) => (
+                <button
+                  key={key}
+                  onClick={() => setActiveTab(key as TabType)}
+                  className={`relative flex items-center gap-2 px-4 py-3 rounded-full transition-all duration-300 ${
+                    activeTab === key
+                      ? key === 'chat'
+                        ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/25'
+                        : 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/25'
+                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <Icon size={20} />
+                  {activeTab === key && (
+                    <span className="text-sm font-semibold whitespace-nowrap">
+                      {label}
+                    </span>
+                  )}
+                </button>
+              ))}
             </div>
           </div>
         </div>
@@ -301,12 +322,6 @@ function App() {
           onAdd={addItem}
           rooms={rooms}
           categories={categories}
-        />
-
-        <ChatInterface
-          items={items}
-          isOpen={showChat}
-          onClose={() => setShowChat(false)}
         />
       </div>
     </div>
