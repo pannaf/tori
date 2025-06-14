@@ -203,41 +203,44 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   if (embedded) {
     return (
-      <div className="flex flex-col h-96">
-        {/* Voice Interface */}
-        <div className="flex-1 flex flex-col items-center justify-center space-y-8">
+      <div className="flex flex-col h-full min-h-[500px]">
+        {/* Voice Interface - Main Focus */}
+        <div className="flex-1 flex flex-col items-center justify-center py-12">
           {/* Big Microphone Button */}
-          <div className="relative">
+          <div className="relative mb-8">
             <button
               onMouseDown={handleMouseDown}
               onMouseUp={handleMouseUp}
               onMouseLeave={handleMouseLeave}
               onTouchStart={handleMouseDown}
               onTouchEnd={handleMouseUp}
-              className={`w-32 h-32 rounded-full flex items-center justify-center transition-all duration-300 shadow-2xl select-none ${
+              className={`w-40 h-40 rounded-full flex items-center justify-center transition-all duration-300 shadow-2xl select-none ${
                 isListening
-                  ? 'bg-gradient-to-r from-red-500 to-pink-600 scale-110'
+                  ? 'bg-gradient-to-r from-red-500 to-pink-600 scale-110 shadow-red-500/25'
                   : isProcessing
-                  ? 'bg-gradient-to-r from-amber-500 to-orange-600'
+                  ? 'bg-gradient-to-r from-amber-500 to-orange-600 shadow-amber-500/25'
                   : 'bg-gradient-to-r from-emerald-500 to-teal-600 hover:scale-105 hover:shadow-emerald-500/25'
               }`}
             >
               {isProcessing ? (
-                <Zap className="text-white animate-spin" size={48} />
+                <Zap className="text-white animate-spin" size={56} />
               ) : (
-                <Mic className="text-white" size={48} />
+                <Mic className="text-white" size={56} />
               )}
             </button>
 
-            {/* Listening Animation */}
+            {/* Listening Animation Rings */}
             {isListening && (
-              <div className="absolute inset-0 rounded-full border-4 border-red-300 animate-ping"></div>
+              <>
+                <div className="absolute inset-0 rounded-full border-4 border-red-300 animate-ping"></div>
+                <div className="absolute inset-0 rounded-full border-2 border-red-200 animate-ping" style={{ animationDelay: '0.5s' }}></div>
+              </>
             )}
           </div>
 
           {/* Status Text */}
           <div className="text-center">
-            <h3 className="text-xl font-bold text-gray-900 mb-2">
+            <h3 className="text-3xl font-bold text-gray-900 mb-3">
               {isProcessing
                 ? "Processing..."
                 : isListening
@@ -245,28 +248,76 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 : "Hold to talk"
               }
             </h3>
+            <p className="text-gray-600 text-lg">
+              {isProcessing
+                ? "Tori is thinking..."
+                : isListening
+                ? "I'm all ears! 👂"
+                : "Press and hold the microphone"
+              }
+            </p>
           </div>
         </div>
 
-        {/* Recent Messages (Compact) */}
+        {/* Recent Messages - Compact at Bottom */}
         {messages.length > 1 && (
-          <div className="mt-4 max-h-32 overflow-y-auto space-y-2">
-            {messages.slice(-2).map((message) => (
-              <div
-                key={message.id}
-                className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
-              >
+          <div className="border-t border-gray-100 pt-6">
+            <h4 className="text-sm font-semibold text-gray-500 mb-4 text-center">Recent conversation</h4>
+            <div className="max-h-48 overflow-y-auto space-y-3">
+              {messages.slice(-3).map((message) => (
                 <div
-                  className={`max-w-[85%] px-3 py-2 rounded-xl text-xs ${
-                    message.isUser
-                      ? 'bg-indigo-100 text-indigo-800'
-                      : 'bg-emerald-100 text-emerald-800'
-                  }`}
+                  key={message.id}
+                  className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
                 >
-                  <p>{message.content}</p>
+                  <div className={`max-w-[85%] ${message.isUser ? 'order-1' : 'order-2'}`}>
+                    <div
+                      className={`px-4 py-3 rounded-2xl text-sm ${
+                        message.isUser
+                          ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-br-md'
+                          : 'bg-gray-100 text-gray-900 rounded-bl-md'
+                      }`}
+                    >
+                      <p className="leading-relaxed">{message.content}</p>
+                    </div>
+
+                    {message.relatedItems && message.relatedItems.length > 0 && (
+                      <div className="mt-3 space-y-2">
+                        {message.relatedItems.slice(0, 2).map((item) => (
+                          <div
+                            key={item.id}
+                            className="bg-white border border-gray-200 rounded-xl p-3 text-sm shadow-sm"
+                          >
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="font-semibold text-gray-900">{item.name}</span>
+                              <span className="text-gray-500 text-xs bg-gray-100 px-2 py-1 rounded-full">{item.room}</span>
+                            </div>
+                            {item.estimatedValue && (
+                              <div>
+                                <span className="text-emerald-600 font-bold">${item.estimatedValue}</span>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+
+              {isTyping && (
+                <div className="flex justify-start">
+                  <div className="bg-gray-100 rounded-2xl rounded-bl-md px-4 py-3">
+                    <div className="flex items-center gap-1">
+                      <div className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce"></div>
+                      <div className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                      <div className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div ref={messagesEndRef} />
+            </div>
           </div>
         )}
       </div>
