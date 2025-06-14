@@ -59,7 +59,7 @@ function App() {
               </p>
             </div>
 
-            {items.length > 0 && <StatsOverview items={items} />}
+            {items.length > 0 && <StatsOverview items={items} variant="compact" />}
 
             {items.length === 0 ? (
               <div className="text-center py-12">
