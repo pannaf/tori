@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, MessageSquare, Home, Search, BarChart3, Heart } from 'lucide-react';
+import { Plus, MessageSquare, Home, Search, BarChart3, Sparkles } from 'lucide-react';
 import { useInventory } from './hooks/useInventory';
 import { AddItemModal } from './components/AddItemModal';
 import { ItemCard } from './components/ItemCard';
@@ -37,18 +37,23 @@ function App() {
       case 'home':
         return (
           <div className="space-y-6">
-            <div className="text-center py-6">
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full text-white font-semibold mb-4">
-                <Heart size={20} className="text-pink-300" />
+            <div className="text-center py-8">
+              <div className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-2xl text-white font-bold text-lg mb-6 shadow-lg">
+                <div className="w-8 h-8 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                  <Sparkles size={18} className="text-white" />
+                </div>
                 Tori
               </div>
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                Hey there! Welcome to Tori
-              </h1>
-              <p className="text-gray-600">
+              <h1 className="text-3xl font-bold text-gray-900 mb-3 leading-tight">
                 {items.length === 0
-                  ? "I'm here to help you organize your home! Let's start by adding your first item 📸"
-                  : `You've got ${items.length} items organized across your home! Looking good! ✨`
+                  ? "Hey there! Tori is here to help with your home inventory"
+                  : "Hey there! Welcome to Tori"
+                }
+              </h1>
+              <p className="text-gray-600 text-lg leading-relaxed max-w-sm mx-auto">
+                {items.length === 0
+                  ? "Let's get started by adding your first item with AI-powered photo recognition ✨"
+                  : `You've got ${items.length} items beautifully organized across your home! ✨`
                 }
               </p>
             </div>
@@ -56,17 +61,17 @@ function App() {
             {items.length > 0 && <StatsOverview items={items} />}
 
             {items.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="w-24 h-24 bg-gradient-to-r from-indigo-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Plus className="text-indigo-600" size={32} />
+              <div className="text-center py-16">
+                <div className="w-32 h-32 bg-gradient-to-br from-indigo-100 via-purple-100 to-pink-100 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-sm">
+                  <Plus className="text-indigo-600" size={40} />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Ready to get organized?</h3>
-                <p className="text-gray-600 mb-6">
-                  Snap a photo of anything in your home and I'll help you catalog it with AI magic! ✨
+                <h3 className="text-xl font-bold text-gray-900 mb-3">Ready to get organized?</h3>
+                <p className="text-gray-600 mb-8 max-w-xs mx-auto leading-relaxed">
+                  Snap a photo of anything in your home and Tori will catalog it with AI magic!
                 </p>
                 <button
                   onClick={() => setShowAddModal(true)}
-                  className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-6 py-3 rounded-xl font-semibold hover:opacity-90 transition-opacity"
+                  className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white px-8 py-4 rounded-2xl font-bold text-lg hover:opacity-90 transition-all hover:scale-105 shadow-lg"
                 >
                   Add Your First Item
                 </button>
@@ -74,11 +79,11 @@ function App() {
             ) : (
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-semibold text-gray-900">Recent Additions</h2>
+                  <h2 className="text-xl font-bold text-gray-900">Recent Additions</h2>
                   {recentItems.length > 0 && (
                     <button
                       onClick={() => setActiveTab('search')}
-                      className="text-indigo-600 hover:text-indigo-800 transition-colors text-sm font-medium"
+                      className="text-indigo-600 hover:text-indigo-800 transition-colors text-sm font-semibold"
                     >
                       View all →
                     </button>
@@ -103,9 +108,9 @@ function App() {
       case 'search':
         return (
           <div className="space-y-6">
-            <div className="text-center py-4">
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">Find Your Stuff</h1>
-              <p className="text-gray-600">Search through your organized home inventory</p>
+            <div className="text-center py-6">
+              <h1 className="text-3xl font-bold text-gray-900 mb-3">Find Your Stuff</h1>
+              <p className="text-gray-600 text-lg">Search through your organized home inventory</p>
             </div>
 
             <SearchAndFilters
@@ -131,10 +136,10 @@ function App() {
             </div>
 
             {filteredItems.length === 0 && (
-              <div className="text-center py-12">
-                <Search className="mx-auto mb-4 text-gray-400" size={48} />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Nothing found</h3>
-                <p className="text-gray-600">
+              <div className="text-center py-16">
+                <Search className="mx-auto mb-6 text-gray-400" size={56} />
+                <h3 className="text-xl font-bold text-gray-900 mb-3">Nothing found</h3>
+                <p className="text-gray-600 max-w-xs mx-auto">
                   Try a different search term or adjust your filters
                 </p>
               </div>
@@ -145,9 +150,9 @@ function App() {
       case 'stats':
         return (
           <div className="space-y-6">
-            <div className="text-center py-4">
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">Your Home Stats</h1>
-              <p className="text-gray-600">See how organized you are! 📊</p>
+            <div className="text-center py-6">
+              <h1 className="text-3xl font-bold text-gray-900 mb-3">Your Home Stats</h1>
+              <p className="text-gray-600 text-lg">See how organized you are! 📊</p>
             </div>
 
             <StatsOverview items={items} />
@@ -235,7 +240,7 @@ function App() {
 
           <button
             onClick={() => setShowAddModal(true)}
-            className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white p-4 rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-105"
+            className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white p-4 rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-105"
             title="Add new item"
           >
             <Plus size={28} />
@@ -254,7 +259,7 @@ function App() {
                 key={key}
                 onClick={() => setActiveTab(key as TabType)}
                 className={`flex flex-col items-center gap-1 py-2 px-4 rounded-xl transition-colors ${activeTab === key
-                    ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white'
+                    ? 'bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white'
                     : 'text-gray-500 hover:text-gray-700'
                   }`}
               >

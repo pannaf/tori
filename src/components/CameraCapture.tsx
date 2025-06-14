@@ -109,7 +109,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
     <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center">
       <div className="w-full max-w-md mx-4">
         <div className="bg-white rounded-2xl overflow-hidden shadow-2xl">
-          <div className="flex items-center justify-between p-4 bg-gradient-to-r from-indigo-500 to-purple-600">
+          <div className="flex items-center justify-between p-4 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500">
             <div className="flex items-center gap-2">
               <h3 className="text-white font-semibold">Tori's AI Camera</h3>
               <Sparkles className="text-yellow-300" size={16} />
@@ -141,11 +141,11 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
             )}
 
             {!error && !isProcessing && (
-              <div className="aspect-square bg-gradient-to-br from-indigo-50 to-purple-50 flex items-center justify-center p-6">
+              <div className="aspect-square bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 flex items-center justify-center p-6">
                 <div className="text-center">
                   <button
                     onClick={() => fileInputRef.current?.click()}
-                    className="w-20 h-20 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full flex items-center justify-center mb-4 mx-auto hover:opacity-90 transition-opacity"
+                    className="w-20 h-20 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-full flex items-center justify-center mb-4 mx-auto hover:opacity-90 transition-opacity"
                   >
                     <Camera size={32} className="text-white" />
                   </button>
@@ -156,7 +156,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
             )}
 
             {isProcessing && (
-              <div className="aspect-square bg-gradient-to-br from-indigo-50 to-purple-50 flex items-center justify-center">
+              <div className="aspect-square bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 flex items-center justify-center">
                 <div className="text-center">
                   <div className="relative mb-4">
                     <Zap className="animate-pulse mx-auto text-yellow-300" size={40} />

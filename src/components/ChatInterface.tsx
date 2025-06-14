@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Sparkles, Heart } from 'lucide-react';
+import { Send, Bot, User, Sparkles } from 'lucide-react';
 import { ChatMessage } from '../types/inventory';
 import { InventoryItem } from '../types/inventory';
 
@@ -13,7 +13,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ items, isOpen, onC
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: '1',
-      content: "Hey! I'm Tori, your friendly home inventory assistant! 🏠✨ I can help you find items, get stats about your stuff, or just chat about your home organization. What's on your mind?",
+      content: "Hey there! I'm Tori, your friendly home inventory assistant! 🏠✨ I can help you find items, get stats about your stuff, or just chat about your home organization. What's on your mind?",
       isUser: false,
       timestamp: new Date().toISOString(),
     }
@@ -198,10 +198,10 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ items, isOpen, onC
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-40 flex items-end justify-center p-4">
       <div className="bg-white rounded-t-2xl w-full max-w-md h-[70vh] flex flex-col">
-        <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-t-2xl">
+        <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-t-2xl">
           <div className="flex items-center gap-3">
             <div className="bg-white bg-opacity-20 rounded-full p-2">
-              <Heart className="text-pink-300" size={20} />
+              <Sparkles className="text-white" size={20} />
             </div>
             <div>
               <h3 className="text-white font-semibold">Chat with Tori</h3>
@@ -226,7 +226,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ items, isOpen, onC
                 <div
                   className={`px-4 py-2 rounded-2xl ${
                     message.isUser
-                      ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white'
+                      ? 'bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white'
                       : 'bg-gray-100 text-gray-900'
                   }`}
                 >
@@ -258,12 +258,12 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ items, isOpen, onC
                   }`}
                 >
                   <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
-                    message.isUser ? 'bg-indigo-100' : 'bg-pink-100'
+                    message.isUser ? 'bg-indigo-100' : 'bg-purple-100'
                   }`}>
                     {message.isUser ? (
                       <User size={12} className="text-indigo-600" />
                     ) : (
-                      <Heart size={12} className="text-pink-600" />
+                      <Sparkles size={12} className="text-purple-600" />
                     )}
                   </div>
                   <span className="text-xs text-gray-500">
@@ -305,7 +305,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ items, isOpen, onC
             <button
               onClick={handleSend}
               disabled={!inputValue.trim()}
-              className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white p-2 rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+              className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white p-2 rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Send size={20} />
             </button>
