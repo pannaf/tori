@@ -49,7 +49,7 @@ function App() {
                 ) : (
                  <>
                   <span className="text-gray-900">Your home,</span>{" "}
-                  <span className="text-emerald-500">effortlessly organized</span>
+                  <span className="text-gray-500">effortlessly organized</span>
                  </>
                 )}
               </h1>
