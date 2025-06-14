@@ -47,7 +47,7 @@ function App() {
                 {items.length === 0 ? (
                   <>Tori. Know what you own.</>
                 ) : (
-                  <>Know what you own.</>
+                  <>Your home, organized</>
                 )}
               </h1>
               
