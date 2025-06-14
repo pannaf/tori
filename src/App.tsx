@@ -43,14 +43,11 @@ function App() {
                 Tori
               </div>
               
-              <h1 className="text-2xl font-bold text-gray-900 mb-3 leading-tight">
+              <h1 className="text-3xl font-bold text-gray-900 mb-3 leading-tight">
                 {items.length === 0 ? (
                   <>Tori. Know what you own.</>
                 ) : (
-                 <>
-                  <span className="text-gray-900">Your home,</span>{" "}
-                  <span className="text-gray-500">effortlessly organized.</span>
-                 </>
+                  <>Your home, effortlessly organized</>
                 )}
               </h1>
               
