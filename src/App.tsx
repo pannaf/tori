@@ -217,10 +217,7 @@ function App() {
         return (
           <div className="space-y-6">
             <div className="text-center py-6">
-              <div className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-violet-600 to-purple-600 rounded-full text-white font-bold mb-4 shadow-lg shadow-violet-500/25">
-                <MessageSquare size={20} />
-                 Chat with Tori
-              </div>
+              
               <h1 className="text-2xl font-bold text-gray-900 mb-2">Ask me anything!</h1>
               <p className="text-gray-600">I can help you find items, get stats, or organize your home</p>
             </div>
