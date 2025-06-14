@@ -43,7 +43,7 @@ function App() {
                 Tori
               </div>
               
-              <h1 className="text-xl font-bold text-gray-900 mb-3 leading-tight">
+              <h1 className="text-2xl font-bold text-gray-900 mb-3 leading-tight">
                 {items.length === 0 ? (
                   <>Tori. Know what you own.</>
                 ) : (
