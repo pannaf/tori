@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Mic, MicOff, Zap, Volume2 } from 'lucide-react';
+import { Mic, MicOff, Zap, Volume2, Sparkles } from 'lucide-react';
 import { ChatMessage } from '../types/inventory';
 import { InventoryItem } from '../types/inventory';
 
@@ -19,14 +19,14 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: '1',
-      content: "Hey! I'm Tori! 👋 I'm here to help you with your home inventory. You can ask me anything - like where your stuff is, what you own, or how much it's all worth. Just talk to me like you would a friend!",
+      content: "Hey! I'm Tori! 👋 Just tap the microphone and talk to me like you would a friend. Ask me anything about your home inventory - where your stuff is, what you own, how much it's worth. I'm all ears!",
       isUser: false,
       timestamp: new Date().toISOString(),
     }
   ]);
-  const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -169,23 +169,22 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     };
   };
 
-  const handleSend = async () => {
-    if (!inputValue.trim()) return;
+  const handleVoiceInput = async (transcript: string) => {
+    if (!transcript.trim()) return;
 
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
-      content: inputValue,
+      content: transcript,
       isUser: true,
       timestamp: new Date().toISOString(),
     };
 
     setMessages(prev => [...prev, userMessage]);
-    setInputValue('');
     setIsTyping(true);
 
     // Simulate more natural typing delay
     setTimeout(() => {
-      const response = generateResponse(inputValue);
+      const response = generateResponse(transcript);
       const botMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         content: response.content,
@@ -196,139 +195,136 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
       setMessages(prev => [...prev, botMessage]);
       setIsTyping(false);
-    }, 800 + Math.random() * 1200); // More natural response time
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
+    }, 800 + Math.random() * 1200);
   };
 
   const toggleListening = () => {
-    setIsListening(!isListening);
-    // In a real implementation, you'd integrate with Web Speech API here
+    if (isListening) {
+      // Stop listening
+      setIsListening(false);
+      setIsProcessing(true);
+      
+      // Simulate voice processing
+      setTimeout(() => {
+        setIsProcessing(false);
+        // In a real implementation, you'd process the actual voice input here
+        handleVoiceInput("What's in my kitchen?"); // Demo response
+      }, 1500);
+    } else {
+      // Start listening
+      setIsListening(true);
+      // In a real implementation, you'd start Web Speech API here
+    }
   };
 
   if (embedded) {
     return (
       <div className="flex flex-col h-96">
         {/* Chat Header */}
-        <div className="flex items-center gap-3 mb-4 p-4 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-2xl border border-emerald-100">
+        <div className="flex items-center gap-3 mb-6 p-4 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-2xl border border-emerald-100">
           <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center">
             <Zap className="text-white" size={20} />
           </div>
           <div>
             <h3 className="font-bold text-gray-900">Tori</h3>
-            <p className="text-sm text-gray-600">Your home assistant</p>
+            <p className="text-sm text-gray-600">Your voice assistant</p>
           </div>
           <div className="ml-auto">
             <div className="flex items-center gap-1">
               <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-              <span className="text-xs text-emerald-600 font-medium">Online</span>
+              <span className="text-xs text-emerald-600 font-medium">Listening</span>
             </div>
           </div>
         </div>
 
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto space-y-4 mb-4">
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
-            >
-              <div className={`max-w-[85%] ${message.isUser ? 'order-1' : 'order-2'}`}>
-                {!message.isUser && (
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-6 h-6 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full flex items-center justify-center">
-                      <Zap size={12} className="text-white" />
-                    </div>
-                    <span className="text-xs font-medium text-gray-600">Tori</span>
-                  </div>
-                )}
-
-                <div
-                  className={`px-4 py-3 rounded-2xl ${message.isUser
-                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-br-md'
-                    : 'bg-gray-100 text-gray-900 rounded-bl-md'
-                    }`}
-                >
-                  <p className="text-sm leading-relaxed">{message.content}</p>
-                </div>
-
-                {message.relatedItems && message.relatedItems.length > 0 && (
-                  <div className="mt-3 space-y-2">
-                    {message.relatedItems.map((item) => (
-                      <div
-                        key={item.id}
-                        className="bg-white border border-gray-200 rounded-xl p-3 text-sm shadow-sm hover:shadow-md transition-shadow"
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="font-semibold text-gray-900">{item.name}</span>
-                          <span className="text-gray-500 text-xs bg-gray-100 px-2 py-1 rounded-full">{item.room}</span>
-                        </div>
-                        {item.estimatedValue && (
-                          <div className="mt-1">
-                            <span className="text-emerald-600 font-bold">${item.estimatedValue}</span>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
-
-          {isTyping && (
-            <div className="flex justify-start">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-6 h-6 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full flex items-center justify-center">
-                  <Zap size={12} className="text-white" />
-                </div>
-                <span className="text-xs font-medium text-gray-600">Tori is typing...</span>
-              </div>
-              <div className="bg-gray-100 rounded-2xl rounded-bl-md px-4 py-3">
-                <div className="flex items-center gap-1">
-                  <div className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                  <div className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* Input Area */}
-        <div className="flex gap-3">
-          <div className="flex-1 relative">
-            <input
-              type="text"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Just talk to me naturally..."
-              className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-colors"
-            />
+        {/* Voice Interface */}
+        <div className="flex-1 flex flex-col items-center justify-center space-y-6">
+          {/* Big Microphone Button */}
+          <div className="relative">
             <button
               onClick={toggleListening}
-              className={`absolute right-3 top-1/2 transform -translate-y-1/2 p-1 rounded-lg transition-colors ${isListening ? 'text-red-500 bg-red-50' : 'text-gray-400 hover:text-gray-600'
-                }`}
+              className={`w-32 h-32 rounded-full flex items-center justify-center transition-all duration-300 shadow-2xl ${
+                isListening
+                  ? 'bg-gradient-to-r from-red-500 to-pink-600 animate-pulse scale-110'
+                  : isProcessing
+                  ? 'bg-gradient-to-r from-amber-500 to-orange-600'
+                  : 'bg-gradient-to-r from-emerald-500 to-teal-600 hover:scale-105 hover:shadow-emerald-500/25'
+              }`}
             >
-              {isListening ? <MicOff size={16} /> : <Mic size={16} />}
+              {isProcessing ? (
+                <Sparkles className="text-white animate-spin" size={48} />
+              ) : isListening ? (
+                <MicOff className="text-white" size={48} />
+              ) : (
+                <Mic className="text-white" size={48} />
+              )}
             </button>
+
+            {/* Listening Animation */}
+            {isListening && (
+              <div className="absolute inset-0 rounded-full border-4 border-red-300 animate-ping"></div>
+            )}
           </div>
-          <button
-            onClick={handleSend}
-            disabled={!inputValue.trim()}
-            className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white p-3 rounded-2xl hover:shadow-lg hover:shadow-emerald-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <Send size={20} />
-          </button>
+
+          {/* Status Text */}
+          <div className="text-center">
+            <h3 className="text-xl font-bold text-gray-900 mb-2">
+              {isProcessing
+                ? "Processing..."
+                : isListening
+                ? "I'm listening..."
+                : "Tap to talk to Tori"
+              }
+            </h3>
+            <p className="text-gray-600 text-sm max-w-xs">
+              {isProcessing
+                ? "Understanding what you said..."
+                : isListening
+                ? "Go ahead, ask me anything!"
+                : "Ask about your items, rooms, or anything else!"
+              }
+            </p>
+          </div>
+
+          {/* Voice Waves Animation */}
+          {isListening && (
+            <div className="flex items-center gap-1">
+              {[...Array(5)].map((_, i) => (
+                <div
+                  key={i}
+                  className="w-1 bg-emerald-500 rounded-full animate-pulse"
+                  style={{
+                    height: `${Math.random() * 20 + 10}px`,
+                    animationDelay: `${i * 0.1}s`,
+                    animationDuration: '0.5s'
+                  }}
+                />
+              ))}
+            </div>
+          )}
         </div>
+
+        {/* Recent Messages (Compact) */}
+        {messages.length > 1 && (
+          <div className="mt-4 max-h-32 overflow-y-auto space-y-2">
+            {messages.slice(-2).map((message) => (
+              <div
+                key={message.id}
+                className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
+              >
+                <div
+                  className={`max-w-[85%] px-3 py-2 rounded-xl text-xs ${
+                    message.isUser
+                      ? 'bg-indigo-100 text-indigo-800'
+                      : 'bg-emerald-100 text-emerald-800'
+                  }`}
+                >
+                  <p>{message.content}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     );
   }
@@ -348,7 +344,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
               <h3 className="text-white font-bold text-lg">Tori</h3>
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-green-300 rounded-full animate-pulse"></div>
-                <p className="text-white text-opacity-80 text-sm">Ready to chat</p>
+                <p className="text-white text-opacity-80 text-sm">Ready to listen</p>
               </div>
             </div>
           </div>
@@ -360,120 +356,154 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
           </button>
         </div>
 
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
+        {/* Voice Interface */}
+        <div className="flex-1 flex flex-col items-center justify-center px-6 space-y-8">
+          {/* Big Microphone Button */}
+          <div className="relative">
+            <button
+              onClick={toggleListening}
+              className={`w-40 h-40 rounded-full flex items-center justify-center transition-all duration-300 shadow-2xl ${
+                isListening
+                  ? 'bg-gradient-to-r from-red-500 to-pink-600 animate-pulse scale-110'
+                  : isProcessing
+                  ? 'bg-gradient-to-r from-amber-500 to-orange-600'
+                  : 'bg-gradient-to-r from-emerald-500 to-teal-600 hover:scale-105 hover:shadow-emerald-500/25'
+              }`}
             >
-              <div className={`max-w-[85%] ${message.isUser ? 'order-1' : 'order-2'}`}>
-                {!message.isUser && (
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-6 h-6 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full flex items-center justify-center">
-                      <Zap size={12} className="text-white" />
-                    </div>
-                    <span className="text-xs font-medium text-gray-600">Tori</span>
-                    <button className="text-gray-400 hover:text-gray-600 transition-colors">
-                      <Volume2 size={12} />
-                    </button>
-                  </div>
-                )}
+              {isProcessing ? (
+                <Sparkles className="text-white animate-spin" size={56} />
+              ) : isListening ? (
+                <MicOff className="text-white" size={56} />
+              ) : (
+                <Mic className="text-white" size={56} />
+              )}
+            </button>
 
+            {/* Listening Animation Rings */}
+            {isListening && (
+              <>
+                <div className="absolute inset-0 rounded-full border-4 border-red-300 animate-ping"></div>
+                <div className="absolute inset-0 rounded-full border-2 border-red-200 animate-ping" style={{ animationDelay: '0.5s' }}></div>
+              </>
+            )}
+          </div>
+
+          {/* Status Text */}
+          <div className="text-center">
+            <h3 className="text-2xl font-bold text-gray-900 mb-3">
+              {isProcessing
+                ? "Processing..."
+                : isListening
+                ? "I'm listening..."
+                : "Tap to talk to Tori"
+              }
+            </h3>
+            <p className="text-gray-600 leading-relaxed max-w-sm">
+              {isProcessing
+                ? "Understanding what you said and finding your answer..."
+                : isListening
+                ? "Go ahead, ask me anything about your home inventory!"
+                : "Just tap the microphone and ask me about your items, rooms, or anything else!"
+              }
+            </p>
+          </div>
+
+          {/* Voice Waves Animation */}
+          {isListening && (
+            <div className="flex items-center gap-2">
+              {[...Array(7)].map((_, i) => (
                 <div
-                  className={`px-4 py-3 rounded-2xl ${message.isUser
-                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-br-md'
-                    : 'bg-gray-100 text-gray-900 rounded-bl-md'
-                    }`}
-                >
-                  <p className="text-sm leading-relaxed">{message.content}</p>
-                </div>
-
-                {message.relatedItems && message.relatedItems.length > 0 && (
-                  <div className="mt-3 space-y-2">
-                    {message.relatedItems.map((item) => (
-                      <div
-                        key={item.id}
-                        className="bg-white border border-gray-200 rounded-xl p-3 text-sm shadow-sm hover:shadow-md transition-shadow"
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="font-semibold text-gray-900">{item.name}</span>
-                          <span className="text-gray-500 text-xs bg-gray-100 px-2 py-1 rounded-full">{item.room}</span>
-                        </div>
-                        {item.estimatedValue && (
-                          <div className="mt-1">
-                            <span className="text-emerald-600 font-bold">${item.estimatedValue}</span>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
-                  <span>
-                    {new Date(message.timestamp).toLocaleTimeString([], {
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}
-                  </span>
-                </div>
-              </div>
-            </div>
-          ))}
-
-          {isTyping && (
-            <div className="flex justify-start">
-              <div className="flex flex-col">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-6 h-6 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full flex items-center justify-center">
-                    <Zap size={12} className="text-white" />
-                  </div>
-                  <span className="text-xs font-medium text-gray-600">Tori is typing...</span>
-                </div>
-                <div className="bg-gray-100 rounded-2xl rounded-bl-md px-4 py-3">
-                  <div className="flex items-center gap-1">
-                    <div className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                    <div className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                  </div>
-                </div>
-              </div>
+                  key={i}
+                  className="w-1.5 bg-emerald-500 rounded-full animate-pulse"
+                  style={{
+                    height: `${Math.random() * 30 + 15}px`,
+                    animationDelay: `${i * 0.1}s`,
+                    animationDuration: '0.6s'
+                  }}
+                />
+              ))}
             </div>
           )}
-
-          <div ref={messagesEndRef} />
         </div>
 
-        {/* Input Area */}
-        <div className="p-4 border-t border-gray-100">
-          <div className="flex gap-3">
-            <div className="flex-1 relative">
-              <input
-                type="text"
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Just talk to me naturally..."
-                className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-2xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-colors"
-              />
-              <button
-                onClick={toggleListening}
-                className={`absolute right-3 top-1/2 transform -translate-y-1/2 p-1 rounded-lg transition-colors ${isListening ? 'text-red-500 bg-red-50' : 'text-gray-400 hover:text-gray-600'
-                  }`}
+        {/* Recent Messages (Scrollable) */}
+        {messages.length > 1 && (
+          <div className="max-h-40 overflow-y-auto px-4 pb-4 space-y-3">
+            {messages.slice(-3).map((message) => (
+              <div
+                key={message.id}
+                className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
               >
-                {isListening ? <MicOff size={16} /> : <Mic size={16} />}
-              </button>
-            </div>
-            <button
-              onClick={handleSend}
-              disabled={!inputValue.trim()}
-              className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white p-3 rounded-2xl hover:shadow-lg hover:shadow-emerald-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Send size={18} />
-            </button>
+                <div className={`max-w-[85%] ${message.isUser ? 'order-1' : 'order-2'}`}>
+                  {!message.isUser && (
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="w-5 h-5 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full flex items-center justify-center">
+                        <Zap size={10} className="text-white" />
+                      </div>
+                      <span className="text-xs font-medium text-gray-600">Tori</span>
+                      <button className="text-gray-400 hover:text-gray-600 transition-colors">
+                        <Volume2 size={10} />
+                      </button>
+                    </div>
+                  )}
+
+                  <div
+                    className={`px-3 py-2 rounded-xl text-sm ${
+                      message.isUser
+                        ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-br-md'
+                        : 'bg-gray-100 text-gray-900 rounded-bl-md'
+                    }`}
+                  >
+                    <p className="leading-relaxed">{message.content}</p>
+                  </div>
+
+                  {message.relatedItems && message.relatedItems.length > 0 && (
+                    <div className="mt-2 space-y-1">
+                      {message.relatedItems.slice(0, 2).map((item) => (
+                        <div
+                          key={item.id}
+                          className="bg-white border border-gray-200 rounded-lg p-2 text-xs shadow-sm"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="font-semibold text-gray-900">{item.name}</span>
+                            <span className="text-gray-500 text-xs bg-gray-100 px-1 py-0.5 rounded">{item.room}</span>
+                          </div>
+                          {item.estimatedValue && (
+                            <div className="mt-1">
+                              <span className="text-emerald-600 font-bold">${item.estimatedValue}</span>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+
+            {isTyping && (
+              <div className="flex justify-start">
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="w-5 h-5 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full flex items-center justify-center">
+                      <Zap size={10} className="text-white" />
+                    </div>
+                    <span className="text-xs font-medium text-gray-600">Tori is thinking...</span>
+                  </div>
+                  <div className="bg-gray-100 rounded-xl rounded-bl-md px-3 py-2">
+                    <div className="flex items-center gap-1">
+                      <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce"></div>
+                      <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                      <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div ref={messagesEndRef} />
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
