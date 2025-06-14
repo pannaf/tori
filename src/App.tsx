@@ -223,35 +223,17 @@ function App() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50">
       <div className="max-w-md mx-auto bg-white min-h-screen relative shadow-xl shadow-slate-200/50">
         {/* Main Content */}
-        <div className="pb-32">
+        <div className="pb-24">
           <div className="p-6">
             {renderTabContent()}
           </div>
         </div>
 
-        {/* Floating Action Buttons */}
-        <div className="fixed bottom-28 right-6 z-30 flex flex-col gap-4">
-          <button
-            onClick={() => setShowChat(true)}
-            className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white p-4 rounded-full shadow-xl shadow-emerald-500/25 hover:shadow-emerald-500/40 transition-all duration-300 hover:scale-110"
-            title="Chat with Tori"
-          >
-            <MessageSquare size={24} />
-          </button>
-
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-5 rounded-full shadow-xl shadow-indigo-500/25 hover:shadow-indigo-500/40 transition-all duration-300 hover:scale-110"
-            title="Add new item"
-          >
-            <Plus size={28} />
-          </button>
-        </div>
-
-        {/* Floating Pill Navigation */}
+        {/* Unified Floating Pill Navigation */}
         <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-40">
           <div className="bg-white/95 backdrop-blur-xl rounded-full shadow-2xl shadow-gray-900/10 border border-gray-200/50 p-2">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
+              {/* Navigation Items */}
               {[
                 { key: 'home', icon: Home, label: 'Home' },
                 { key: 'search', icon: Search, label: 'Search' },
@@ -274,6 +256,26 @@ function App() {
                   )}
                 </button>
               ))}
+
+              {/* Divider */}
+              <div className="w-px h-8 bg-gray-200 mx-1" />
+
+              {/* Action Items */}
+              <button
+                onClick={() => setShowChat(true)}
+                className="flex items-center gap-2 px-4 py-3 rounded-full transition-all duration-300 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                title="Chat with Tori"
+              >
+                <MessageSquare size={20} />
+              </button>
+
+              <button
+                onClick={() => setShowAddModal(true)}
+                className="flex items-center gap-2 px-4 py-3 rounded-full transition-all duration-300 bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 hover:scale-105"
+                title="Add new item"
+              >
+                <Plus size={22} />
+              </button>
             </div>
           </div>
         </div>
