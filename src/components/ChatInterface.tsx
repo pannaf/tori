@@ -205,16 +205,16 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     return (
       <div className="flex flex-col h-full min-h-[500px]">
         {/* Voice Interface - Main Focus */}
-        <div className="flex-1 flex flex-col items-center justify-center py-12">
+        <div className="flex-1 flex flex-col items-center justify-center py-8">
           {/* Big Microphone Button */}
-          <div className="relative mb-8">
+          <div className="relative mb-6">
             <button
               onMouseDown={handleMouseDown}
               onMouseUp={handleMouseUp}
               onMouseLeave={handleMouseLeave}
               onTouchStart={handleMouseDown}
               onTouchEnd={handleMouseUp}
-              className={`w-40 h-40 rounded-full flex items-center justify-center transition-all duration-300 shadow-2xl select-none ${
+              className={`w-32 h-32 rounded-full flex items-center justify-center transition-all duration-300 shadow-2xl select-none ${
                 isListening
                   ? 'bg-gradient-to-r from-red-500 to-pink-600 scale-110 shadow-red-500/25'
                   : isProcessing
@@ -223,9 +223,9 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
               }`}
             >
               {isProcessing ? (
-                <Zap className="text-white animate-spin" size={56} />
+                <Zap className="text-white animate-spin" size={48} />
               ) : (
-                <Mic className="text-white" size={56} />
+                <Mic className="text-white" size={48} />
               )}
             </button>
 
@@ -239,8 +239,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
           </div>
 
           {/* Status Text */}
-          <div className="text-center">
-            <h3 className="text-3xl font-bold text-gray-900 mb-3">
+          <div className="text-center mb-6">
+            <h3 className="text-2xl font-bold text-gray-900 mb-2">
               {isProcessing
                 ? "Processing..."
                 : isListening
@@ -248,7 +248,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 : "Hold to talk"
               }
             </h3>
-            <p className="text-gray-600 text-lg">
+            <p className="text-gray-600">
               {isProcessing
                 ? "Tori is thinking..."
                 : isListening
@@ -261,8 +261,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
         {/* Recent Messages - Compact at Bottom */}
         {messages.length > 1 && (
-          <div className="border-t border-gray-100 pt-6">
-            <h4 className="text-sm font-semibold text-gray-500 mb-4 text-center">Recent conversation</h4>
+          <div className="border-t border-gray-100 pt-4">
+            <h4 className="text-sm font-semibold text-gray-500 mb-3 text-center">Recent conversation</h4>
             <div className="max-h-48 overflow-y-auto space-y-3">
               {messages.slice(-3).map((message) => (
                 <div
@@ -349,7 +349,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         </div>
 
         {/* Voice Interface */}
-        <div className="flex-1 flex flex-col items-center justify-center px-6 space-y-8">
+        <div className="flex-1 flex flex-col items-center justify-center px-6 space-y-6">
           {/* Big Microphone Button */}
           <div className="relative">
             <button
@@ -358,7 +358,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
               onMouseLeave={handleMouseLeave}
               onTouchStart={handleMouseDown}
               onTouchEnd={handleMouseUp}
-              className={`w-40 h-40 rounded-full flex items-center justify-center transition-all duration-300 shadow-2xl select-none ${
+              className={`w-32 h-32 rounded-full flex items-center justify-center transition-all duration-300 shadow-2xl select-none ${
                 isListening
                   ? 'bg-gradient-to-r from-red-500 to-pink-600 scale-110'
                   : isProcessing
@@ -367,9 +367,9 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
               }`}
             >
               {isProcessing ? (
-                <Zap className="text-white animate-spin" size={56} />
+                <Zap className="text-white animate-spin" size={48} />
               ) : (
-                <Mic className="text-white" size={56} />
+                <Mic className="text-white" size={48} />
               )}
             </button>
 
@@ -384,7 +384,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
           {/* Status Text */}
           <div className="text-center">
-            <h3 className="text-2xl font-bold text-gray-900 mb-3">
+            <h3 className="text-xl font-bold text-gray-900 mb-2">
               {isProcessing
                 ? "Processing..."
                 : isListening
@@ -392,6 +392,14 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 : "Hold to talk"
               }
             </h3>
+            <p className="text-gray-600">
+              {isProcessing
+                ? "Tori is thinking..."
+                : isListening
+                ? "I'm all ears! 👂"
+                : "Press and hold the microphone"
+              }
+            </p>
           </div>
         </div>
 
