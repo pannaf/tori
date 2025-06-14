@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, MessageSquare, Home, Search, BarChart3, Sparkles } from 'lucide-react';
+import { Plus, MessageSquare, Home, Search, BarChart3, Heart } from 'lucide-react';
 import { useInventory } from './hooks/useInventory';
 import { AddItemModal } from './components/AddItemModal';
 import { ItemCard } from './components/ItemCard';
@@ -37,45 +37,41 @@ function App() {
       case 'home':
         return (
           <div className="space-y-6">
-            <div className="text-center py-8">
-              <div className="mb-6">
-                <h1 className="text-3xl font-bold text-gray-900 mb-3">
-                  Your Home Inventory
-                </h1>
-                <p className="text-lg text-gray-600 leading-relaxed">
-                  {items.length === 0
-                    ? "Start organizing your home with AI-powered cataloging"
-                    : `${items.length} items organized and ready to find`
-                  }
-                </p>
+            <div className="text-center py-6">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full text-white font-semibold mb-4">
+                <Heart size={20} className="text-pink-300" />
+                Tori
               </div>
-              
-              {items.length === 0 && (
-                <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl p-6 border border-indigo-100">
-                  <div className="flex items-center justify-center mb-4">
-                    <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full p-3">
-                      <Sparkles className="text-white" size={24} />
-                    </div>
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    Ready to get started?
-                  </h3>
-                  <p className="text-gray-600 mb-4">
-                    Take a photo of any item and let AI automatically detect and catalog it for you
-                  </p>
-                  <button
-                    onClick={() => setShowAddModal(true)}
-                    className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-6 py-3 rounded-xl font-semibold hover:opacity-90 transition-opacity"
-                  >
-                    Add Your First Item
-                  </button>
-                </div>
-              )}
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">
+                Hey there! Welcome to Tori
+              </h1>
+              <p className="text-gray-600">
+                {items.length === 0
+                  ? "I'm here to help you organize your home! Let's start by adding your first item 📸"
+                  : `You've got ${items.length} items organized across your home! Looking good! ✨`
+                }
+              </p>
             </div>
 
             {items.length > 0 && <StatsOverview items={items} />}
 
-            {items.length > 0 && (
+            {items.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="w-24 h-24 bg-gradient-to-r from-indigo-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Plus className="text-indigo-600" size={32} />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Ready to get organized?</h3>
+                <p className="text-gray-600 mb-6">
+                  Snap a photo of anything in your home and I'll help you catalog it with AI magic! ✨
+                </p>
+                <button
+                  onClick={() => setShowAddModal(true)}
+                  className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-6 py-3 rounded-xl font-semibold hover:opacity-90 transition-opacity"
+                >
+                  Add Your First Item
+                </button>
+              </div>
+            ) : (
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-lg font-semibold text-gray-900">Recent Additions</h2>
