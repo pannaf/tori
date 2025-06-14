@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Zap } from 'lucide-react';
+import { Send, Mic, MicOff, Zap, Volume2 } from 'lucide-react';
 import { ChatMessage } from '../types/inventory';
 import { InventoryItem } from '../types/inventory';
 
@@ -19,13 +19,14 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: '1',
-      content: "Hey there! I'm Tori, your friendly home inventory assistant! 🏠✨ I can help you find items, get stats about your stuff, or just chat about your home organization. What's on your mind?",
+      content: "Hey! I'm Tori! 👋 I'm here to help you with your home inventory. You can ask me anything - like where your stuff is, what you own, or how much it's all worth. Just talk to me like you would a friend!",
       isUser: false,
       timestamp: new Date().toISOString(),
     }
   ]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [isListening, setIsListening] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -45,7 +46,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       const categories = [...new Set(items.map(item => item.category))];
 
       return {
-        content: `You've got ${totalItems} items organized across ${rooms.length} rooms and ${categories.length} different categories! 📊 Your most popular room is ${rooms[0] || 'N/A'} and you have the most ${categories[0] || 'N/A'} items. Pretty organized! 🎉`
+        content: `You've got ${totalItems} items! That's pretty impressive! 🎉 They're spread across ${rooms.length} different rooms, and I can see you have ${categories.length} different types of stuff. Your ${rooms[0] || 'favorite room'} seems to be where you keep most things!`
       };
     }
 
@@ -57,12 +58,12 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
       if (valuableItems.length > 0) {
         return {
-          content: `Here are your most valuable treasures! 💎`,
+          content: `Ooh, let me show you your most valuable stuff! 💎 These are your priciest treasures:`,
           relatedItems: valuableItems
         };
       } else {
         return {
-          content: `Looks like you haven't added estimated values to your items yet, or they're all under $100. That's totally fine - not everything needs to be expensive to be valuable! 💝`
+          content: `Hmm, looks like you haven't added prices to your items yet, or everything's under $100. That's totally fine though! The most valuable things aren't always the most expensive, right? 💝`
         };
       }
     }
@@ -83,12 +84,12 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
       if (roomItems.length > 0) {
         return {
-          content: `Found ${roomItems.length} items in your ${room}! Here's what you've got: 🏠`,
+          content: `Oh nice! I found ${roomItems.length} things in your ${room}! 🏠 Here's what you've got in there:`,
           relatedItems: roomItems.slice(0, 5)
         };
       } else {
         return {
-          content: `Hmm, I don't see any items in your ${room} yet. Maybe it's time to add some? 📸`
+          content: `Hmm, I don't see anything in your ${room} yet. Maybe it's time to add some stuff? Or maybe it's just super tidy in there! 😄`
         };
       }
     }
@@ -108,12 +109,12 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
       if (categoryItems.length > 0) {
         return {
-          content: `Here are your ${category.toLowerCase()} items! 📱`,
+          content: `Here are all your ${category.toLowerCase()}! 📱 You've got some good stuff:`,
           relatedItems: categoryItems.slice(0, 5)
         };
       } else {
         return {
-          content: `No ${category.toLowerCase()} items found yet. Time to go shopping? 😉`
+          content: `I don't see any ${category.toLowerCase()} items yet. Time for some shopping? 😉 Or maybe you just haven't added them to your inventory!`
         };
       }
     }
@@ -128,33 +129,39 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
       if (foundItems.length > 0) {
         return {
-          content: `Found ${foundItems.length} items matching "${searchTerms}"! 🔍`,
+          content: `Found it! 🔍 Actually, I found ${foundItems.length} things that match "${searchTerms}". Here they are:`,
           relatedItems: foundItems.slice(0, 5)
         };
       } else {
         return {
-          content: `Couldn't find anything matching "${searchTerms}" 😅 Maybe try a different search term? Or perhaps you haven't added it to your inventory yet!`
+          content: `Hmm, I couldn't find anything matching "${searchTerms}" 🤔 Maybe try describing it differently? Or perhaps you haven't added it to your inventory yet!`
         };
       }
     }
 
     if (lowerQuery.includes('hello') || lowerQuery.includes('hi') || lowerQuery.includes('hey')) {
       return {
-        content: `Hey there! 👋 Great to chat with you! I'm here to help you with anything related to your home inventory. Want to know what you have, where it is, or how much it's worth? Just ask! 😊`
+        content: `Hey there! 👋 So good to chat with you! I'm Tori, and I'm basically your home's memory. I know where all your stuff is and can help you find anything. What's on your mind today?`
       };
     }
 
     if (lowerQuery.includes('thank') || lowerQuery.includes('thanks')) {
       return {
-        content: `Aww, you're so welcome! 🥰 I love helping you stay organized. Feel free to ask me anything else about your stuff!`
+        content: `Aww, you're so sweet! 🥰 I absolutely love helping you stay organized. It's literally what I live for! Got anything else you want to know about your stuff?`
+      };
+    }
+
+    if (lowerQuery.includes('help') || lowerQuery.includes('what can you do')) {
+      return {
+        content: `I'm like your home's personal assistant! 🏠✨ I can help you find specific items, tell you what's in any room, show you your most valuable stuff, count your things, or just chat about your home organization. Try asking me things like "What's in my kitchen?" or "Find my laptop" or "How much is my stuff worth?"`
       };
     }
 
     const responses = [
-      "I'm here to help you with your home inventory! Try asking me things like 'What's in my kitchen?' or 'Find my laptop' or 'How many items do I have?' 🤔",
-      "You can ask me about specific rooms, categories, or search for particular items! I'm like your personal home assistant 🏠✨",
-      "I love helping you stay organized! Ask me about your most valuable items, room distributions, or search for anything specific 📊💝",
-      "Want to know something about your inventory? I can help you find items, get stats, or just chat about your home organization! 😊"
+      "I'm not sure I caught that! 🤔 Try asking me about specific rooms, like 'What's in my kitchen?' or search for items like 'Find my laptop'. I'm here to help!",
+      "Hmm, let me think... 💭 You can ask me about your rooms, categories, or search for specific items! I'm like having a friend who remembers where you put everything!",
+      "I love chatting, but I'm best at helping with your inventory! 😊 Ask me about your most valuable items, what's in different rooms, or help finding something specific!",
+      "Not quite sure what you're looking for! 🤷‍♀️ I'm great at finding your stuff though - try asking 'Where is my...' or 'What do I have in my...' and I'll help you out!"
     ];
 
     return {
@@ -176,7 +183,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     setInputValue('');
     setIsTyping(true);
 
-    // Simulate typing delay
+    // Simulate more natural typing delay
     setTimeout(() => {
       const response = generateResponse(inputValue);
       const botMessage: ChatMessage = {
@@ -189,7 +196,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
       setMessages(prev => [...prev, botMessage]);
       setIsTyping(false);
-    }, 1000);
+    }, 800 + Math.random() * 1200); // More natural response time
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -199,9 +206,32 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     }
   };
 
+  const toggleListening = () => {
+    setIsListening(!isListening);
+    // In a real implementation, you'd integrate with Web Speech API here
+  };
+
   if (embedded) {
     return (
       <div className="flex flex-col h-96">
+        {/* Chat Header */}
+        <div className="flex items-center gap-3 mb-4 p-4 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-2xl border border-emerald-100">
+          <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center">
+            <Zap className="text-white" size={20} />
+          </div>
+          <div>
+            <h3 className="font-bold text-gray-900">Tori</h3>
+            <p className="text-sm text-gray-600">Your home assistant</p>
+          </div>
+          <div className="ml-auto">
+            <div className="flex items-center gap-1">
+              <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+              <span className="text-xs text-emerald-600 font-medium">Online</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Messages */}
         <div className="flex-1 overflow-y-auto space-y-4 mb-4">
           {messages.map((message) => (
             <div
@@ -209,8 +239,19 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
               className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
             >
               <div className={`max-w-[85%] ${message.isUser ? 'order-1' : 'order-2'}`}>
+                {!message.isUser && (
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-6 h-6 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full flex items-center justify-center">
+                      <Zap size={12} className="text-white" />
+                    </div>
+                    <span className="text-xs font-medium text-gray-600">Tori</span>
+                  </div>
+                )}
+
                 <div
-                  className={`px-4 py-3 rounded-2xl ${message.isUser ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white' : 'bg-gray-100 text-gray-900'
+                  className={`px-4 py-3 rounded-2xl ${message.isUser
+                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-br-md'
+                    : 'bg-gray-100 text-gray-900 rounded-bl-md'
                     }`}
                 >
                   <p className="text-sm leading-relaxed">{message.content}</p>
@@ -221,14 +262,16 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                     {message.relatedItems.map((item) => (
                       <div
                         key={item.id}
-                        className="bg-white border border-gray-200 rounded-xl p-3 text-sm shadow-sm"
+                        className="bg-white border border-gray-200 rounded-xl p-3 text-sm shadow-sm hover:shadow-md transition-shadow"
                       >
                         <div className="flex items-center justify-between">
                           <span className="font-semibold text-gray-900">{item.name}</span>
-                          <span className="text-gray-500 text-xs">{item.room}</span>
+                          <span className="text-gray-500 text-xs bg-gray-100 px-2 py-1 rounded-full">{item.room}</span>
                         </div>
                         {item.estimatedValue && (
-                          <span className="text-emerald-600 font-semibold">${item.estimatedValue}</span>
+                          <div className="mt-1">
+                            <span className="text-emerald-600 font-bold">${item.estimatedValue}</span>
+                          </div>
                         )}
                       </div>
                     ))}
@@ -240,11 +283,17 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
           {isTyping && (
             <div className="flex justify-start">
-              <div className="bg-gray-100 rounded-2xl px-4 py-3">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-6 h-6 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full flex items-center justify-center">
+                  <Zap size={12} className="text-white" />
+                </div>
+                <span className="text-xs font-medium text-gray-600">Tori is typing...</span>
+              </div>
+              <div className="bg-gray-100 rounded-2xl rounded-bl-md px-4 py-3">
                 <div className="flex items-center gap-1">
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                  <div className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce"></div>
+                  <div className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                  <div className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                 </div>
               </div>
             </div>
@@ -253,15 +302,25 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
           <div ref={messagesEndRef} />
         </div>
 
+        {/* Input Area */}
         <div className="flex gap-3">
-          <input
-            type="text"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder="Ask Tori anything about your stuff..."
-            className="flex-1 px-4 py-3 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
-          />
+          <div className="flex-1 relative">
+            <input
+              type="text"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder="Just talk to me naturally..."
+              className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-colors"
+            />
+            <button
+              onClick={toggleListening}
+              className={`absolute right-3 top-1/2 transform -translate-y-1/2 p-1 rounded-lg transition-colors ${isListening ? 'text-red-500 bg-red-50' : 'text-gray-400 hover:text-gray-600'
+                }`}
+            >
+              {isListening ? <MicOff size={16} /> : <Mic size={16} />}
+            </button>
+          </div>
           <button
             onClick={handleSend}
             disabled={!inputValue.trim()}
@@ -278,73 +337,81 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-40 flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl w-full max-w-md h-[500px] flex flex-col shadow-2xl">
-        <div className="flex items-center justify-between px-4 py-2 border-b border-gray-100 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-t-3xl">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
-              <Zap className="text-white" size={16} />
+      <div className="bg-white rounded-3xl w-full max-w-md h-[600px] flex flex-col shadow-2xl">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-t-3xl">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-white bg-opacity-20 rounded-2xl flex items-center justify-center">
+              <Zap className="text-white" size={20} />
             </div>
             <div>
-              <h3 className="text-white font-bold text-base">Chat with Tori</h3>
-              <p className="text-white text-opacity-80 text-xs">Your friendly inventory assistant</p>
+              <h3 className="text-white font-bold text-lg">Tori</h3>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-300 rounded-full animate-pulse"></div>
+                <p className="text-white text-opacity-80 text-sm">Ready to chat</p>
+              </div>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="text-white hover:bg-white hover:bg-opacity-20 rounded-lg p-1.5 transition-colors"
+            className="text-white hover:bg-white hover:bg-opacity-20 rounded-xl p-2 transition-colors"
           >
             ×
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
           {messages.map((message) => (
             <div
               key={message.id}
               className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
             >
               <div className={`max-w-[85%] ${message.isUser ? 'order-1' : 'order-2'}`}>
+                {!message.isUser && (
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-6 h-6 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full flex items-center justify-center">
+                      <Zap size={12} className="text-white" />
+                    </div>
+                    <span className="text-xs font-medium text-gray-600">Tori</span>
+                    <button className="text-gray-400 hover:text-gray-600 transition-colors">
+                      <Volume2 size={12} />
+                    </button>
+                  </div>
+                )}
+
                 <div
-                  className={`px-4 py-2 rounded-2xl ${message.isUser
-                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white'
-                    : 'bg-gray-100 text-gray-900'
+                  className={`px-4 py-3 rounded-2xl ${message.isUser
+                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-br-md'
+                    : 'bg-gray-100 text-gray-900 rounded-bl-md'
                     }`}
                 >
                   <p className="text-sm leading-relaxed">{message.content}</p>
                 </div>
 
                 {message.relatedItems && message.relatedItems.length > 0 && (
-                  <div className="mt-2 space-y-2">
+                  <div className="mt-3 space-y-2">
                     {message.relatedItems.map((item) => (
                       <div
                         key={item.id}
-                        className="bg-white border border-gray-200 rounded-xl p-2 text-sm shadow-sm"
+                        className="bg-white border border-gray-200 rounded-xl p-3 text-sm shadow-sm hover:shadow-md transition-shadow"
                       >
                         <div className="flex items-center justify-between">
                           <span className="font-semibold text-gray-900">{item.name}</span>
-                          <span className="text-gray-500 text-xs">{item.room}</span>
+                          <span className="text-gray-500 text-xs bg-gray-100 px-2 py-1 rounded-full">{item.room}</span>
                         </div>
                         {item.estimatedValue && (
-                          <span className="text-emerald-600 font-semibold text-xs">${item.estimatedValue}</span>
+                          <div className="mt-1">
+                            <span className="text-emerald-600 font-bold">${item.estimatedValue}</span>
+                          </div>
                         )}
                       </div>
                     ))}
                   </div>
                 )}
 
-                <div
-                  className={`flex items-center gap-1.5 mt-1 ${message.isUser ? 'justify-end' : 'justify-start'
-                    }`}
-                >
-                  <div className={`w-5 h-5 rounded-lg flex items-center justify-center ${message.isUser ? 'bg-indigo-100' : 'bg-purple-100'
-                    }`}>
-                    {message.isUser ? (
-                      <User size={12} className="text-indigo-600" />
-                    ) : (
-                      <Zap size={12} className="text-purple-600" />
-                    )}
-                  </div>
-                  <span className="text-[10px] text-gray-500">
+                <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
+                  <span>
                     {new Date(message.timestamp).toLocaleTimeString([], {
                       hour: '2-digit',
                       minute: '2-digit'
@@ -357,11 +424,19 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
           {isTyping && (
             <div className="flex justify-start">
-              <div className="bg-gray-100 rounded-2xl px-4 py-2">
-                <div className="flex items-center gap-1">
-                  <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"></div>
-                  <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                  <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+              <div className="flex flex-col">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-6 h-6 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full flex items-center justify-center">
+                    <Zap size={12} className="text-white" />
+                  </div>
+                  <span className="text-xs font-medium text-gray-600">Tori is typing...</span>
+                </div>
+                <div className="bg-gray-100 rounded-2xl rounded-bl-md px-4 py-3">
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce"></div>
+                    <div className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                    <div className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -370,20 +445,30 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
           <div ref={messagesEndRef} />
         </div>
 
-        <div className="p-3 border-t border-gray-100">
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Ask Tori anything about your stuff..."
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-colors"
-            />
+        {/* Input Area */}
+        <div className="p-4 border-t border-gray-100">
+          <div className="flex gap-3">
+            <div className="flex-1 relative">
+              <input
+                type="text"
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Just talk to me naturally..."
+                className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-2xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-colors"
+              />
+              <button
+                onClick={toggleListening}
+                className={`absolute right-3 top-1/2 transform -translate-y-1/2 p-1 rounded-lg transition-colors ${isListening ? 'text-red-500 bg-red-50' : 'text-gray-400 hover:text-gray-600'
+                  }`}
+              >
+                {isListening ? <MicOff size={16} /> : <Mic size={16} />}
+              </button>
+            </div>
             <button
               onClick={handleSend}
               disabled={!inputValue.trim()}
-              className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white p-2 rounded-xl hover:shadow-lg hover:shadow-emerald-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white p-3 rounded-2xl hover:shadow-lg hover:shadow-emerald-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Send size={18} />
             </button>
