@@ -4,9 +4,10 @@ import { InventoryItem } from '../types/inventory';
 
 interface StatsOverviewProps {
   items: InventoryItem[];
+  variant?: 'default' | 'compact';
 }
 
-export const StatsOverview: React.FC<StatsOverviewProps> = ({ items }) => {
+export const StatsOverview: React.FC<StatsOverviewProps> = ({ items, variant = 'default' }) => {
   const totalItems = items.length;
   const totalRooms = new Set(items.map(item => item.room)).size;
   const totalValue = items.reduce((sum, item) => sum + (item.estimatedValue || 0), 0);
@@ -46,6 +47,30 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({ items }) => {
       change: 'This week',
     },
   ];
+
+  if (variant === 'compact') {
+    return (
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {stats.map(({ label, value, icon: Icon, gradient, change }) => (
+          <div
+            key={label}
+            className="bg-white rounded-xl p-3 border border-gray-100 shadow-sm hover:shadow-md transition-shadow"
+          >
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-500">{label}</p>
+                <p className="text-xl font-bold text-gray-900 mt-1">{value}</p>
+                <p className="text-xs text-gray-500 mt-1">{change}</p>
+              </div>
+              <div className={`bg-gradient-to-br ${gradient} p-2 rounded-lg text-white`}>
+                <Icon size={16} />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="grid grid-cols-2 gap-4">
