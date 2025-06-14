@@ -46,11 +46,14 @@ export async function detectObject(imagePath: string, objectName: string): Promi
             prompt: objectName
         });
 
+        // Base64 encode the API key for Basic authentication
+        const encodedApiKey = Buffer.from(process.env.LANDING_AI_API_KEY).toString('base64');
+
         const response = await fetch(url, {
             method: 'POST',
             body: formData,
             headers: {
-                Authorization: `Basic ${process.env.LANDING_AI_API_KEY}`,
+                Authorization: `Basic ${encodedApiKey}`,
             },
         });
 
@@ -141,4 +144,4 @@ export async function cropImage(
         console.error('Error cropping image:', error);
         throw error;
     }
-} 
+}
