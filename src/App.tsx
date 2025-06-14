@@ -46,7 +46,7 @@ function App() {
                 Hey there! Welcome to Tori
               </h1>
               <p className="text-gray-600">
-                {items.length === 0 
+                {items.length === 0
                   ? "I'm here to help you organize your home! Let's start by adding your first item 📸"
                   : `You've got ${items.length} items organized across your home! Looking good! ✨`
                 }
@@ -84,7 +84,7 @@ function App() {
                     </button>
                   )}
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-4">
                   {recentItems.map((item) => (
                     <ItemCard
@@ -160,7 +160,7 @@ function App() {
                     {rooms.map(room => {
                       const roomItems = items.filter(item => item.room === room.name);
                       const percentage = items.length > 0 ? (roomItems.length / items.length) * 100 : 0;
-                      
+
                       return (
                         <div key={room.id} className="flex items-center justify-between">
                           <span className="text-sm font-medium text-gray-700">{room.name}</span>
@@ -185,7 +185,7 @@ function App() {
                     {categories.map(category => {
                       const categoryItems = items.filter(item => item.category === category.name);
                       const percentage = items.length > 0 ? (categoryItems.length / items.length) * 100 : 0;
-                      
+
                       return (
                         <div key={category.id} className="flex items-center justify-between">
                           <span className="text-sm font-medium text-gray-700">{category.name}</span>
@@ -232,7 +232,7 @@ function App() {
           >
             <MessageSquare size={24} />
           </button>
-          
+
           <button
             onClick={() => setShowAddModal(true)}
             className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white p-4 rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-105"
@@ -253,11 +253,10 @@ function App() {
               <button
                 key={key}
                 onClick={() => setActiveTab(key as TabType)}
-                className={`flex flex-col items-center gap-1 py-2 px-4 rounded-xl transition-colors ${
-                  activeTab === key
+                className={`flex flex-col items-center gap-1 py-2 px-4 rounded-xl transition-colors ${activeTab === key
                     ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white'
                     : 'text-gray-500 hover:text-gray-700'
-                }`}
+                  }`}
               >
                 <Icon size={20} />
                 <span className="text-xs font-medium">{label}</span>

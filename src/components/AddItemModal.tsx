@@ -11,6 +11,25 @@ interface AddItemModalProps {
   categories: Category[];
 }
 
+interface LandingAiObject {
+  label: string;
+  confidence: number;
+  boundingBox: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
+}
+
+interface DetectedObject {
+  name: string;
+  category: string;
+  estimatedValue?: number;
+  landingAiObjects?: LandingAiObject[];
+  imageUrl?: string;
+}
+
 export const AddItemModal: React.FC<AddItemModalProps> = ({
   isOpen,
   onClose,
@@ -20,6 +39,11 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
 }) => {
   const [showCamera, setShowCamera] = useState(false);
   const [aiDetected, setAiDetected] = useState(false);
+  const [detectedRoom, setDetectedRoom] = useState('');
+  const [detectedObjects, setDetectedObjects] = useState<DetectedObject[]>([]);
+  const [currentObjectIndex, setCurrentObjectIndex] = useState(0);
+  const [isProcessingLandingAi, setIsProcessingLandingAi] = useState(false);
+  const [imageData, setImageData] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     category: '',
@@ -45,20 +69,75 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
       });
       setShowCamera(false);
       setAiDetected(false);
+      setDetectedObjects([]);
+      setCurrentObjectIndex(0);
+      setDetectedRoom('');
+      setIsProcessingLandingAi(false);
     }
   }, [isOpen]);
 
-  const handleCameraCapture = (imageData: string, recognitionData: any) => {
+  const processWithLandingAi = async (imageData: string, objectName: string): Promise<any> => {
+    try {
+      // Create form data for the Landing AI API
+      const formData = new FormData();
+      // Convert base64 to blob
+      const base64Data = imageData.split(',')[1];
+      const blob = await fetch(`data:image/jpeg;base64,${base64Data}`).then(res => res.blob());
+      formData.append('image', blob);
+      formData.append('object_name', objectName);
+
+      const response = await fetch('http://localhost:3000/api/detect-object', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to process with Landing AI');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error processing with Landing AI:', error);
+      return null;
+    }
+  };
+
+  const handleCameraCapture = async (capturedImageData: string, recognitionData: any) => {
+    setImageData(capturedImageData); // Store the original image data
     // Auto-fill form with AI detection results
+    const objects = recognitionData.objects.map((obj: {
+      name: string;
+      category: string;
+      description: string;
+      estimated_cost_usd: number;
+      imageUrl?: string;
+    }) => ({
+      name: obj.name,
+      category: obj.category,
+      description: obj.description,
+      estimatedValue: obj.estimated_cost_usd,
+      imageUrl: obj.imageUrl
+    }));
+
+    // Take only the first 3 objects
+    const firstThreeObjects = objects.slice(0, 3);
+
+    // Normalize room name to match our data model (e.g., "living room" -> "Living Room")
+    const normalizedRoom = recognitionData.room.split(' ')
+      .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+
+    setDetectedObjects(firstThreeObjects);
+    setDetectedRoom(normalizedRoom);
     setFormData(prev => ({
       ...prev,
-      imageUrl: imageData,
-      room: recognitionData.room,
-      name: recognitionData.suggestedName || recognitionData.objects[0]?.name || '',
-      category: recognitionData.suggestedCategory || recognitionData.objects[0]?.category || '',
-      description: recognitionData.objects.length > 1 
-        ? `Detected: ${recognitionData.objects.map((obj: any) => obj.name).join(', ')}`
-        : `AI detected: ${recognitionData.objects[0]?.name || 'Unknown item'}`,
+      imageUrl: firstThreeObjects[0]?.imageUrl || capturedImageData,
+      room: normalizedRoom,
+      name: firstThreeObjects[0]?.name || '',
+      category: firstThreeObjects[0]?.category || '',
+      description: firstThreeObjects[0]?.description || '',
+      estimatedValue: firstThreeObjects[0]?.estimatedValue?.toString() || '',
+      tags: `detected, ${firstThreeObjects[0]?.category?.toLowerCase() || ''}`
     }));
     setShowCamera(false);
     setAiDetected(true);
@@ -66,15 +145,43 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
+    const currentObject = detectedObjects[currentObjectIndex];
     const newItem = {
       ...formData,
+      // Use the cropped image URL from the current object if available
+      imageUrl: currentObject?.imageUrl || formData.imageUrl,
       estimatedValue: formData.estimatedValue ? parseFloat(formData.estimatedValue) : undefined,
       tags: formData.tags.split(',').map(tag => tag.trim()).filter(Boolean),
+      // Add any Landing AI detection results as tags
+      ...(currentObject?.landingAiObjects?.length && {
+        tags: [
+          ...formData.tags.split(',').map(tag => tag.trim()).filter(Boolean),
+          ...currentObject.landingAiObjects.map((obj: LandingAiObject) => `detected:${obj.label}`)
+        ]
+      })
     };
 
     onAdd(newItem);
-    onClose();
+
+    // If there are more objects to add, prepare the form for the next one
+    if (currentObjectIndex < Math.min(detectedObjects.length - 1, 2)) { // Only process up to 3 objects
+      const nextObject = detectedObjects[currentObjectIndex + 1];
+      setCurrentObjectIndex(prev => prev + 1);
+      setFormData(prev => ({
+        ...prev,
+        // Use the cropped image URL for the next object
+        imageUrl: nextObject.imageUrl || imageData,
+        name: nextObject.name || '',
+        category: nextObject.category || '',
+        estimatedValue: nextObject.estimatedValue?.toString() || '',
+        description: nextObject.landingAiObjects?.length
+          ? `AI detected: ${nextObject.landingAiObjects.map((obj: LandingAiObject) => `${obj.label} (${Math.round(obj.confidence * 100)}% confidence)`).join(', ')}`
+          : `Detected: ${nextObject.name || ''}`
+      }));
+    } else {
+      onClose();
+    }
   };
 
   if (!isOpen) return null;
@@ -103,28 +210,18 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {formData.imageUrl && (
-            <div className="relative">
+            <div className="relative aspect-square bg-gray-100 rounded-xl overflow-hidden">
               <img
-                src={formData.imageUrl}
-                alt="Captured item"
-                className="w-full h-32 object-cover rounded-xl"
+                src={formData.imageUrl.startsWith('data:') ? formData.imageUrl : `http://localhost:3000${formData.imageUrl}`}
+                alt={`${formData.name || 'Captured item'}`}
+                className="w-full h-full object-contain"
               />
               {aiDetected && (
-                <div className="absolute top-2 left-2 bg-green-500 text-white px-2 py-1 rounded-lg text-xs flex items-center gap-1">
+                <div className="absolute top-2 left-2 bg-green-500 bg-opacity-90 text-white px-2 py-1 rounded-lg text-xs flex items-center gap-1">
                   <Check size={12} />
                   AI Detected!
                 </div>
               )}
-              <button
-                type="button"
-                onClick={() => {
-                  setFormData(prev => ({ ...prev, imageUrl: '' }));
-                  setAiDetected(false);
-                }}
-                className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
-              >
-                <X size={16} />
-              </button>
             </div>
           )}
 
@@ -145,10 +242,31 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
                 <span className="font-medium">Tori's AI Detection Results:</span>
               </div>
               <p className="text-green-600 text-sm">
-                Automatically filled in the details below! Feel free to edit anything that doesn't look right.
+                {isProcessingLandingAi
+                  ? "Processing with Landing AI..."
+                  : `${currentObjectIndex + 1} of ${Math.min(detectedObjects.length, 3)} objects in this ${detectedRoom.toLowerCase()}`
+                }
               </p>
             </div>
           )}
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Where is it? *
+            </label>
+            <select
+              required
+              value={formData.room}
+              onChange={(e) => setFormData(prev => ({ ...prev, room: e.target.value }))}
+              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors ${aiDetected ? 'border-green-300 bg-green-50' : 'border-gray-300'
+                }`}
+            >
+              <option value="">Select a room</option>
+              {rooms.map((room) => (
+                <option key={room.id} value={room.name}>{room.name}</option>
+              ))}
+            </select>
+          </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -159,51 +277,28 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
               required
               value={formData.name}
               onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors ${
-                aiDetected ? 'border-green-300 bg-green-50' : 'border-gray-300'
-              }`}
+              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors ${aiDetected ? 'border-green-300 bg-green-50' : 'border-gray-300'
+                }`}
               placeholder="e.g., MacBook Pro, Coffee Mug, etc."
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Which room? *
-              </label>
-              <select
-                required
-                value={formData.room}
-                onChange={(e) => setFormData(prev => ({ ...prev, room: e.target.value }))}
-                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors ${
-                  aiDetected ? 'border-green-300 bg-green-50' : 'border-gray-300'
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Category *
+            </label>
+            <select
+              required
+              value={formData.category}
+              onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
+              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors ${aiDetected ? 'border-green-300 bg-green-50' : 'border-gray-300'
                 }`}
-              >
-                <option value="">Pick a room</option>
-                {rooms.map(room => (
-                  <option key={room.id} value={room.name}>{room.name}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Category *
-              </label>
-              <select
-                required
-                value={formData.category}
-                onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
-                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors ${
-                  aiDetected ? 'border-green-300 bg-green-50' : 'border-gray-300'
-                }`}
-              >
-                <option value="">What type?</option>
-                {categories.map(category => (
-                  <option key={category.id} value={category.name}>{category.name}</option>
-                ))}
-              </select>
-            </div>
+            >
+              <option value="">Select a category</option>
+              {categories.map((category) => (
+                <option key={category.id} value={category.name}>{category.name}</option>
+              ))}
+            </select>
           </div>
 
           <div>
@@ -213,9 +308,8 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
             <textarea
               value={formData.description}
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors ${
-                aiDetected ? 'border-green-300 bg-green-50' : 'border-gray-300'
-              }`}
+              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors ${aiDetected ? 'border-green-300 bg-green-50' : 'border-gray-300'
+                }`}
               rows={3}
               placeholder="Any details you want to remember..."
             />
@@ -244,35 +338,37 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
               </label>
               <input
                 type="number"
-                min="0"
-                step="0.01"
                 value={formData.estimatedValue}
                 onChange={(e) => setFormData(prev => ({ ...prev, estimatedValue: e.target.value }))}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
+                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors ${aiDetected ? 'border-green-300 bg-green-50' : 'border-gray-300'
+                  }`}
                 placeholder="0.00"
+                step="0.01"
+                min="0"
               />
             </div>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Tags (separate with commas)
+              Tags
             </label>
             <input
               type="text"
               value={formData.tags}
               onChange={(e) => setFormData(prev => ({ ...prev, tags: e.target.value }))}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
-              placeholder="work, expensive, gift, vintage..."
+              placeholder="vintage, gift, favorite (comma separated)"
             />
           </div>
 
           <button
             type="submit"
-            className="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white py-3 rounded-xl font-semibold hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+            className="w-full bg-indigo-600 text-white py-3 rounded-xl font-semibold hover:bg-indigo-700 transition-colors mt-6"
           >
-            <Plus size={20} />
-            Add to Tori
+            {currentObjectIndex < Math.min(detectedObjects.length - 1, 2)
+              ? `Add Item (${currentObjectIndex + 1}/${Math.min(detectedObjects.length, 3)})`
+              : 'Add Item'}
           </button>
         </form>
       </div>

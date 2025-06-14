@@ -21,13 +21,13 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, onEdit, onDelete }) =>
       {item.imageUrl && (
         <div className="aspect-square bg-gray-100">
           <img
-            src={item.imageUrl}
+            src={item.imageUrl.startsWith('data:') ? item.imageUrl : `http://localhost:3000${item.imageUrl}`}
             alt={item.name}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-contain"
           />
         </div>
       )}
-      
+
       <div className="p-4">
         <div className="flex items-start justify-between mb-2">
           <h3 className="font-semibold text-gray-900 text-lg leading-tight">{item.name}</h3>
@@ -55,7 +55,7 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, onEdit, onDelete }) =>
           <span className={`px-2 py-1 rounded-full text-xs font-medium ${conditionColors[item.condition]}`}>
             {item.condition.charAt(0).toUpperCase() + item.condition.slice(1)}
           </span>
-          
+
           {item.estimatedValue && (
             <div className="flex items-center gap-1 text-sm font-semibold text-gray-900">
               <DollarSign size={14} />
