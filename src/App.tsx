@@ -217,9 +217,9 @@ function App() {
         return (
           <div className="space-y-6">
             <div className="text-center py-6">
-              <div className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full text-white font-bold mb-4 shadow-lg shadow-emerald-500/25">
+              <div className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-violet-600 to-purple-600 rounded-full text-white font-bold mb-4 shadow-lg shadow-violet-500/25">
                 <MessageSquare size={20} />
-                 Speak with Tori
+                 Chat with Tori
               </div>
               <h1 className="text-2xl font-bold text-gray-900 mb-2">Ask me anything!</h1>
               <p className="text-gray-600">I can help you find items, get stats, or organize your home</p>
@@ -298,7 +298,7 @@ function App() {
                   className={`relative flex items-center gap-2 px-4 py-3 rounded-full transition-all duration-300 ${
                     activeTab === key
                       ? key === 'chat'
-                        ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/25'
+                        ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-lg shadow-violet-500/25'
                         : 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/25'
                       : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
                   }`}

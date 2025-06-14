@@ -219,7 +219,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                   ? 'bg-gradient-to-r from-red-500 to-pink-600 scale-110 shadow-red-500/25'
                   : isProcessing
                   ? 'bg-gradient-to-r from-amber-500 to-orange-600 shadow-amber-500/25'
-                  : 'bg-gradient-to-r from-emerald-500 to-teal-600 hover:scale-105 hover:shadow-emerald-500/25'
+                  : 'bg-gradient-to-r from-blue-500 to-cyan-600 hover:scale-105 hover:shadow-blue-500/25'
               }`}
             >
               {isProcessing ? (
@@ -273,7 +273,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                     <div
                       className={`px-4 py-3 rounded-2xl text-sm ${
                         message.isUser
-                          ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-br-md'
+                          ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-br-md'
                           : 'bg-gray-100 text-gray-900 rounded-bl-md'
                       }`}
                     >
@@ -293,7 +293,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                             </div>
                             {item.estimatedValue && (
                               <div>
-                                <span className="text-emerald-600 font-bold">${item.estimatedValue}</span>
+                                <span className="text-blue-600 font-bold">${item.estimatedValue}</span>
                               </div>
                             )}
                           </div>
@@ -308,9 +308,9 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 <div className="flex justify-start">
                   <div className="bg-gray-100 rounded-2xl rounded-bl-md px-4 py-3">
                     <div className="flex items-center gap-1">
-                      <div className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce"></div>
-                      <div className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                      <div className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
+                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                     </div>
                   </div>
                 </div>
@@ -330,7 +330,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     <div className="fixed inset-0 bg-black bg-opacity-50 z-40 flex items-center justify-center p-4">
       <div className="bg-white rounded-3xl w-full max-w-md h-[600px] flex flex-col shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-t-3xl">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-violet-600 to-purple-600 rounded-t-3xl">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-white bg-opacity-20 rounded-2xl flex items-center justify-center">
               <Zap className="text-white" size={20} />
@@ -363,7 +363,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                   ? 'bg-gradient-to-r from-red-500 to-pink-600 scale-110'
                   : isProcessing
                   ? 'bg-gradient-to-r from-amber-500 to-orange-600'
-                  : 'bg-gradient-to-r from-emerald-500 to-teal-600 hover:scale-105 hover:shadow-emerald-500/25'
+                  : 'bg-gradient-to-r from-blue-500 to-cyan-600 hover:scale-105 hover:shadow-blue-500/25'
               }`}
             >
               {isProcessing ? (
@@ -407,7 +407,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                   <div
                     className={`px-3 py-2 rounded-xl text-sm ${
                       message.isUser
-                        ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-br-md'
+                        ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-br-md'
                         : 'bg-gray-100 text-gray-900 rounded-bl-md'
                     }`}
                   >
@@ -427,7 +427,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                           </div>
                           {item.estimatedValue && (
                             <div className="mt-1">
-                              <span className="text-emerald-600 font-bold">${item.estimatedValue}</span>
+                              <span className="text-blue-600 font-bold">${item.estimatedValue}</span>
                             </div>
                           )}
                         </div>
@@ -442,9 +442,9 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
               <div className="flex justify-start">
                 <div className="bg-gray-100 rounded-xl rounded-bl-md px-3 py-2">
                   <div className="flex items-center gap-1">
-                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce"></div>
-                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce"></div>
+                    <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                    <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                   </div>
                 </div>
               </div>
