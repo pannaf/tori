@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Sparkles } from 'lucide-react';
+import { Send, Bot, User, Zap } from 'lucide-react';
 import { ChatMessage } from '../types/inventory';
 import { InventoryItem } from '../types/inventory';
 
@@ -197,55 +197,55 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ items, isOpen, onC
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-40 flex items-end justify-center p-4">
-      <div className="bg-white rounded-t-2xl w-full max-w-md h-[70vh] flex flex-col">
-        <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-t-2xl">
-          <div className="flex items-center gap-3">
-            <div className="bg-white bg-opacity-20 rounded-full p-2">
-              <Sparkles className="text-white" size={20} />
+      <div className="bg-white rounded-t-3xl w-full max-w-md h-[75vh] flex flex-col shadow-2xl">
+        <div className="flex items-center justify-between p-6 border-b border-gray-100 bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 rounded-t-3xl">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-white bg-opacity-20 rounded-2xl flex items-center justify-center">
+              <Zap className="text-white" size={24} />
             </div>
             <div>
-              <h3 className="text-white font-semibold">Chat with Tori</h3>
+              <h3 className="text-white font-bold text-lg">Chat with Tori</h3>
               <p className="text-white text-opacity-80 text-sm">Your friendly inventory assistant</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-1 transition-colors"
+            className="text-white hover:bg-white hover:bg-opacity-20 rounded-xl p-2 transition-colors"
           >
             ×
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {messages.map((message) => (
             <div
               key={message.id}
               className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
             >
-              <div className={`max-w-[80%] ${message.isUser ? 'order-1' : 'order-2'}`}>
+              <div className={`max-w-[85%] ${message.isUser ? 'order-1' : 'order-2'}`}>
                 <div
-                  className={`px-4 py-2 rounded-2xl ${
+                  className={`px-5 py-3 rounded-2xl ${
                     message.isUser
-                      ? 'bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white'
+                      ? 'bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 text-white'
                       : 'bg-gray-100 text-gray-900'
                   }`}
                 >
-                  <p className="text-sm">{message.content}</p>
+                  <p className="text-sm leading-relaxed">{message.content}</p>
                 </div>
                 
                 {message.relatedItems && message.relatedItems.length > 0 && (
-                  <div className="mt-2 space-y-2">
+                  <div className="mt-3 space-y-2">
                     {message.relatedItems.map((item) => (
                       <div
                         key={item.id}
-                        className="bg-white border border-gray-200 rounded-lg p-2 text-sm"
+                        className="bg-white border border-gray-200 rounded-xl p-3 text-sm shadow-sm"
                       >
                         <div className="flex items-center justify-between">
-                          <span className="font-medium text-gray-900">{item.name}</span>
+                          <span className="font-semibold text-gray-900">{item.name}</span>
                           <span className="text-gray-500 text-xs">{item.room}</span>
                         </div>
                         {item.estimatedValue && (
-                          <span className="text-green-600 font-medium">${item.estimatedValue}</span>
+                          <span className="text-emerald-600 font-semibold">${item.estimatedValue}</span>
                         )}
                       </div>
                     ))}
@@ -253,17 +253,17 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ items, isOpen, onC
                 )}
                 
                 <div
-                  className={`flex items-center gap-2 mt-1 ${
+                  className={`flex items-center gap-2 mt-2 ${
                     message.isUser ? 'justify-end' : 'justify-start'
                   }`}
                 >
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
-                    message.isUser ? 'bg-indigo-100' : 'bg-purple-100'
+                  <div className={`w-7 h-7 rounded-xl flex items-center justify-center ${
+                    message.isUser ? 'bg-violet-100' : 'bg-purple-100'
                   }`}>
                     {message.isUser ? (
-                      <User size={12} className="text-indigo-600" />
+                      <User size={14} className="text-violet-600" />
                     ) : (
-                      <Sparkles size={12} className="text-purple-600" />
+                      <Zap size={14} className="text-purple-600" />
                     )}
                   </div>
                   <span className="text-xs text-gray-500">
@@ -279,7 +279,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ items, isOpen, onC
           
           {isTyping && (
             <div className="flex justify-start">
-              <div className="bg-gray-100 rounded-2xl px-4 py-2">
+              <div className="bg-gray-100 rounded-2xl px-5 py-3">
                 <div className="flex items-center gap-1">
                   <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
                   <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
@@ -292,20 +292,20 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ items, isOpen, onC
           <div ref={messagesEndRef} />
         </div>
 
-        <div className="p-4 border-t border-gray-100">
-          <div className="flex gap-2">
+        <div className="p-6 border-t border-gray-100">
+          <div className="flex gap-3">
             <input
               type="text"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="Ask Tori anything about your stuff..."
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
+              className="flex-1 px-4 py-3 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-colors"
             />
             <button
               onClick={handleSend}
               disabled={!inputValue.trim()}
-              className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white p-2 rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+              className="bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 text-white p-3 rounded-2xl hover:shadow-lg hover:shadow-purple-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Send size={20} />
             </button>

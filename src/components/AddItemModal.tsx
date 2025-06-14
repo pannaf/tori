@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Camera, Plus, Sparkles, Check, Zap } from 'lucide-react';
+import { X, Camera, Plus, Check, Zap } from 'lucide-react';
 import { Room, Category, InventoryItem } from '../types/inventory';
 import { CameraCapture } from './CameraCapture';
 
@@ -197,28 +197,28 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-40 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-3xl w-full max-w-md max-h-[90vh] overflow-y-auto shadow-2xl">
         <div className="flex items-center justify-between p-6 border-b border-gray-100">
-          <h2 className="text-xl font-bold text-gray-900">Add to Your Collection</h2>
+          <h2 className="text-2xl font-bold text-gray-900">Add to Your Collection</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-gray-400 hover:text-gray-600 transition-colors p-1"
           >
             <X size={24} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {formData.imageUrl && (
-            <div className="relative aspect-square bg-gray-100 rounded-xl overflow-hidden">
+            <div className="relative aspect-square bg-gray-100 rounded-2xl overflow-hidden">
               <img
                 src={formData.imageUrl.startsWith('data:') ? formData.imageUrl : `http://localhost:3000${formData.imageUrl}`}
                 alt={`${formData.name || 'Captured item'}`}
                 className="w-full h-full object-contain"
               />
               {aiDetected && (
-                <div className="absolute top-2 left-2 bg-green-500 bg-opacity-90 text-white px-2 py-1 rounded-lg text-xs flex items-center gap-1">
-                  <Check size={12} />
+                <div className="absolute top-3 left-3 bg-emerald-500 bg-opacity-95 text-white px-3 py-2 rounded-xl text-sm flex items-center gap-2 font-semibold">
+                  <Check size={14} />
                   AI Detected!
                 </div>
               )}
@@ -228,20 +228,20 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
           <button
             type="button"
             onClick={() => setShowCamera(true)}
-            className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white py-3 rounded-xl font-semibold hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+            className="w-full bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 text-white py-4 rounded-2xl font-bold hover:shadow-2xl hover:shadow-purple-500/25 transition-all duration-300 hover:scale-105 flex items-center justify-center gap-3"
           >
-            <Camera size={20} />
+            <Camera size={22} />
             {formData.imageUrl ? 'Retake Photo' : 'Take Photo & Auto-Detect'}
-            <Sparkles size={16} className="text-yellow-300" />
+            <Zap size={18} className="text-amber-300" />
           </button>
 
           {aiDetected && (
-            <div className="bg-green-50 border border-green-200 rounded-xl p-3">
-              <div className="flex items-center gap-2 text-green-700 mb-1">
-                <Zap size={16} />
-                <span className="font-medium">Tori's AI Detection Results:</span>
+            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4">
+              <div className="flex items-center gap-3 text-emerald-700 mb-2">
+                <Zap size={18} />
+                <span className="font-bold">Tori's AI Detection Results:</span>
               </div>
-              <p className="text-green-600 text-sm">
+              <p className="text-emerald-600 text-sm">
                 {isProcessingLandingAi
                   ? "Processing with Landing AI..."
                   : `${currentObjectIndex + 1} of ${Math.min(detectedObjects.length, 3)} objects in this ${detectedRoom.toLowerCase()}`
@@ -251,14 +251,14 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-semibold text-gray-700 mb-3">
               Where is it? *
             </label>
             <select
               required
               value={formData.room}
               onChange={(e) => setFormData(prev => ({ ...prev, room: e.target.value }))}
-              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors ${aiDetected ? 'border-green-300 bg-green-50' : 'border-gray-300'
+              className={`w-full px-4 py-3 border rounded-2xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-colors ${aiDetected ? 'border-emerald-300 bg-emerald-50' : 'border-gray-300'
                 }`}
             >
               <option value="">Select a room</option>
@@ -269,7 +269,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-semibold text-gray-700 mb-3">
               What is it? *
             </label>
             <input
@@ -277,21 +277,21 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
               required
               value={formData.name}
               onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors ${aiDetected ? 'border-green-300 bg-green-50' : 'border-gray-300'
+              className={`w-full px-4 py-3 border rounded-2xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-colors ${aiDetected ? 'border-emerald-300 bg-emerald-50' : 'border-gray-300'
                 }`}
               placeholder="e.g., MacBook Pro, Coffee Mug, etc."
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-semibold text-gray-700 mb-3">
               Category *
             </label>
             <select
               required
               value={formData.category}
               onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
-              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors ${aiDetected ? 'border-green-300 bg-green-50' : 'border-gray-300'
+              className={`w-full px-4 py-3 border rounded-2xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-colors ${aiDetected ? 'border-emerald-300 bg-emerald-50' : 'border-gray-300'
                 }`}
             >
               <option value="">Select a category</option>
@@ -302,13 +302,13 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-semibold text-gray-700 mb-3">
               Tell me more about it
             </label>
             <textarea
               value={formData.description}
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors ${aiDetected ? 'border-green-300 bg-green-50' : 'border-gray-300'
+              className={`w-full px-4 py-3 border rounded-2xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-colors ${aiDetected ? 'border-emerald-300 bg-emerald-50' : 'border-gray-300'
                 }`}
               rows={3}
               placeholder="Any details you want to remember..."
@@ -317,13 +317,13 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-semibold text-gray-700 mb-3">
                 Condition
               </label>
               <select
                 value={formData.condition}
                 onChange={(e) => setFormData(prev => ({ ...prev, condition: e.target.value as any }))}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
+                className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-colors"
               >
                 <option value="excellent">Like new ✨</option>
                 <option value="good">Pretty good 👍</option>
@@ -333,14 +333,14 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-semibold text-gray-700 mb-3">
                 Worth about ($)
               </label>
               <input
                 type="number"
                 value={formData.estimatedValue}
                 onChange={(e) => setFormData(prev => ({ ...prev, estimatedValue: e.target.value }))}
-                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors ${aiDetected ? 'border-green-300 bg-green-50' : 'border-gray-300'
+                className={`w-full px-4 py-3 border rounded-2xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-colors ${aiDetected ? 'border-emerald-300 bg-emerald-50' : 'border-gray-300'
                   }`}
                 placeholder="0.00"
                 step="0.01"
@@ -350,21 +350,21 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-semibold text-gray-700 mb-3">
               Tags
             </label>
             <input
               type="text"
               value={formData.tags}
               onChange={(e) => setFormData(prev => ({ ...prev, tags: e.target.value }))}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
+              className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-colors"
               placeholder="vintage, gift, favorite (comma separated)"
             />
           </div>
 
           <button
             type="submit"
-            className="w-full bg-indigo-600 text-white py-3 rounded-xl font-semibold hover:bg-indigo-700 transition-colors mt-6"
+            className="w-full bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 text-white py-4 rounded-2xl font-bold text-lg hover:shadow-2xl hover:shadow-purple-500/25 transition-all duration-300 hover:scale-105"
           >
             {currentObjectIndex < Math.min(detectedObjects.length - 1, 2)
               ? `Add Item (${currentObjectIndex + 1}/${Math.min(detectedObjects.length, 3)})`
