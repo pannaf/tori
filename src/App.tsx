@@ -37,30 +37,21 @@ function App() {
       case 'home':
         return (
           <div className="space-y-8">
-            <div className="text-center py-12">
-              <div className="relative inline-block mb-8">
-                <div className="w-20 h-20 bg-gradient-to-br from-violet-600 via-purple-600 to-indigo-600 rounded-3xl flex items-center justify-center shadow-2xl shadow-purple-500/25 mb-6 mx-auto">
-                  <Zap size={32} className="text-white" />
-                </div>
-                <div className="absolute -top-2 -right-2 w-6 h-6 bg-gradient-to-r from-amber-400 to-orange-400 rounded-full flex items-center justify-center">
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                </div>
+            <div className="text-center py-8">
+              <div className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 rounded-full text-white font-bold mb-6 shadow-lg shadow-violet-500/25">
+                <Zap size={20} />
+                Tori
               </div>
               
-              <h1 className="text-4xl font-black text-gray-900 mb-4 tracking-tight">
+              <h1 className="text-3xl font-bold text-gray-900 mb-3 leading-tight">
                 {items.length === 0 ? (
-                  <>
-                    Hey there! <span className="bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">Tori</span> is here to help<br />
-                    <span className="text-2xl font-bold text-gray-600">with your home inventory</span>
-                  </>
+                  <>Tori. Know what you own.</>
                 ) : (
-                  <>
-                    Welcome back to <span className="bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">Tori</span>
-                  </>
+                  <>Welcome back to Tori</>
                 )}
               </h1>
               
-              <p className="text-lg text-gray-600 leading-relaxed max-w-md mx-auto">
+              <p className="text-gray-600 leading-relaxed">
                 {items.length === 0
                   ? "Let's get started by adding your first item with AI-powered photo recognition"
                   : `You've got ${items.length} items beautifully organized across your home`
@@ -71,17 +62,17 @@ function App() {
             {items.length > 0 && <StatsOverview items={items} />}
 
             {items.length === 0 ? (
-              <div className="text-center py-16">
-                <div className="w-32 h-32 bg-gradient-to-br from-violet-50 via-purple-50 to-indigo-50 rounded-3xl flex items-center justify-center mx-auto mb-8 border border-violet-100">
-                  <Plus className="text-violet-600" size={48} />
+              <div className="text-center py-12">
+                <div className="w-24 h-24 bg-gradient-to-br from-violet-50 to-indigo-50 rounded-3xl flex items-center justify-center mx-auto mb-6 border border-violet-100">
+                  <Plus className="text-violet-600" size={36} />
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-4">Ready to get organized?</h3>
-                <p className="text-gray-600 mb-10 max-w-sm mx-auto text-lg leading-relaxed">
+                <h3 className="text-xl font-bold text-gray-900 mb-3">Ready to get organized?</h3>
+                <p className="text-gray-600 mb-8 max-w-sm mx-auto leading-relaxed">
                   Snap a photo and let Tori's AI catalog everything for you
                 </p>
                 <button
                   onClick={() => setShowAddModal(true)}
-                  className="bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 text-white px-10 py-4 rounded-2xl font-bold text-lg hover:shadow-2xl hover:shadow-purple-500/25 transition-all duration-300 hover:scale-105"
+                  className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white px-8 py-4 rounded-full font-bold hover:shadow-xl hover:shadow-violet-500/25 transition-all duration-300 hover:scale-105"
                 >
                   Add Your First Item
                 </button>
@@ -89,7 +80,7 @@ function App() {
             ) : (
               <div>
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-bold text-gray-900">Recent Additions</h2>
+                  <h2 className="text-xl font-bold text-gray-900">Recent Additions</h2>
                   {recentItems.length > 0 && (
                     <button
                       onClick={() => setActiveTab('search')}
@@ -118,9 +109,9 @@ function App() {
       case 'search':
         return (
           <div className="space-y-6">
-            <div className="text-center py-8">
-              <h1 className="text-3xl font-bold text-gray-900 mb-3">Find Your Stuff</h1>
-              <p className="text-gray-600 text-lg">Search through your organized home inventory</p>
+            <div className="text-center py-6">
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">Find Your Stuff</h1>
+              <p className="text-gray-600">Search through your organized home inventory</p>
             </div>
 
             <SearchAndFilters
@@ -146,10 +137,10 @@ function App() {
             </div>
 
             {filteredItems.length === 0 && (
-              <div className="text-center py-16">
-                <Search className="mx-auto mb-6 text-gray-400" size={56} />
-                <h3 className="text-xl font-bold text-gray-900 mb-3">Nothing found</h3>
-                <p className="text-gray-600 max-w-xs mx-auto">
+              <div className="text-center py-12">
+                <Search className="mx-auto mb-4 text-gray-400" size={48} />
+                <h3 className="text-lg font-bold text-gray-900 mb-2">Nothing found</h3>
+                <p className="text-gray-600">
                   Try a different search term or adjust your filters
                 </p>
               </div>
@@ -160,9 +151,9 @@ function App() {
       case 'stats':
         return (
           <div className="space-y-6">
-            <div className="text-center py-8">
-              <h1 className="text-3xl font-bold text-gray-900 mb-3">Your Home Stats</h1>
-              <p className="text-gray-600 text-lg">See how organized you are! 📊</p>
+            <div className="text-center py-6">
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">Your Home Stats</h1>
+              <p className="text-gray-600">See how organized you are! 📊</p>
             </div>
 
             <StatsOverview items={items} />
@@ -230,7 +221,7 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-violet-50">
-      <div className="max-w-md mx-auto bg-white min-h-screen relative shadow-2xl shadow-slate-200/50">
+      <div className="max-w-md mx-auto bg-white min-h-screen relative shadow-xl shadow-slate-200/50">
         {/* Main Content */}
         <div className="pb-20">
           <div className="p-6">
@@ -242,7 +233,7 @@ function App() {
         <div className="fixed bottom-24 right-6 z-30 flex flex-col gap-4">
           <button
             onClick={() => setShowChat(true)}
-            className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white p-4 rounded-2xl shadow-2xl shadow-emerald-500/25 hover:shadow-emerald-500/40 transition-all duration-300 hover:scale-110"
+            className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white p-4 rounded-full shadow-xl shadow-emerald-500/25 hover:shadow-emerald-500/40 transition-all duration-300 hover:scale-110"
             title="Chat with Tori"
           >
             <MessageSquare size={24} />
@@ -250,7 +241,7 @@ function App() {
 
           <button
             onClick={() => setShowAddModal(true)}
-            className="bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 text-white p-5 rounded-2xl shadow-2xl shadow-purple-500/25 hover:shadow-purple-500/40 transition-all duration-300 hover:scale-110"
+            className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white p-5 rounded-full shadow-xl shadow-violet-500/25 hover:shadow-violet-500/40 transition-all duration-300 hover:scale-110"
             title="Add new item"
           >
             <Plus size={28} />
@@ -268,8 +259,8 @@ function App() {
               <button
                 key={key}
                 onClick={() => setActiveTab(key as TabType)}
-                className={`flex flex-col items-center gap-2 py-3 px-6 rounded-2xl transition-all duration-300 ${activeTab === key
-                    ? 'bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/25'
+                className={`flex flex-col items-center gap-2 py-3 px-6 rounded-full transition-all duration-300 ${activeTab === key
+                    ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-lg shadow-violet-500/25'
                     : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
                   }`}
               >
