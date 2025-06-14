@@ -47,7 +47,12 @@ function App() {
                 {items.length === 0 ? (
                   <>Tori. Know what you own.</>
                 ) : (
-                  <>Your home, organized beautifully</>
+                 <>
+                  <span className="text-gray-900">Your home,</span>{" "}
+                  <span className="bg-gradient-to-r from-indigo-500 to-purple-600 text-transparent bg-clip-text">
+                    effortlessly organized
+                  </span>
+                </>
                 )}
               </h1>
               
