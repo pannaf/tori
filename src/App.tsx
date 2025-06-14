@@ -109,9 +109,18 @@ function App() {
       case 'search':
         return (
           <div className="space-y-6">
-            <div className="text-center py-6">
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">Find Your Stuff</h1>
-              <p className="text-gray-600">Search through your organized home inventory</p>
+            <div className="flex items-center justify-between py-6">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900 mb-2">Find Your Stuff</h1>
+                <p className="text-gray-600">Search through your organized home inventory</p>
+              </div>
+              <button
+                onClick={() => setShowChat(true)}
+                className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white p-3 rounded-2xl hover:shadow-lg hover:shadow-emerald-500/25 transition-all duration-300 hover:scale-105"
+                title="Chat with Tori"
+              >
+                <MessageSquare size={20} />
+              </button>
             </div>
 
             <SearchAndFilters
@@ -232,12 +241,11 @@ function App() {
         {/* Unified Floating Pill Navigation */}
         <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-40">
           <div className="bg-white/95 backdrop-blur-xl rounded-full shadow-2xl shadow-gray-900/10 border border-gray-200/50 p-2">
-            <div className="flex items-center gap-1">
-              {/* Navigation Items */}
+            <div className="flex items-center">
+              {/* Left Navigation Items */}
               {[
                 { key: 'home', icon: Home, label: 'Home' },
                 { key: 'search', icon: Search, label: 'Search' },
-                { key: 'stats', icon: BarChart3, label: 'Stats' },
               ].map(({ key, icon: Icon, label }) => (
                 <button
                   key={key}
@@ -257,24 +265,30 @@ function App() {
                 </button>
               ))}
 
-              {/* Divider */}
-              <div className="w-px h-8 bg-gray-200 mx-1" />
-
-              {/* Action Items */}
-              <button
-                onClick={() => setShowChat(true)}
-                className="flex items-center gap-2 px-4 py-3 rounded-full transition-all duration-300 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
-                title="Chat with Tori"
-              >
-                <MessageSquare size={20} />
-              </button>
-
+              {/* Center Add Button */}
               <button
                 onClick={() => setShowAddModal(true)}
-                className="flex items-center gap-2 px-4 py-3 rounded-full transition-all duration-300 bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 hover:scale-105"
+                className="flex items-center justify-center w-14 h-14 mx-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-full shadow-xl shadow-indigo-500/25 hover:shadow-indigo-500/40 hover:scale-110 transition-all duration-300"
                 title="Add new item"
               >
-                <Plus size={22} />
+                <Plus size={24} />
+              </button>
+
+              {/* Right Navigation Item */}
+              <button
+                onClick={() => setActiveTab('stats')}
+                className={`relative flex items-center gap-2 px-4 py-3 rounded-full transition-all duration-300 ${
+                  activeTab === 'stats'
+                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/25'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <BarChart3 size={20} />
+                {activeTab === 'stats' && (
+                  <span className="text-sm font-semibold whitespace-nowrap">
+                    Stats
+                  </span>
+                )}
               </button>
             </div>
           </div>
