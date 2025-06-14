@@ -223,14 +223,14 @@ function App() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50">
       <div className="max-w-md mx-auto bg-white min-h-screen relative shadow-xl shadow-slate-200/50">
         {/* Main Content */}
-        <div className="pb-20">
+        <div className="pb-32">
           <div className="p-6">
             {renderTabContent()}
           </div>
         </div>
 
         {/* Floating Action Buttons */}
-        <div className="fixed bottom-24 right-6 z-30 flex flex-col gap-4">
+        <div className="fixed bottom-28 right-6 z-30 flex flex-col gap-4">
           <button
             onClick={() => setShowChat(true)}
             className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white p-4 rounded-full shadow-xl shadow-emerald-500/25 hover:shadow-emerald-500/40 transition-all duration-300 hover:scale-110"
@@ -248,26 +248,33 @@ function App() {
           </button>
         </div>
 
-        {/* Bottom Navigation */}
-        <div className="fixed bottom-0 left-1/2 transform -translate-x-1/2 w-full max-w-md bg-white/95 backdrop-blur-xl border-t border-gray-100 px-6 py-4">
-          <div className="flex items-center justify-around">
-            {[
-              { key: 'home', icon: Home, label: 'Home' },
-              { key: 'search', icon: Search, label: 'Search' },
-              { key: 'stats', icon: BarChart3, label: 'Stats' },
-            ].map(({ key, icon: Icon, label }) => (
-              <button
-                key={key}
-                onClick={() => setActiveTab(key as TabType)}
-                className={`flex flex-col items-center gap-2 py-3 px-6 rounded-full transition-all duration-300 ${activeTab === key
-                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/25'
-                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+        {/* Floating Pill Navigation */}
+        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-40">
+          <div className="bg-white/95 backdrop-blur-xl rounded-full shadow-2xl shadow-gray-900/10 border border-gray-200/50 p-2">
+            <div className="flex items-center gap-2">
+              {[
+                { key: 'home', icon: Home, label: 'Home' },
+                { key: 'search', icon: Search, label: 'Search' },
+                { key: 'stats', icon: BarChart3, label: 'Stats' },
+              ].map(({ key, icon: Icon, label }) => (
+                <button
+                  key={key}
+                  onClick={() => setActiveTab(key as TabType)}
+                  className={`relative flex items-center gap-2 px-4 py-3 rounded-full transition-all duration-300 ${
+                    activeTab === key
+                      ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/25'
+                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
                   }`}
-              >
-                <Icon size={22} />
-                <span className="text-xs font-semibold">{label}</span>
-              </button>
-            ))}
+                >
+                  <Icon size={20} />
+                  {activeTab === key && (
+                    <span className="text-sm font-semibold whitespace-nowrap">
+                      {label}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
