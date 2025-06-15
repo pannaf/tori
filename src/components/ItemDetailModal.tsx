@@ -1,5 +1,5 @@
-import React from 'react';
-import { X, MapPin, Tag, DollarSign, Calendar, Edit3, Trash2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, MapPin, Tag, DollarSign, Calendar, Edit3, Trash2, AlertTriangle } from 'lucide-react';
 import { InventoryItem } from '../types/inventory';
 
 interface ItemDetailModalProps {
@@ -17,6 +17,8 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
   onEdit,
   onDelete,
 }) => {
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
   if (!isOpen || !item) return null;
 
   const conditionColors = {
@@ -49,12 +51,57 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
     onClose();
   };
 
-  const handleDelete = () => {
-    if (onDelete && confirm('Are you sure you want to delete this item?')) {
-      onDelete(item.id);
-      onClose();
-    }
+  const handleDeleteClick = () => {
+    setShowDeleteConfirm(true);
   };
+
+  const handleConfirmDelete = () => {
+    if (onDelete) {
+      onDelete(item.id);
+    }
+    setShowDeleteConfirm(false);
+    onClose();
+  };
+
+  const handleCancelDelete = () => {
+    setShowDeleteConfirm(false);
+  };
+
+  // Delete Confirmation Modal
+  if (showDeleteConfirm) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl">
+          {/* Header */}
+          <div className="p-6 text-center border-b border-gray-100">
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <AlertTriangle className="text-red-600" size={32} />
+            </div>
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Delete Item?</h2>
+            <p className="text-gray-600">
+              Are you sure you want to delete <span className="font-semibold text-gray-900">"{item.name}"</span>? This action cannot be undone.
+            </p>
+          </div>
+
+          {/* Actions */}
+          <div className="p-6 grid grid-cols-2 gap-3">
+            <button
+              onClick={handleCancelDelete}
+              className="px-6 py-3 bg-gray-100 text-gray-700 rounded-2xl font-semibold hover:bg-gray-200 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleConfirmDelete}
+              className="px-6 py-3 bg-gradient-to-r from-red-500 to-pink-600 text-white rounded-2xl font-semibold hover:shadow-xl hover:shadow-red-500/25 transition-all duration-300 hover:scale-105"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
@@ -160,7 +207,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
             </button>
             
             <button
-              onClick={handleDelete}
+              onClick={handleDeleteClick}
               className="flex items-center justify-center gap-2 bg-gradient-to-r from-red-500 to-pink-600 text-white py-4 rounded-2xl font-semibold hover:shadow-xl hover:shadow-red-500/25 transition-all duration-300 hover:scale-105"
             >
               <Trash2 size={18} />
