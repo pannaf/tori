@@ -17,6 +17,17 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, onEdit, onDelete, onCl
     poor: 'bg-red-100 text-red-800 border-red-200',
   };
 
+  // Smart number formatting function
+  const formatValue = (value: number): string => {
+    if (value >= 1000000) {
+      return `$${(value / 1000000).toFixed(value >= 10000000 ? 0 : 1)}m`;
+    } else if (value >= 1000) {
+      return `$${(value / 1000).toFixed(value >= 10000 ? 0 : 1)}k`;
+    } else {
+      return `$${value.toFixed(0)}`;
+    }
+  };
+
   const handleClick = () => {
     if (onClick) {
       onClick(item);
@@ -60,7 +71,7 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, onEdit, onDelete, onCl
           {item.estimatedValue && (
             <div className="flex items-center gap-1 text-sm font-semibold text-gray-900">
               <DollarSign size={14} />
-              <span>{item.estimatedValue.toFixed(0)}</span>
+              <span>{formatValue(item.estimatedValue)}</span>
             </div>
           )}
           
