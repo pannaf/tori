@@ -165,47 +165,14 @@ router.post('/analyze-image', upload.single('image'), async (req, res) => {
                 return obj;
             }));
 
-            // Create authenticated Supabase client
-            const authToken = req.body.authToken;
-            if (!authToken) {
-                throw new Error('Authentication token required');
-            }
+            // DON'T save to database yet - let frontend handle that when user confirms
+            console.log('AI detection complete, returning data to frontend');
 
-            const authenticatedSupabase = createAuthenticatedSupabaseClient(authToken);
-
-            // Create analysis session in database using authenticated client
-            console.log('Creating analysis session with authenticated user');
-
-            const session = await createAnalysisSessionAuth(authenticatedSupabase, {
-                total_estimated_value_usd: result.total_estimated_value_usd,
-                room: result.room,
-                user_id: req.body.userId || null
-            });
-
-            // Prepare inventory items for database
-            const inventoryItems = objectsWithImages.map(obj => ({
-                name: obj.name,
-                category: obj.category,
-                description: obj.description,
-                estimated_value: obj.estimated_cost_usd,
-                room: result.room,
-                condition: 'Unknown', // Default condition, can be updated later
-                tags: [obj.category.toLowerCase(), result.room.toLowerCase()],
-                crop_image_data: obj.imageUrl, // Store the Supabase URL
-                ai_detected: true,
-                detection_confidence: obj.confidence || 0.8, // Use detection confidence if available
-                user_id: req.body.userId || null // Optional user ID from request
-            }));
-
-            // Save inventory items to database using authenticated client
-            const savedItems = await createInventoryItemsAuth(authenticatedSupabase, inventoryItems, session.id);
-
-            // Update the result with the processed objects and session info
+            // Update the result with the processed objects (no database saves)
             const finalResult = {
                 ...result,
                 objects: objectsWithImages,
-                sessionId: session.id,
-                savedItems: savedItems.length
+                message: 'AI detection complete - items ready for user confirmation'
             };
 
             // Clean up the uploaded file
