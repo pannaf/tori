@@ -52,11 +52,19 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
             }
           }
 
-          setProcessingStep('Analyzing with AI...');
+          setProcessingStep('Analyzing with AI... (this may take up to 2 minutes)');
+
+          // Create AbortController for timeout handling
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minute timeout
+
           const response = await fetch(`${env.API_URL}/api/analyze-image`, {
             method: 'POST',
             body: formData,
+            signal: controller.signal,
           });
+
+          clearTimeout(timeoutId);
 
           if (!response.ok) {
             throw new Error('Failed to analyze image');
@@ -84,7 +92,15 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
           setIsProcessing(false);
         } catch (error) {
           console.error('Recognition failed:', error);
-          setError('Failed to analyze image. Please try again.');
+          if (error instanceof Error) {
+            if (error.name === 'AbortError') {
+              setError('Request timed out. AI processing takes time - try again or use a smaller image.');
+            } else {
+              setError(`Analysis failed: ${error.message}. Please try again.`);
+            }
+          } else {
+            setError('Failed to analyze image. Please try again.');
+          }
           setIsProcessing(false);
           setProcessingStep('');
         }
