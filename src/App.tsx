@@ -409,10 +409,10 @@ function App() {
                 </button>
               ))}
 
-              {/* Center Add Button - Now matches the indigo/purple theme! */}
+              {/* Center Add Button - Now with a beautiful neutral design that doesn't compete */}
               <button
                 onClick={() => setShowAddModal(true)}
-                className="flex items-center justify-center w-14 h-14 mx-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-full hover:shadow-xl hover:shadow-indigo-500/25 hover:scale-110 transition-all duration-300"
+                className="flex items-center justify-center w-14 h-14 mx-2 bg-white border-2 border-gray-300 text-gray-600 rounded-full hover:border-gray-400 hover:text-gray-800 hover:shadow-lg hover:scale-110 transition-all duration-300 shadow-sm"
                 title="Add new item"
               >
                 <Plus size={24} />
