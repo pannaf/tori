@@ -167,10 +167,10 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
                 onChange={(e) => setFormData(prev => ({ ...prev, condition: e.target.value as any }))}
                 className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
               >
-                <option value="excellent">Like new ✨</option>
-                <option value="good">Pretty good 👍</option>
-                <option value="fair">Okay 👌</option>
-                <option value="poor">Seen better days 😅</option>
+                <option value="excellent">Excellent</option>
+                <option value="good">Good</option>
+                <option value="fair">Fair</option>
+                <option value="poor">Poor</option>
               </select>
             </div>
 

@@ -26,13 +26,6 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
     poor: 'bg-red-100 text-red-800 border-red-200',
   };
 
-  const conditionEmojis = {
-    excellent: '✨',
-    good: '👍',
-    fair: '👌',
-    poor: '😅',
-  };
-
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
@@ -79,9 +72,8 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
             <X size={20} />
           </button>
 
-          {/* Condition badge overlay */}
-          <div className={`absolute top-4 left-4 px-3 py-2 rounded-xl text-sm font-semibold border ${conditionColors[item.condition]} backdrop-blur-sm`}>
-            <span className="mr-1">{conditionEmojis[item.condition]}</span>
+          {/* Pill-shaped condition badge overlay */}
+          <div className={`absolute top-4 left-4 px-4 py-2 rounded-full text-sm font-semibold border-2 border-white ${conditionColors[item.condition]} backdrop-blur-sm`}>
             {item.condition.charAt(0).toUpperCase() + item.condition.slice(1)}
           </div>
         </div>

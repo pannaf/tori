@@ -35,8 +35,8 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, onEdit, onDelete, onCl
             alt={item.name}
             className="w-full h-full object-contain"
           />
-          {/* Condition badge with white border */}
-          <div className={`absolute top-2 left-2 px-2 py-1 rounded-lg text-xs font-semibold border-2 border-white ${conditionColors[item.condition]}`}>
+          {/* Pill-shaped condition badge with white border */}
+          <div className={`absolute top-2 left-2 px-3 py-1 rounded-full text-xs font-semibold border-2 border-white ${conditionColors[item.condition]}`}>
             {item.condition.charAt(0).toUpperCase() + item.condition.slice(1)}
           </div>
         </div>
