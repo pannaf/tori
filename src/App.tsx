@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, MessageSquare, Home, Search, BarChart3, Zap, LogOut } from 'lucide-react';
+import { Plus, MessageSquare, Home, Search, BarChart3, Zap, LogOut, User } from 'lucide-react';
 import { useInventory } from './hooks/useInventory';
 import { useAuth } from './hooks/useAuth';
 import { AddItemModal } from './components/AddItemModal';
@@ -37,6 +37,7 @@ function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRoom, setSelectedRoom] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
+  const [showUserMenu, setShowUserMenu] = useState(false);
 
   const filteredItems = searchItems(searchQuery, selectedRoom, selectedCategory);
   const recentItems = items
@@ -73,6 +74,11 @@ function App() {
   const handleSignUp = async (email: string, password: string) => {
     await signUp(email, password);
     setShowAuthModal(false);
+  };
+
+  const handleSignOut = () => {
+    signOut();
+    setShowUserMenu(false);
   };
 
   // Show loading screen
@@ -124,19 +130,41 @@ function App() {
       case 'home':
         return (
           <div className="space-y-6">
-            <div className="text-center py-6">
-              <div className="flex items-center justify-between mb-6">
-                <div className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-full text-white font-bold shadow-lg shadow-indigo-500/25">
-                  <Zap size={20} />
-                  Tori
+            {/* Header with centered logo and user menu */}
+            <div className="relative text-center py-6">
+              {/* User menu button - positioned absolutely in top right */}
+              <div className="absolute top-0 right-0">
+                <div className="relative">
+                  <button
+                    onClick={() => setShowUserMenu(!showUserMenu)}
+                    className="w-10 h-10 bg-gradient-to-r from-indigo-100 to-purple-100 border-2 border-indigo-200 rounded-full flex items-center justify-center text-indigo-600 hover:bg-gradient-to-r hover:from-indigo-200 hover:to-purple-200 transition-all duration-200"
+                  >
+                    <User size={18} />
+                  </button>
+
+                  {/* Dropdown menu */}
+                  {showUserMenu && (
+                    <div className="absolute right-0 top-12 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 min-w-48 z-10">
+                      <div className="px-4 py-3 border-b border-gray-100">
+                        <p className="text-sm font-semibold text-gray-900">Signed in as</p>
+                        <p className="text-sm text-gray-600 truncate">{user.email}</p>
+                      </div>
+                      <button
+                        onClick={handleSignOut}
+                        className="w-full px-4 py-3 text-left text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2"
+                      >
+                        <LogOut size={16} />
+                        Sign out
+                      </button>
+                    </div>
+                  )}
                 </div>
-                <button
-                  onClick={signOut}
-                  className="text-gray-500 hover:text-gray-700 transition-colors p-2"
-                  title="Sign out"
-                >
-                  <LogOut size={20} />
-                </button>
+              </div>
+
+              {/* Centered logo and content */}
+              <div className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-full text-white font-bold mb-6 shadow-lg shadow-indigo-500/25">
+                <Zap size={20} />
+                Tori
               </div>
 
               <h1 className="text-3xl font-bold text-gray-900 mb-3 leading-tight">
@@ -154,6 +182,14 @@ function App() {
                 }
               </p>
             </div>
+
+            {/* Click outside to close user menu */}
+            {showUserMenu && (
+              <div 
+                className="fixed inset-0 z-5" 
+                onClick={() => setShowUserMenu(false)}
+              />
+            )}
 
             {items.length > 0 && <StatsOverview items={items} variant="compact" />}
 
