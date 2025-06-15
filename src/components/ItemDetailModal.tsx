@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, MapPin, Tag, DollarSign, Calendar, Edit3, Trash2, Share } from 'lucide-react';
+import { X, MapPin, Tag, DollarSign, Calendar, Edit3, Trash2 } from 'lucide-react';
 import { InventoryItem } from '../types/inventory';
 
 interface ItemDetailModalProps {
@@ -149,40 +149,21 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="grid grid-cols-3 gap-3 pt-2">
+          {/* Action Buttons - Now just Edit and Delete */}
+          <div className="grid grid-cols-2 gap-4 pt-2">
             <button
               onClick={handleEdit}
-              className="flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white py-3 rounded-2xl font-semibold hover:shadow-xl hover:shadow-indigo-500/25 transition-all duration-300 hover:scale-105"
+              className="flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white py-4 rounded-2xl font-semibold hover:shadow-xl hover:shadow-indigo-500/25 transition-all duration-300 hover:scale-105"
             >
-              <Edit3 size={16} />
+              <Edit3 size={18} />
               Edit
             </button>
             
             <button
-              onClick={() => {
-                // Share functionality - could copy to clipboard or open share dialog
-                if (navigator.share) {
-                  navigator.share({
-                    title: item.name,
-                    text: `Check out my ${item.name} in my home inventory!`,
-                  });
-                } else {
-                  // Fallback - copy to clipboard
-                  navigator.clipboard.writeText(`${item.name} - ${item.room} - $${item.estimatedValue || 0}`);
-                }
-              }}
-              className="flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white py-3 rounded-2xl font-semibold hover:shadow-xl hover:shadow-emerald-500/25 transition-all duration-300 hover:scale-105"
-            >
-              <Share size={16} />
-              Share
-            </button>
-            
-            <button
               onClick={handleDelete}
-              className="flex items-center justify-center gap-2 bg-gradient-to-r from-red-500 to-pink-600 text-white py-3 rounded-2xl font-semibold hover:shadow-xl hover:shadow-red-500/25 transition-all duration-300 hover:scale-105"
+              className="flex items-center justify-center gap-2 bg-gradient-to-r from-red-500 to-pink-600 text-white py-4 rounded-2xl font-semibold hover:shadow-xl hover:shadow-red-500/25 transition-all duration-300 hover:scale-105"
             >
-              <Trash2 size={16} />
+              <Trash2 size={18} />
               Delete
             </button>
           </div>
