@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Save, Camera } from 'lucide-react';
 import { Room, Category, InventoryItem } from '../types/inventory';
+import { env } from '../config/env';
 
 interface EditItemModalProps {
   item: InventoryItem | null;
@@ -83,7 +84,7 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
                 src={
                   item.imageUrl.startsWith('data:') ? item.imageUrl :
                     item.imageUrl.startsWith('http') ? item.imageUrl :
-                      `http://localhost:3000${item.imageUrl}`
+                      `${env.API_URL}${item.imageUrl}`
                 }
                 alt={item.name}
                 className="w-full h-full object-contain"

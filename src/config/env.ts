@@ -3,11 +3,11 @@ export const env = {
   // API Configuration
   OPENAI_API_KEY: import.meta.env.VITE_OPENAI_API_KEY,
   LANDING_AI_API_KEY: import.meta.env.VITE_LANDING_AI_API_KEY,
-  API_URL: import.meta.env.VITE_API_URL || 'http://localhost:3000',
-  
+  API_URL: import.meta.env.VITE_API_URL || 'https://tori-production.up.railway.app',
+
   // Debug mode
   DEBUG: import.meta.env.VITE_DEBUG === 'true',
-  
+
   // Environment info
   IS_DEVELOPMENT: import.meta.env.DEV,
   IS_PRODUCTION: import.meta.env.PROD,
@@ -19,15 +19,15 @@ export const validateEnv = () => {
     'VITE_OPENAI_API_KEY',
     'VITE_LANDING_AI_API_KEY',
   ];
-  
+
   const missing = required.filter(key => !import.meta.env[key]);
-  
+
   if (missing.length > 0) {
     console.warn('⚠️ Missing environment variables:', missing);
     console.warn('📝 Please check your .env file and add the missing variables');
     return false;
   }
-  
+
   console.log('✅ All required environment variables are set');
   return true;
 };

@@ -6,7 +6,9 @@
     "start": "node dist/app.js",
     "dev": "npm run build && nodemon dist/app.js",
     "build": "tsc",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "railway:build": "npm run build",
+    "railway:start": "npm run start"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.50.0",

@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Camera, X, Zap, AlertCircle, RefreshCw } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
+import { env } from '../config/env';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -52,7 +53,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
           }
 
           setProcessingStep('Analyzing with AI...');
-          const response = await fetch('http://localhost:3000/api/analyze-image', {
+          const response = await fetch(`${env.API_URL}/api/analyze-image`, {
             method: 'POST',
             body: formData,
           });

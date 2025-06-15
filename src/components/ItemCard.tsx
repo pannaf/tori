@@ -1,6 +1,7 @@
 import React from 'react';
 import { MapPin, Tag, DollarSign } from 'lucide-react';
 import { InventoryItem } from '../types/inventory';
+import { env } from '../config/env';
 
 interface ItemCardProps {
   item: InventoryItem;
@@ -52,7 +53,7 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, onEdit, onDelete, onCl
             src={
               item.imageUrl.startsWith('data:') ? item.imageUrl :
                 item.imageUrl.startsWith('http') ? item.imageUrl :
-                  `http://localhost:3000${item.imageUrl}`
+                  `${env.API_URL}${item.imageUrl}`
             }
             alt={item.name}
             className="w-full h-full object-contain"

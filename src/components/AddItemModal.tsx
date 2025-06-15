@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Camera, Plus, Check, Zap } from 'lucide-react';
 import { Room, Category, InventoryItem } from '../types/inventory';
 import { CameraCapture } from './CameraCapture';
+import { env } from '../config/env';
 
 interface AddItemModalProps {
   isOpen: boolean;
@@ -86,7 +87,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
       formData.append('image', blob);
       formData.append('object_name', objectName);
 
-      const response = await fetch('http://localhost:3000/api/detect-object', {
+      const response = await fetch(`${env.API_URL}/api/detect-object`, {
         method: 'POST',
         body: formData,
       });
@@ -215,7 +216,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
                 src={
                   formData.imageUrl.startsWith('data:') ? formData.imageUrl :
                     formData.imageUrl.startsWith('http') ? formData.imageUrl :
-                      `http://localhost:3000${formData.imageUrl}`
+                      `${env.API_URL}${formData.imageUrl}`
                 }
                 alt={`${formData.name || 'Captured item'}`}
                 className="w-full h-full object-contain"

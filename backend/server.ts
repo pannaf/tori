@@ -20,11 +20,15 @@ const app = express();
 const upload = multer({ dest: 'uploads/' });
 
 // Configure CORS
-app.use(cors({
-    origin: 'http://localhost:5173', // Vite's default port
+const corsOptions = {
+    origin: process.env.NODE_ENV === 'production'
+        ? ['https://your-frontend-domain.com', 'https://tori-production.up.railway.app'] // Replace your-frontend-domain.com with actual frontend domain
+        : ['http://localhost:5173', 'http://localhost:3000'], // Local development
     methods: ['GET', 'POST'],
-    allowedHeaders: ['Content-Type']
-}));
+    allowedHeaders: ['Content-Type'],
+    credentials: true
+};
+app.use(cors(corsOptions));
 
 app.use(express.json());
 

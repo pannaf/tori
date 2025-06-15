@@ -18,8 +18,22 @@ if (!fs.existsSync(uploadsDir)) {
 
 const app = express();
 
-app.use(cors());
+// Configure CORS - allow both local development and Railway deployment
+const corsOptions = {
+    origin: process.env.NODE_ENV === 'production'
+        ? ['https://your-frontend-domain.com', 'https://tori-production.up.railway.app'] // Replace your-frontend-domain.com with actual frontend domain
+        : ['http://localhost:5173', 'http://localhost:3000'], // Local development
+    credentials: true,
+    optionsSuccessStatus: 200
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
+
+// Health check endpoint for Railway
+app.get('/health', (req, res) => {
+    res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
+});
 
 // Register routes
 app.use('/api', debugSupabaseRouter);  // Debug route first

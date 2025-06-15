@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, MapPin, Tag, DollarSign, Calendar, Edit3, Trash2, AlertTriangle } from 'lucide-react';
 import { InventoryItem } from '../types/inventory';
+import { env } from '../config/env';
 
 interface ItemDetailModalProps {
   item: InventoryItem | null;
@@ -114,7 +115,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                 src={
                   item.imageUrl.startsWith('data:') ? item.imageUrl :
                     item.imageUrl.startsWith('http') ? item.imageUrl :
-                      `http://localhost:3000${item.imageUrl}`
+                      `${env.API_URL}${item.imageUrl}`
                 }
                 alt={item.name}
                 className="w-full h-full object-contain"
