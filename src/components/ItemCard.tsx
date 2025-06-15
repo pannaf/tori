@@ -20,11 +20,11 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, onEdit, onDelete, onCl
   // Smart number formatting function
   const formatValue = (value: number): string => {
     if (value >= 1000000) {
-      return `$${(value / 1000000).toFixed(value >= 10000000 ? 0 : 1)}m`;
+      return `${(value / 1000000).toFixed(value >= 10000000 ? 0 : 1)}m`;
     } else if (value >= 1000) {
-      return `$${(value / 1000).toFixed(value >= 10000 ? 0 : 1)}k`;
+      return `${(value / 1000).toFixed(value >= 10000 ? 0 : 1)}k`;
     } else {
-      return `$${value.toFixed(0)}`;
+      return `${value.toFixed(0)}`;
     }
   };
 
