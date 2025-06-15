@@ -11,10 +11,10 @@ interface ItemCardProps {
 
 export const ItemCard: React.FC<ItemCardProps> = ({ item, onEdit, onDelete, onClick }) => {
   const conditionColors = {
-    excellent: 'bg-emerald-100 text-emerald-800',
-    good: 'bg-blue-100 text-blue-800',
-    fair: 'bg-amber-100 text-amber-800',
-    poor: 'bg-red-100 text-red-800',
+    excellent: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+    good: 'bg-blue-100 text-blue-800 border-blue-200',
+    fair: 'bg-amber-100 text-amber-800 border-amber-200',
+    poor: 'bg-red-100 text-red-800 border-red-200',
   };
 
   const handleClick = () => {
@@ -29,25 +29,26 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, onEdit, onDelete, onCl
       onClick={handleClick}
     >
       {item.imageUrl && (
-        <div className="aspect-square bg-gray-100">
+        <div className="relative aspect-square bg-gray-100">
           <img
             src={item.imageUrl.startsWith('data:') ? item.imageUrl : `http://localhost:3000${item.imageUrl}`}
             alt={item.name}
             className="w-full h-full object-contain"
           />
+          {/* Condition badge in upper left corner */}
+          <div className={`absolute top-2 left-2 px-2 py-1 rounded-lg text-xs font-semibold border ${conditionColors[item.condition]}`}>
+            {item.condition.charAt(0).toUpperCase() + item.condition.slice(1)}
+          </div>
         </div>
       )}
 
       <div className="p-4">
-        <div className="flex items-start justify-between mb-2">
+        <div className="mb-3">
           <h3 className="font-semibold text-gray-900 text-lg leading-tight">{item.name}</h3>
         </div>
 
-        {item.description && (
-          <p className="text-gray-600 text-sm mb-3 line-clamp-2">{item.description}</p>
-        )}
-
-        <div className="flex items-center gap-2 mb-3">
+        {/* Location and Category stacked vertically */}
+        <div className="space-y-2 mb-3">
           <div className="flex items-center gap-1 text-sm text-gray-500">
             <MapPin size={14} />
             <span>{item.room}</span>
@@ -58,11 +59,8 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, onEdit, onDelete, onCl
           </div>
         </div>
 
+        {/* Price and Tags */}
         <div className="flex items-center justify-between">
-          <span className={`px-2 py-1 rounded-full text-xs font-medium ${conditionColors[item.condition]}`}>
-            {item.condition.charAt(0).toUpperCase() + item.condition.slice(1)}
-          </span>
-
           {item.estimatedValue && (
             <div className="flex items-center gap-1 text-sm font-semibold text-gray-900">
               <DollarSign size={14} />
