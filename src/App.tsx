@@ -35,7 +35,7 @@ function App() {
     switch (activeTab) {
       case 'home':
         return (
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div className="text-center py-6">
               <div className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-full text-white font-bold mb-6 shadow-lg shadow-indigo-500/25">
                 <Zap size={20} />
