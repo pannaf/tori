@@ -15,13 +15,14 @@ import { InventoryItem } from './types/inventory';
 type TabType = 'home' | 'search' | 'stats' | 'chat';
 
 function App() {
-  const { user, loading, signIn, signUp, signOut } = useAuth();
+  const { user, loading: authLoading, signIn, signUp, signOut } = useAuth();
   const [showAuthModal, setShowAuthModal] = useState(false);
 
   const {
     items,
     rooms,
     categories,
+    loading: inventoryLoading,
     addItem,
     updateItem,
     deleteItem,
@@ -75,7 +76,7 @@ function App() {
   };
 
   // Show loading screen
-  if (loading) {
+  if (authLoading || inventoryLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50 flex items-center justify-center">
         <div className="text-center">
