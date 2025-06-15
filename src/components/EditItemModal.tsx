@@ -80,7 +80,11 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
           {item.imageUrl && (
             <div className="relative aspect-square bg-gray-100 rounded-2xl overflow-hidden">
               <img
-                src={item.imageUrl.startsWith('data:') ? item.imageUrl : `http://localhost:3000${item.imageUrl}`}
+                src={
+                  item.imageUrl.startsWith('data:') ? item.imageUrl :
+                    item.imageUrl.startsWith('http') ? item.imageUrl :
+                      `http://localhost:3000${item.imageUrl}`
+                }
                 alt={item.name}
                 className="w-full h-full object-contain"
               />

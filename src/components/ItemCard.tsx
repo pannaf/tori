@@ -42,14 +42,18 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, onEdit, onDelete, onCl
   };
 
   return (
-    <div 
+    <div
       className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300 hover:scale-[1.02] cursor-pointer"
       onClick={handleClick}
     >
       {item.imageUrl && (
         <div className="relative aspect-square bg-gray-100">
           <img
-            src={item.imageUrl.startsWith('data:') ? item.imageUrl : `http://localhost:3000${item.imageUrl}`}
+            src={
+              item.imageUrl.startsWith('data:') ? item.imageUrl :
+                item.imageUrl.startsWith('http') ? item.imageUrl :
+                  `http://localhost:3000${item.imageUrl}`
+            }
             alt={item.name}
             className="w-full h-full object-contain"
           />
@@ -81,7 +85,7 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, onEdit, onDelete, onCl
               <span>{formatValue(item.estimatedValue)}</span>
             </div>
           )}
-          
+
           {/* Condition pill badge */}
           <div className={`px-3 py-1 rounded-full text-xs font-semibold border ${conditionColors[item.condition]}`}>
             {conditionLabels[item.condition]}

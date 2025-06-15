@@ -212,7 +212,11 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
           {formData.imageUrl && (
             <div className="relative aspect-square bg-gray-100 rounded-2xl overflow-hidden">
               <img
-                src={formData.imageUrl.startsWith('data:') ? formData.imageUrl : `http://localhost:3000${formData.imageUrl}`}
+                src={
+                  formData.imageUrl.startsWith('data:') ? formData.imageUrl :
+                    formData.imageUrl.startsWith('http') ? formData.imageUrl :
+                      `http://localhost:3000${formData.imageUrl}`
+                }
                 alt={`${formData.name || 'Captured item'}`}
                 className="w-full h-full object-contain"
               />

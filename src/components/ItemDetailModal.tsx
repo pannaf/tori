@@ -111,13 +111,17 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
           {item.imageUrl && (
             <div className="aspect-square bg-gray-100 rounded-t-3xl overflow-hidden">
               <img
-                src={item.imageUrl.startsWith('data:') ? item.imageUrl : `http://localhost:3000${item.imageUrl}`}
+                src={
+                  item.imageUrl.startsWith('data:') ? item.imageUrl :
+                    item.imageUrl.startsWith('http') ? item.imageUrl :
+                      `http://localhost:3000${item.imageUrl}`
+                }
                 alt={item.name}
                 className="w-full h-full object-contain"
               />
             </div>
           )}
-          
+
           {/* Close button overlay */}
           <button
             onClick={onClose}
@@ -152,7 +156,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
               <p className="text-sm font-semibold text-indigo-700">Location</p>
               <p className="text-indigo-900 font-bold">{item.room}</p>
             </div>
-            
+
             <div className="bg-gradient-to-r from-violet-50 to-purple-50 border border-violet-200 rounded-2xl p-4 text-center">
               <Tag className="mx-auto mb-2 text-violet-600" size={20} />
               <p className="text-sm font-semibold text-violet-700">Category</p>
@@ -205,7 +209,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
               <Edit3 size={18} />
               Edit
             </button>
-            
+
             <button
               onClick={handleDeleteClick}
               className="flex items-center justify-center gap-2 bg-gradient-to-r from-red-500 to-pink-600 text-white py-4 rounded-2xl font-semibold hover:shadow-xl hover:shadow-red-500/25 transition-all duration-300 hover:scale-105"
