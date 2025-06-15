@@ -26,6 +26,13 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
     poor: 'bg-red-100 text-red-800 border-red-200',
   };
 
+  const conditionLabels = {
+    excellent: 'Great',
+    good: 'Good',
+    fair: 'Fair',
+    poor: 'Poor',
+  };
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
@@ -74,7 +81,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
 
           {/* Pill-shaped condition badge overlay */}
           <div className={`absolute top-4 left-4 px-4 py-2 rounded-full text-sm font-semibold border-2 border-white ${conditionColors[item.condition]} backdrop-blur-sm`}>
-            {item.condition.charAt(0).toUpperCase() + item.condition.slice(1)}
+            {conditionLabels[item.condition]}
           </div>
         </div>
 

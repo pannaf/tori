@@ -28,6 +28,13 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, onEdit, onDelete, onCl
     }
   };
 
+  const conditionLabels = {
+    excellent: 'Great',
+    good: 'Good',
+    fair: 'Fair',
+    poor: 'Poor',
+  };
+
   const handleClick = () => {
     if (onClick) {
       onClick(item);
@@ -77,7 +84,7 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, onEdit, onDelete, onCl
           
           {/* Condition pill badge */}
           <div className={`px-3 py-1 rounded-full text-xs font-semibold border ${conditionColors[item.condition]}`}>
-            {item.condition.charAt(0).toUpperCase() + item.condition.slice(1)}
+            {conditionLabels[item.condition]}
           </div>
         </div>
       </div>
