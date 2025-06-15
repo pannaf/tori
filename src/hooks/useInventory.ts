@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { InventoryItem, Room, Category } from '../types/inventory';
+import { env } from '../config/env';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -177,44 +178,57 @@ export const useInventory = () => {
   };
 
   const updateItem = async (id: string, updates: Partial<InventoryItem>) => {
+    // Update local state immediately for responsive UI
     const updatedItems = items.map(item =>
       item.id === id ? { ...item, ...updates } : item
     );
     await saveItems(updatedItems);
 
-    // Try to save to Supabase using upsert for updates
-    const updatedItem = updatedItems.find(item => item.id === id);
-    if (updatedItem) {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
+    // Save to database via API
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
 
-        if (user) {
-          const supabaseItem = {
-            id: updatedItem.id, // Keep existing UUID for updates
-            name: updatedItem.name,
-            category: updatedItem.category,
-            room: updatedItem.room,
-            description: updatedItem.description,
-            estimated_value: updatedItem.estimatedValue,
-            tags: updatedItem.tags,
-            condition: updatedItem.condition,
-            crop_image_data: updatedItem.imageUrl,
-            user_id: user.id,
-            ai_detected: false,
-            detection_confidence: null,
-          };
+      if (user && session) {
+        // Transform the updates to match the database schema
+        const databaseUpdates = {
+          name: updates.name,
+          category: updates.category,
+          room: updates.room,
+          description: updates.description,
+          estimated_value: updates.estimatedValue,
+          tags: updates.tags,
+          condition: updates.condition,
+          // Don't update image data or other fields during regular edits
+        };
 
-          const { error } = await supabase
-            .from('inventory_items')
-            .upsert(supabaseItem);
+        // Only include fields that are actually being updated
+        const cleanUpdates = Object.fromEntries(
+          Object.entries(databaseUpdates).filter(([_, value]) => value !== undefined)
+        );
 
-          if (error) {
-            console.error('Error updating in Supabase:', error);
-          }
+        const response = await fetch(`${env.API_URL}/api/inventory-items/${id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify(cleanUpdates),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(`Failed to update item: ${errorData.error || response.statusText}`);
         }
-      } catch (error) {
-        console.error('Error in updateItem Supabase operation:', error);
+
+        console.log('Successfully updated item in database:', id);
+      } else {
+        console.warn('User not authenticated, skipping database update');
       }
+    } catch (error) {
+      console.error('Error updating item in database:', error);
+      // The local state is already updated, so the UI shows the changes
+      // We could show a warning to the user here that the change wasn't saved
     }
   };
 
