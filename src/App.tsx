@@ -383,24 +383,44 @@ function App() {
           </div>
         </div>
 
-        {/* Floating Add Button - Only show on home and search pages */}
-        {(activeTab === 'home' || activeTab === 'search') && (
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="fixed bottom-28 right-8 w-14 h-14 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-full shadow-2xl shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:scale-110 transition-all duration-300 flex items-center justify-center z-30"
-          >
-            <Plus size={24} />
-          </button>
-        )}
-
-        {/* Clean Bottom Navigation */}
+        {/* Unified Floating Pill Navigation */}
         <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-40">
           <div className="bg-white/95 backdrop-blur-xl rounded-full shadow-2xl shadow-gray-900/10 border border-gray-200/50 p-2">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center">
+              {/* Left Navigation Items */}
               {[
                 { key: 'home', icon: Home, label: 'Home' },
-                { key: 'search', icon: Search, label: 'Search' },
                 { key: 'stats', icon: BarChart3, label: 'Stats' },
+              ].map(({ key, icon: Icon, label }) => (
+                <button
+                  key={key}
+                  onClick={() => setActiveTab(key as TabType)}
+                  className={`relative flex items-center gap-2 px-4 py-3 rounded-full transition-all duration-300 ${activeTab === key
+                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/25'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                    }`}
+                >
+                  <Icon size={20} />
+                  {activeTab === key && (
+                    <span className="text-sm font-semibold whitespace-nowrap">
+                      {label}
+                    </span>
+                  )}
+                </button>
+              ))}
+
+              {/* Center Add Button - Now Green! */}
+              <button
+                onClick={() => setShowAddModal(true)}
+                className="flex items-center justify-center w-14 h-14 mx-2 border-2 border-emerald-600 text-emerald-600 rounded-full hover:bg-emerald-600 hover:text-white hover:shadow-xl hover:shadow-emerald-500/25 hover:scale-110 transition-all duration-300"
+                title="Add new item"
+              >
+                <Plus size={24} />
+              </button>
+
+              {/* Right Navigation Items */}
+              {[
+                { key: 'search', icon: Search, label: 'Search' },
                 { key: 'chat', icon: MessageSquare, label: 'Chat' },
               ].map(({ key, icon: Icon, label }) => (
                 <button
