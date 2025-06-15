@@ -213,14 +213,24 @@ function App() {
               <div>
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-xl font-bold text-gray-900">Recent Additions</h2>
-                  {recentItems.length > 0 && (
+                  <div className="flex items-center gap-3">
+                    {recentItems.length > 0 && (
+                      <button
+                        onClick={() => setActiveTab('search')}
+                        className="text-indigo-600 hover:text-indigo-800 transition-colors font-semibold"
+                      >
+                        View all →
+                      </button>
+                    )}
+                    {/* Contextual Add Button */}
                     <button
-                      onClick={() => setActiveTab('search')}
-                      className="text-indigo-600 hover:text-indigo-800 transition-colors font-semibold"
+                      onClick={() => setShowAddModal(true)}
+                      className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-4 py-2 rounded-full font-semibold hover:shadow-lg hover:shadow-emerald-500/25 transition-all duration-300 hover:scale-105 flex items-center gap-2"
                     >
-                      View all →
+                      <Plus size={16} />
+                      Add Item
                     </button>
-                  )}
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -242,9 +252,19 @@ function App() {
       case 'search':
         return (
           <div className="space-y-6">
-            <div className="text-center py-6">
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">Find Your Stuff</h1>
-              <p className="text-gray-600">Search through your organized home inventory</p>
+            <div className="flex items-center justify-between py-6">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900 mb-2">Find Your Stuff</h1>
+                <p className="text-gray-600">Search through your organized home inventory</p>
+              </div>
+              {/* Contextual Add Button */}
+              <button
+                onClick={() => setShowAddModal(true)}
+                className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-4 py-2 rounded-full font-semibold hover:shadow-lg hover:shadow-emerald-500/25 transition-all duration-300 hover:scale-105 flex items-center gap-2"
+              >
+                <Plus size={16} />
+                Add Item
+              </button>
             </div>
 
             <SearchAndFilters
@@ -383,44 +403,14 @@ function App() {
           </div>
         </div>
 
-        {/* Unified Floating Pill Navigation */}
+        {/* Simplified Bottom Navigation - No Add Button */}
         <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-40">
           <div className="bg-white/95 backdrop-blur-xl rounded-full shadow-2xl shadow-gray-900/10 border border-gray-200/50 p-2">
-            <div className="flex items-center">
-              {/* Left Navigation Items */}
+            <div className="flex items-center gap-2">
               {[
                 { key: 'home', icon: Home, label: 'Home' },
-                { key: 'stats', icon: BarChart3, label: 'Stats' },
-              ].map(({ key, icon: Icon, label }) => (
-                <button
-                  key={key}
-                  onClick={() => setActiveTab(key as TabType)}
-                  className={`relative flex items-center gap-2 px-4 py-3 rounded-full transition-all duration-300 ${activeTab === key
-                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/25'
-                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-                    }`}
-                >
-                  <Icon size={20} />
-                  {activeTab === key && (
-                    <span className="text-sm font-semibold whitespace-nowrap">
-                      {label}
-                    </span>
-                  )}
-                </button>
-              ))}
-
-              {/* Center Add Button - Now Green! */}
-              <button
-                onClick={() => setShowAddModal(true)}
-                className="flex items-center justify-center w-14 h-14 mx-2 border-2 border-emerald-600 text-emerald-600 rounded-full hover:bg-emerald-600 hover:text-white hover:shadow-xl hover:shadow-emerald-500/25 hover:scale-110 transition-all duration-300"
-                title="Add new item"
-              >
-                <Plus size={24} />
-              </button>
-
-              {/* Right Navigation Items */}
-              {[
                 { key: 'search', icon: Search, label: 'Search' },
+                { key: 'stats', icon: BarChart3, label: 'Stats' },
                 { key: 'chat', icon: MessageSquare, label: 'Chat' },
               ].map(({ key, icon: Icon, label }) => (
                 <button
