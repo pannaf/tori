@@ -23,28 +23,24 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({ items, variant = '
       value: totalItems.toString(),
       icon: Package,
       gradient: 'from-indigo-500 to-purple-600',
-      change: `+${recentItems} this week`,
     },
     {
       label: 'Rooms',
       value: totalRooms.toString(),
       icon: Home,
       gradient: 'from-emerald-500 to-teal-600',
-      change: 'Across home',
     },
     {
       label: 'Total Value',
       value: `$${totalValue.toFixed(0)}`,
       icon: DollarSign,
       gradient: 'from-purple-500 to-pink-600',
-      change: 'Estimated',
     },
     {
-      label: 'Growth',
+      label: 'New Items',
       value: recentItems > 0 ? `+${recentItems}` : '0',
       icon: TrendingUp,
       gradient: 'from-orange-500 to-red-600',
-      change: 'This week',
     },
   ];
 
@@ -52,7 +48,7 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({ items, variant = '
     return (
       <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
         <div className="grid grid-cols-4 gap-4">
-          {stats.map(({ label, value, icon: Icon, gradient, change }) => (
+          {stats.map(({ label, value, icon: Icon, gradient }) => (
             <div key={label} className="text-center">
               <div className={`bg-gradient-to-br ${gradient} w-8 h-8 rounded-xl flex items-center justify-center mx-auto mb-2 shadow-sm`}>
                 <Icon size={14} className="text-white" />
@@ -60,7 +56,6 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({ items, variant = '
               <div className="space-y-0.5">
                 <p className="text-lg font-bold text-gray-900">{value}</p>
                 <p className="text-xs font-medium text-gray-700">{label}</p>
-                <p className="text-xs text-gray-500">{change}</p>
               </div>
             </div>
           ))}
@@ -84,7 +79,6 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({ items, variant = '
           <div className="space-y-1">
             <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
             <p className="text-sm font-semibold text-gray-900">{stat.label}</p>
-            <p className="text-xs text-gray-500">{stat.change}</p>
           </div>
         </div>
       ))}
