@@ -2,16 +2,22 @@ import { Router } from 'express';
 import multer from 'multer';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as os from 'os';
 import OpenAI from 'openai';
 import { detectObject, cropImage } from './objectDetector.js';
+import { uploadImageFileToSupabase } from './storageUtils.js';
+import { createAnalysisSession, createInventoryItems, getInventoryItems, getAnalysisSessions, getInventoryItemsByCategory, getInventoryItemsByRoom, updateInventoryItem, deleteInventoryItem } from './databaseUtils.js';
 
 const router = Router();
 const upload = multer({ dest: 'uploads/' });
 
 interface ObjectWithCost {
     name: string;
+    category: string;
+    description: string;
     estimated_cost_usd: number;
     imageUrl?: string;  // URL to the cropped image
+    confidence?: number;
 }
 
 interface AnalysisResult {
@@ -20,12 +26,7 @@ interface AnalysisResult {
     total_estimated_value_usd: number;
 }
 
-// Ensure the crops directory exists
-const cropsDir = path.join(process.cwd(), 'public/crops');
-if (!fs.existsSync(cropsDir)) {
-    fs.mkdirSync(cropsDir, { recursive: true });
-}
-
+// No auth middleware needed - using service role for storage
 router.post('/analyze-image', upload.single('image'), async (req, res) => {
     try {
         if (!req.file) {
@@ -45,7 +46,7 @@ router.post('/analyze-image', upload.single('image'), async (req, res) => {
         const base64Image = imageBuffer.toString('base64');
 
         const response = await openai.chat.completions.create({
-            model: "gpt-4.1-mini",
+            model: "gpt-4o-mini",
             messages: [
                 {
                     role: "user",
@@ -86,13 +87,23 @@ router.post('/analyze-image', upload.single('image'), async (req, res) => {
                         // Use the first detection (highest confidence)
                         const detection = detections[0];
                         const cropFileName = `${obj.name.replace(/\s+/g, '_')}_${Date.now()}.jpg`;
-                        const cropPath = path.join(cropsDir, cropFileName);
 
-                        await cropImage(req.file!.path, detection.boundingBox, cropPath);
+                        // Create temporary file for the crop
+                        const tempCropPath = path.join(os.tmpdir(), cropFileName);
+
+                        // Crop the image to temporary file
+                        await cropImage(req.file!.path, detection.boundingBox, tempCropPath);
+
+                        // Upload the cropped image to Supabase Storage (using service role)
+                        const imageUrl = await uploadImageFileToSupabase(tempCropPath, cropFileName);
+
+                        // Clean up temporary file
+                        fs.unlinkSync(tempCropPath);
 
                         return {
                             ...obj,
-                            imageUrl: `/crops/${cropFileName}` // URL path to the cropped image
+                            imageUrl: imageUrl, // URL to the image in Supabase Storage
+                            confidence: detection.confidence
                         };
                     }
                 } catch (error) {
@@ -101,10 +112,36 @@ router.post('/analyze-image', upload.single('image'), async (req, res) => {
                 return obj;
             }));
 
-            // Update the result with the processed objects
+            // Create analysis session in database
+            const session = await createAnalysisSession({
+                total_estimated_value_usd: result.total_estimated_value_usd,
+                room: result.room
+            });
+
+            // Prepare inventory items for database
+            const inventoryItems = objectsWithImages.map(obj => ({
+                name: obj.name,
+                category: obj.category,
+                description: obj.description,
+                estimated_value: obj.estimated_cost_usd,
+                room: result.room,
+                condition: 'Unknown', // Default condition, can be updated later
+                tags: [obj.category.toLowerCase(), result.room.toLowerCase()],
+                crop_image_data: obj.imageUrl, // Store the Supabase URL
+                ai_detected: true,
+                detection_confidence: obj.confidence || 0.8, // Use detection confidence if available
+                user_id: req.body.userId || null // Optional user ID from request
+            }));
+
+            // Save inventory items to database
+            const savedItems = await createInventoryItems(inventoryItems, session.id);
+
+            // Update the result with the processed objects and session info
             const finalResult = {
                 ...result,
-                objects: objectsWithImages
+                objects: objectsWithImages,
+                sessionId: session.id,
+                savedItems: savedItems.length
             };
 
             // Clean up the uploaded file
@@ -122,6 +159,87 @@ router.post('/analyze-image', upload.single('image'), async (req, res) => {
             fs.unlinkSync(req.file.path);
         }
         res.status(500).json({ error: 'Failed to analyze image' });
+    }
+});
+
+// Get all inventory items
+router.get('/inventory-items', async (req, res) => {
+    try {
+        const sessionId = req.query.sessionId as string;
+        const userId = req.query.userId as string;
+        const items = await getInventoryItems(sessionId, userId);
+        res.json(items);
+    } catch (error) {
+        console.error('Error fetching inventory items:', error);
+        res.status(500).json({ error: 'Failed to fetch inventory items' });
+    }
+});
+
+// Get analysis sessions
+router.get('/analysis-sessions', async (req, res) => {
+    try {
+        const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
+        const userId = req.query.userId as string;
+        const sessions = await getAnalysisSessions(limit, userId);
+        res.json(sessions);
+    } catch (error) {
+        console.error('Error fetching analysis sessions:', error);
+        res.status(500).json({ error: 'Failed to fetch analysis sessions' });
+    }
+});
+
+// Get inventory items by category
+router.get('/inventory-items/category/:category', async (req, res) => {
+    try {
+        const { category } = req.params;
+        const userId = req.query.userId as string;
+        const items = await getInventoryItemsByCategory(category, userId);
+        res.json(items);
+    } catch (error) {
+        console.error('Error fetching inventory items by category:', error);
+        res.status(500).json({ error: 'Failed to fetch inventory items by category' });
+    }
+});
+
+// Get inventory items by room
+router.get('/inventory-items/room/:room', async (req, res) => {
+    try {
+        const { room } = req.params;
+        const userId = req.query.userId as string;
+        const items = await getInventoryItemsByRoom(room, userId);
+        res.json(items);
+    } catch (error) {
+        console.error('Error fetching inventory items by room:', error);
+        res.status(500).json({ error: 'Failed to fetch inventory items by room' });
+    }
+});
+
+// Update an inventory item
+router.put('/inventory-items/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const updates = req.body;
+        const updatedItem = await updateInventoryItem(id, updates);
+        res.json(updatedItem);
+    } catch (error) {
+        console.error('Error updating inventory item:', error);
+        res.status(500).json({ error: 'Failed to update inventory item' });
+    }
+});
+
+// Delete an inventory item
+router.delete('/inventory-items/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const success = await deleteInventoryItem(id);
+        if (success) {
+            res.json({ message: 'Item deleted successfully' });
+        } else {
+            res.status(404).json({ error: 'Item not found or could not be deleted' });
+        }
+    } catch (error) {
+        console.error('Error deleting inventory item:', error);
+        res.status(500).json({ error: 'Failed to delete inventory item' });
     }
 });
 
