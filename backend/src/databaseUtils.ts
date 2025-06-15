@@ -1,47 +1,15 @@
-import { supabase, InventoryItem, AnalysisSession } from './supabase.js';
-
-/**
- * Create a new analysis session
- * @param sessionData - Analysis session data
- * @returns Promise with the created session or error
- */
-export async function createAnalysisSession(sessionData: Omit<AnalysisSession, 'id' | 'created_at' | 'updated_at'>): Promise<AnalysisSession> {
-    try {
-        const { data, error } = await supabase
-            .from('analysis_sessions')
-            .insert([sessionData])
-            .select()
-            .single();
-
-        if (error) {
-            console.error('Database error creating analysis session:', error);
-            throw new Error(`Failed to create analysis session: ${error.message}`);
-        }
-
-        console.log('Successfully created analysis session:', data.id);
-        return data;
-    } catch (error) {
-        console.error('Error creating analysis session:', error);
-        throw error;
-    }
-}
+import { supabase, InventoryItem } from './supabase.js';
 
 /**
  * Create inventory items
  * @param items - Array of inventory items
- * @param sessionId - ID of the analysis session
  * @returns Promise with the created items or error
  */
-export async function createInventoryItems(items: Omit<InventoryItem, 'id' | 'created_at' | 'updated_at'>[], sessionId?: string): Promise<InventoryItem[]> {
+export async function createInventoryItems(items: Omit<InventoryItem, 'id' | 'created_at' | 'updated_at'>[]): Promise<InventoryItem[]> {
     try {
-        // Add session_id to each item if provided
-        const itemsWithSession = sessionId
-            ? items.map(item => ({ ...item, session_id: sessionId }))
-            : items;
-
         const { data, error } = await supabase
             .from('inventory_items')
-            .insert(itemsWithSession)
+            .insert(items)
             .select();
 
         if (error) {
@@ -59,20 +27,15 @@ export async function createInventoryItems(items: Omit<InventoryItem, 'id' | 'cr
 
 /**
  * Get all inventory items
- * @param sessionId - Optional session ID to filter by
  * @param userId - Optional user ID to filter by
  * @returns Promise with inventory items or error
  */
-export async function getInventoryItems(sessionId?: string, userId?: string): Promise<InventoryItem[]> {
+export async function getInventoryItems(userId?: string): Promise<InventoryItem[]> {
     try {
         let query = supabase
             .from('inventory_items')
             .select('*')
             .order('created_at', { ascending: false });
-
-        if (sessionId) {
-            query = query.eq('session_id', sessionId);
-        }
 
         if (userId) {
             query = query.eq('user_id', userId);
@@ -88,38 +51,6 @@ export async function getInventoryItems(sessionId?: string, userId?: string): Pr
         return data || [];
     } catch (error) {
         console.error('Error fetching inventory items:', error);
-        throw error;
-    }
-}
-
-/**
- * Get analysis sessions
- * @param limit - Number of sessions to fetch (default: 10)
- * @param userId - Optional user ID to filter by
- * @returns Promise with analysis sessions or error
- */
-export async function getAnalysisSessions(limit: number = 10, userId?: string): Promise<AnalysisSession[]> {
-    try {
-        let query = supabase
-            .from('analysis_sessions')
-            .select('*')
-            .order('created_at', { ascending: false })
-            .limit(limit);
-
-        if (userId) {
-            query = query.eq('user_id', userId);
-        }
-
-        const { data, error } = await query;
-
-        if (error) {
-            console.error('Database error fetching analysis sessions:', error);
-            throw new Error(`Failed to fetch analysis sessions: ${error.message}`);
-        }
-
-        return data || [];
-    } catch (error) {
-        console.error('Error fetching analysis sessions:', error);
         throw error;
     }
 }

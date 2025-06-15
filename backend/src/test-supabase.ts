@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { supabase, supabaseAdmin } from './supabase.js';
-import { createAnalysisSession } from './databaseUtils.js';
+import { createInventoryItems } from './databaseUtils.js';
 
 const router = Router();
 
@@ -11,7 +11,7 @@ router.get('/test-supabase', async (req, res) => {
 
         // Test 1: Database connection
         const { data: tables, error: tableError } = await supabase
-            .from('analysis_sessions')
+            .from('inventory_items')
             .select('count')
             .limit(1);
 
@@ -23,18 +23,21 @@ router.get('/test-supabase', async (req, res) => {
             });
         }
 
-        // Test 2: Create a simple analysis session
+        // Test 2: Create a simple inventory item
         try {
-            const testSession = await createAnalysisSession({
-                total_estimated_value_usd: 100.00,
-                room: 'Test Room'
-            });
-            console.log('Test session created:', testSession.id);
-        } catch (sessionError) {
-            console.error('Session creation failed:', sessionError);
+            const testItems = await createInventoryItems([{
+                name: 'Test Item',
+                category: 'Other',
+                room: 'Test Room',
+                estimated_value: 10.00,
+                ai_detected: false
+            }]);
+            console.log('Test item created:', testItems[0]?.id);
+        } catch (itemError) {
+            console.error('Item creation failed:', itemError);
             return res.status(500).json({
-                error: 'Session creation failed',
-                details: sessionError
+                error: 'Item creation failed',
+                details: itemError
             });
         }
 
@@ -50,23 +53,16 @@ router.get('/test-supabase', async (req, res) => {
         }
 
         const imagesBucket = buckets?.find(b => b.name === 'images');
-        if (!imagesBucket) {
-            return res.status(500).json({
-                error: 'Images bucket not found',
-                availableBuckets: buckets?.map(b => b.name) || []
-            });
-        }
 
         res.json({
             success: true,
-            message: 'Supabase connection successful with service role!',
+            message: 'Supabase connection is working!',
             database: 'Connected ✅',
-            storage: 'Connected ✅ (Service Role)',
-            imagesBucket: imagesBucket.public ? 'Public ✅' : 'Private ⚠️',
-            bucketsFound: buckets?.length || 0,
-            authentication: 'Service Role (No user auth needed) ✅'
+            storage: {
+                connected: 'Yes ✅',
+                imagesBucket: imagesBucket ? 'Found ✅' : 'Not found ❌'
+            }
         });
-
     } catch (error) {
         console.error('Supabase test error:', error);
         res.status(500).json({

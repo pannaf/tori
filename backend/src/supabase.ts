@@ -26,7 +26,6 @@ export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey || sup
 // Database types for TypeScript
 export interface InventoryItem {
     id?: string;
-    session_id?: string;
     name: string;
     category: string;
     room: string;
@@ -43,11 +42,4 @@ export interface InventoryItem {
     updated_at?: string;
 }
 
-export interface AnalysisSession {
-    id?: string;
-    total_estimated_value_usd: number;
-    room: string;
-    user_id?: string;
-    created_at?: string;
-    updated_at?: string;
-} 
+// AnalysisSession interface removed - no longer using sessions table 

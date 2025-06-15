@@ -7,7 +7,7 @@ import OpenAI from 'openai';
 import { createClient } from '@supabase/supabase-js';
 import { detectObject, cropImage } from './objectDetector.js';
 import { uploadImageFileToSupabase } from './storageUtils.js';
-import { createAnalysisSession, createInventoryItems, getInventoryItems, getAnalysisSessions, getInventoryItemsByCategory, getInventoryItemsByRoom, updateInventoryItem, deleteInventoryItem } from './databaseUtils.js';
+import { getInventoryItems, getInventoryItemsByCategory, getInventoryItemsByRoom, updateInventoryItem, deleteInventoryItem } from './databaseUtils.js';
 
 const router = Router();
 const upload = multer({ dest: 'uploads/' });
@@ -30,38 +30,6 @@ function createAuthenticatedSupabaseClient(authToken: string) {
     });
 
     return supabase;
-}
-
-// Authenticated database operations
-async function createAnalysisSessionAuth(supabase: any, sessionData: any) {
-    const { data, error } = await supabase
-        .from('analysis_sessions')
-        .insert([sessionData])
-        .select()
-        .single();
-
-    if (error) {
-        console.error('Database error creating analysis session:', error);
-        throw new Error(`Failed to create analysis session: ${error.message}`);
-    }
-
-    return data;
-}
-
-async function createInventoryItemsAuth(supabase: any, items: any[], sessionId: string) {
-    const itemsWithSession = items.map(item => ({ ...item, session_id: sessionId }));
-
-    const { data, error } = await supabase
-        .from('inventory_items')
-        .insert(itemsWithSession)
-        .select();
-
-    if (error) {
-        console.error('Database error creating inventory items:', error);
-        throw new Error(`Failed to create inventory items: ${error.message}`);
-    }
-
-    return data;
 }
 
 interface ObjectWithCost {
@@ -196,26 +164,12 @@ router.post('/analyze-image', upload.single('image'), async (req, res) => {
 // Get all inventory items
 router.get('/inventory-items', async (req, res) => {
     try {
-        const sessionId = req.query.sessionId as string;
         const userId = req.query.userId as string;
-        const items = await getInventoryItems(sessionId, userId);
+        const items = await getInventoryItems(userId);
         res.json(items);
     } catch (error) {
         console.error('Error fetching inventory items:', error);
         res.status(500).json({ error: 'Failed to fetch inventory items' });
-    }
-});
-
-// Get analysis sessions
-router.get('/analysis-sessions', async (req, res) => {
-    try {
-        const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
-        const userId = req.query.userId as string;
-        const sessions = await getAnalysisSessions(limit, userId);
-        res.json(sessions);
-    } catch (error) {
-        console.error('Error fetching analysis sessions:', error);
-        res.status(500).json({ error: 'Failed to fetch analysis sessions' });
     }
 });
 
