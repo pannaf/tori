@@ -35,10 +35,6 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, onEdit, onDelete, onCl
             alt={item.name}
             className="w-full h-full object-contain"
           />
-          {/* Pill-shaped condition badge with white border */}
-          <div className={`absolute top-2 left-2 px-3 py-1 rounded-full text-xs font-semibold border-2 border-white ${conditionColors[item.condition]}`}>
-            {item.condition.charAt(0).toUpperCase() + item.condition.slice(1)}
-          </div>
         </div>
       )}
 
@@ -59,13 +55,20 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, onEdit, onDelete, onCl
           </div>
         </div>
 
-        {/* Price */}
-        {item.estimatedValue && (
-          <div className="flex items-center gap-1 text-sm font-semibold text-gray-900">
-            <DollarSign size={14} />
-            <span>{item.estimatedValue.toFixed(0)}</span>
+        {/* Price and Condition Badge */}
+        <div className="flex items-center justify-between">
+          {item.estimatedValue && (
+            <div className="flex items-center gap-1 text-sm font-semibold text-gray-900">
+              <DollarSign size={14} />
+              <span>{item.estimatedValue.toFixed(0)}</span>
+            </div>
+          )}
+          
+          {/* Condition pill badge */}
+          <div className={`px-3 py-1 rounded-full text-xs font-semibold border ${conditionColors[item.condition]}`}>
+            {item.condition.charAt(0).toUpperCase() + item.condition.slice(1)}
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
