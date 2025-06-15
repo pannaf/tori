@@ -50,24 +50,21 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({ items, variant = '
 
   if (variant === 'compact') {
     return (
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {stats.map(({ label, value, icon: Icon, gradient, change }) => (
-          <div
-            key={label}
-            className="bg-white rounded-xl p-3 border border-gray-100 shadow-sm hover:shadow-md transition-shadow"
-          >
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-500">{label}</p>
-                <p className="text-xl font-bold text-gray-900 mt-1">{value}</p>
-                <p className="text-xs text-gray-500 mt-1">{change}</p>
+      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+        <div className="grid grid-cols-4 gap-6">
+          {stats.map(({ label, value, icon: Icon, gradient, change }) => (
+            <div key={label} className="text-center">
+              <div className={`bg-gradient-to-br ${gradient} w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg`}>
+                <Icon size={20} className="text-white" />
               </div>
-              <div className={`bg-gradient-to-br ${gradient} p-2 rounded-lg text-white`}>
-                <Icon size={16} />
+              <div className="space-y-1">
+                <p className="text-2xl font-bold text-gray-900">{value}</p>
+                <p className="text-sm font-semibold text-gray-700">{label}</p>
+                <p className="text-xs text-gray-500">{change}</p>
               </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     );
   }
