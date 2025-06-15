@@ -4,6 +4,7 @@ import { useInventory } from './hooks/useInventory';
 import { AddItemModal } from './components/AddItemModal';
 import { ItemCard } from './components/ItemCard';
 import { ItemDetailModal } from './components/ItemDetailModal';
+import { EditItemModal } from './components/EditItemModal';
 import { SearchAndFilters } from './components/SearchAndFilters';
 import { ChatInterface } from './components/ChatInterface';
 import { StatsOverview } from './components/StatsOverview';
@@ -26,6 +27,7 @@ function App() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
   const [showItemDetail, setShowItemDetail] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRoom, setSelectedRoom] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -41,15 +43,20 @@ function App() {
   };
 
   const handleItemEdit = (item: InventoryItem) => {
-    // For now, just close the modal. In a full implementation, 
-    // you'd open an edit modal with the item data pre-filled
+    setSelectedItem(item);
     setShowItemDetail(false);
-    console.log('Edit item:', item);
+    setShowEditModal(true);
   };
 
   const handleItemDelete = (id: string) => {
     deleteItem(id);
     setShowItemDetail(false);
+  };
+
+  const handleSaveEdit = (id: string, updates: Partial<InventoryItem>) => {
+    updateItem(id, updates);
+    setShowEditModal(false);
+    setSelectedItem(null);
   };
 
   const renderTabContent = () => {
@@ -350,6 +357,15 @@ function App() {
           onClose={() => setShowItemDetail(false)}
           onEdit={handleItemEdit}
           onDelete={handleItemDelete}
+        />
+
+        <EditItemModal
+          item={selectedItem}
+          isOpen={showEditModal}
+          onClose={() => setShowEditModal(false)}
+          onSave={handleSaveEdit}
+          rooms={rooms}
+          categories={categories}
         />
       </div>
     </div>
