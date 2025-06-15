@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Plus, MessageSquare, Home, Search, BarChart3, Zap } from 'lucide-react';
+import { Plus, MessageSquare, Home, Search, BarChart3, Zap, LogOut } from 'lucide-react';
 import { useInventory } from './hooks/useInventory';
+import { useAuth } from './hooks/useAuth';
 import { AddItemModal } from './components/AddItemModal';
 import { ItemCard } from './components/ItemCard';
 import { ItemDetailModal } from './components/ItemDetailModal';
@@ -8,11 +9,15 @@ import { EditItemModal } from './components/EditItemModal';
 import { SearchAndFilters } from './components/SearchAndFilters';
 import { ChatInterface } from './components/ChatInterface';
 import { StatsOverview } from './components/StatsOverview';
+import { AuthModal } from './components/AuthModal';
 import { InventoryItem } from './types/inventory';
 
 type TabType = 'home' | 'search' | 'stats' | 'chat';
 
 function App() {
+  const { user, loading, signIn, signUp, signOut } = useAuth();
+  const [showAuthModal, setShowAuthModal] = useState(false);
+
   const {
     items,
     rooms,
@@ -59,15 +64,78 @@ function App() {
     setSelectedItem(null);
   };
 
+  const handleSignIn = async (email: string, password: string) => {
+    await signIn(email, password);
+    setShowAuthModal(false);
+  };
+
+  const handleSignUp = async (email: string, password: string) => {
+    await signUp(email, password);
+    setShowAuthModal(false);
+  };
+
+  // Show loading screen
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-full text-white font-bold mb-6 shadow-lg shadow-indigo-500/25">
+            <Zap size={20} />
+            Tori
+          </div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show auth modal if not signed in
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-full text-white font-bold mb-6 shadow-lg shadow-indigo-500/25">
+            <Zap size={20} />
+            Tori
+          </div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-3">Welcome to Tori</h1>
+          <p className="text-gray-600 mb-8">Your AI-powered home inventory assistant</p>
+          <button
+            onClick={() => setShowAuthModal(true)}
+            className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-8 py-4 rounded-full font-bold hover:shadow-xl hover:shadow-indigo-500/25 transition-all duration-300 hover:scale-105"
+          >
+            Get Started
+          </button>
+        </div>
+
+        <AuthModal
+          isOpen={showAuthModal}
+          onClose={() => setShowAuthModal(false)}
+          onSignIn={handleSignIn}
+          onSignUp={handleSignUp}
+        />
+      </div>
+    );
+  }
+
   const renderTabContent = () => {
     switch (activeTab) {
       case 'home':
         return (
           <div className="space-y-6">
             <div className="text-center py-6">
-              <div className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-full text-white font-bold mb-6 shadow-lg shadow-indigo-500/25">
-                <Zap size={20} />
-                Tori
+              <div className="flex items-center justify-between mb-6">
+                <div className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-full text-white font-bold shadow-lg shadow-indigo-500/25">
+                  <Zap size={20} />
+                  Tori
+                </div>
+                <button
+                  onClick={signOut}
+                  className="text-gray-500 hover:text-gray-700 transition-colors p-2"
+                  title="Sign out"
+                >
+                  <LogOut size={20} />
+                </button>
               </div>
               
               <h1 className="text-3xl font-bold text-gray-900 mb-3 leading-tight">
