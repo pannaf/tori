@@ -213,24 +213,14 @@ function App() {
               <div>
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-xl font-bold text-gray-900">Recent Additions</h2>
-                  <div className="flex items-center gap-3">
-                    {recentItems.length > 0 && (
-                      <button
-                        onClick={() => setActiveTab('search')}
-                        className="text-indigo-600 hover:text-indigo-800 transition-colors font-semibold"
-                      >
-                        View all →
-                      </button>
-                    )}
-                    {/* Contextual Add Button */}
+                  {recentItems.length > 0 && (
                     <button
-                      onClick={() => setShowAddModal(true)}
-                      className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-4 py-2 rounded-full font-semibold hover:shadow-lg hover:shadow-emerald-500/25 transition-all duration-300 hover:scale-105 flex items-center gap-2"
+                      onClick={() => setActiveTab('search')}
+                      className="text-indigo-600 hover:text-indigo-800 transition-colors font-semibold"
                     >
-                      <Plus size={16} />
-                      Add Item
+                      View all →
                     </button>
-                  </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -252,19 +242,9 @@ function App() {
       case 'search':
         return (
           <div className="space-y-6">
-            <div className="flex items-center justify-between py-6">
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900 mb-2">Find Your Stuff</h1>
-                <p className="text-gray-600">Search through your organized home inventory</p>
-              </div>
-              {/* Contextual Add Button */}
-              <button
-                onClick={() => setShowAddModal(true)}
-                className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-4 py-2 rounded-full font-semibold hover:shadow-lg hover:shadow-emerald-500/25 transition-all duration-300 hover:scale-105 flex items-center gap-2"
-              >
-                <Plus size={16} />
-                Add Item
-              </button>
+            <div className="text-center py-6">
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">Find Your Stuff</h1>
+              <p className="text-gray-600">Search through your organized home inventory</p>
             </div>
 
             <SearchAndFilters
@@ -403,7 +383,17 @@ function App() {
           </div>
         </div>
 
-        {/* Simplified Bottom Navigation - No Add Button */}
+        {/* Floating Add Button - Only show on home and search pages */}
+        {(activeTab === 'home' || activeTab === 'search') && (
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="fixed bottom-28 right-8 w-14 h-14 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-full shadow-2xl shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:scale-110 transition-all duration-300 flex items-center justify-center z-30"
+          >
+            <Plus size={24} />
+          </button>
+        )}
+
+        {/* Clean Bottom Navigation */}
         <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-40">
           <div className="bg-white/95 backdrop-blur-xl rounded-full shadow-2xl shadow-gray-900/10 border border-gray-200/50 p-2">
             <div className="flex items-center gap-2">
