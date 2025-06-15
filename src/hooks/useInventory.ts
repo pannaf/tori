@@ -101,7 +101,7 @@ export const useInventory = () => {
       }
 
       const supabaseItem = {
-        id: item.id,
+        // Don't include id - let Supabase generate UUID
         name: item.name,
         category: item.category,
         room: item.room,
@@ -115,17 +115,23 @@ export const useInventory = () => {
         detection_confidence: null,
       };
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('inventory_items')
-        .upsert(supabaseItem);
+        .insert(supabaseItem)
+        .select()
+        .single();
 
       if (error) {
         console.error('Error saving to Supabase:', error);
         throw error;
       }
+
+      // Update the item with the Supabase-generated UUID
+      return data;
     } catch (error) {
       console.error('Error in saveItemToSupabase:', error);
       // Continue with localStorage save even if Supabase fails
+      throw error;
     }
   };
 
@@ -135,17 +141,39 @@ export const useInventory = () => {
   };
 
   const addItem = async (item: Omit<InventoryItem, 'id' | 'dateAdded'>) => {
-    const newItem: InventoryItem = {
-      ...item,
-      id: Date.now().toString(),
-      dateAdded: new Date().toISOString(),
-    };
+    try {
+      // First create the item locally with a temporary ID
+      const tempItem: InventoryItem = {
+        ...item,
+        id: Date.now().toString(), // Temporary ID for local storage
+        dateAdded: new Date().toISOString(),
+      };
 
-    const updatedItems = [...items, newItem];
-    await saveItems(updatedItems);
+      // Try to save to Supabase first
+      const supabaseItem = await saveItemToSupabase(tempItem);
 
-    // Try to save to Supabase
-    await saveItemToSupabase(newItem);
+      // Create the final item with Supabase UUID
+      const finalItem: InventoryItem = {
+        ...tempItem,
+        id: supabaseItem.id, // Use Supabase-generated UUID
+        dateAdded: supabaseItem.created_at,
+      };
+
+      const updatedItems = [...items, finalItem];
+      await saveItems(updatedItems);
+    } catch (error) {
+      console.error('Failed to save to Supabase, saving locally only:', error);
+
+      // Fallback: save locally with timestamp ID
+      const localItem: InventoryItem = {
+        ...item,
+        id: Date.now().toString(),
+        dateAdded: new Date().toISOString(),
+      };
+
+      const updatedItems = [...items, localItem];
+      await saveItems(updatedItems);
+    }
   };
 
   const updateItem = async (id: string, updates: Partial<InventoryItem>) => {
@@ -154,10 +182,39 @@ export const useInventory = () => {
     );
     await saveItems(updatedItems);
 
-    // Try to save to Supabase
+    // Try to save to Supabase using upsert for updates
     const updatedItem = updatedItems.find(item => item.id === id);
     if (updatedItem) {
-      await saveItemToSupabase(updatedItem);
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (user) {
+          const supabaseItem = {
+            id: updatedItem.id, // Keep existing UUID for updates
+            name: updatedItem.name,
+            category: updatedItem.category,
+            room: updatedItem.room,
+            description: updatedItem.description,
+            estimated_value: updatedItem.estimatedValue,
+            tags: updatedItem.tags,
+            condition: updatedItem.condition,
+            crop_image_data: updatedItem.imageUrl,
+            user_id: user.id,
+            ai_detected: false,
+            detection_confidence: null,
+          };
+
+          const { error } = await supabase
+            .from('inventory_items')
+            .upsert(supabaseItem);
+
+          if (error) {
+            console.error('Error updating in Supabase:', error);
+          }
+        }
+      } catch (error) {
+        console.error('Error in updateItem Supabase operation:', error);
+      }
     }
   };
 
