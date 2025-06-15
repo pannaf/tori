@@ -17,27 +17,38 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({ items, variant = '
     return new Date(item.dateAdded) > weekAgo;
   }).length;
 
+  // Smart number formatting for values over $1000
+  const formatValue = (value: number): string => {
+    if (value >= 1000000) {
+      return `$${(value / 1000000).toFixed(value >= 10000000 ? 0 : 1)}m`;
+    } else if (value >= 1000) {
+      return `$${(value / 1000).toFixed(value >= 10000 ? 0 : 1)}k`;
+    } else {
+      return `$${value.toFixed(0)}`;
+    }
+  };
+
   const stats = [
     {
-      label: 'Total Items',
+      label: totalItems === 1 ? 'Total Item' : 'Total Items',
       value: totalItems.toString(),
       icon: Package,
       gradient: 'from-indigo-500 to-purple-600',
     },
     {
-      label: 'Rooms',
+      label: totalRooms === 1 ? 'Room' : 'Rooms',
       value: totalRooms.toString(),
       icon: Home,
       gradient: 'from-emerald-500 to-teal-600',
     },
     {
       label: 'Total Value',
-      value: `$${totalValue.toFixed(0)}`,
+      value: formatValue(totalValue),
       icon: DollarSign,
       gradient: 'from-purple-500 to-pink-600',
     },
     {
-      label: 'New Items',
+      label: recentItems === 1 ? 'New Item' : 'New Items',
       value: recentItems > 0 ? `+${recentItems}` : '0',
       icon: TrendingUp,
       gradient: 'from-orange-500 to-red-600',
