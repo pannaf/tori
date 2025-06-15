@@ -35,8 +35,8 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, onEdit, onDelete, onCl
             alt={item.name}
             className="w-full h-full object-contain"
           />
-          {/* Condition badge in upper left corner */}
-          <div className={`absolute top-2 left-2 px-2 py-1 rounded-lg text-xs font-semibold border ${conditionColors[item.condition]}`}>
+          {/* Condition badge with white border */}
+          <div className={`absolute top-2 left-2 px-2 py-1 rounded-lg text-xs font-semibold border-2 border-white ${conditionColors[item.condition]}`}>
             {item.condition.charAt(0).toUpperCase() + item.condition.slice(1)}
           </div>
         </div>
@@ -59,31 +59,11 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, onEdit, onDelete, onCl
           </div>
         </div>
 
-        {/* Price and Tags */}
-        <div className="flex items-center justify-between">
-          {item.estimatedValue && (
-            <div className="flex items-center gap-1 text-sm font-semibold text-gray-900">
-              <DollarSign size={14} />
-              <span>{item.estimatedValue.toFixed(0)}</span>
-            </div>
-          )}
-        </div>
-
-        {item.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1 mt-3">
-            {item.tags.slice(0, 3).map((tag, index) => (
-              <span
-                key={index}
-                className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full"
-              >
-                {tag}
-              </span>
-            ))}
-            {item.tags.length > 3 && (
-              <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
-                +{item.tags.length - 3}
-              </span>
-            )}
+        {/* Price */}
+        {item.estimatedValue && (
+          <div className="flex items-center gap-1 text-sm font-semibold text-gray-900">
+            <DollarSign size={14} />
+            <span>{item.estimatedValue.toFixed(0)}</span>
           </div>
         )}
       </div>
