@@ -17,12 +17,14 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({ items, variant = '
     return new Date(item.dateAdded) > weekAgo;
   }).length;
 
-  // Smart number formatting for values over $1000
-  const formatValue = (value: number): string => {
-    if (value >= 1000000) {
-      return `$${(value / 1000000).toFixed(value >= 10000000 ? 0 : 1)}m`;
-    } else if (value >= 1000) {
-      return `$${(value / 1000).toFixed(value >= 10000 ? 0 : 1)}k`;
+  // Smart number formatting for compact variant only
+  const formatValue = (value: number, useSmartFormat: boolean = false): string => {
+    if (useSmartFormat && value >= 1000) {
+      if (value >= 1000000) {
+        return `$${(value / 1000000).toFixed(value >= 10000000 ? 0 : 1)}m`;
+      } else {
+        return `$${(value / 1000).toFixed(value >= 10000 ? 0 : 1)}k`;
+      }
     } else {
       return `$${value.toFixed(0)}`;
     }
@@ -43,7 +45,7 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({ items, variant = '
     },
     {
       label: 'Total Value',
-      value: formatValue(totalValue),
+      value: formatValue(totalValue, variant === 'compact'), // Only use smart formatting for compact variant
       icon: DollarSign,
       gradient: 'from-purple-500 to-pink-600',
     },
