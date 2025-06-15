@@ -1,5 +1,14 @@
 import React, { useState, useRef } from 'react';
 import { Camera, X, Zap, AlertCircle, RefreshCw } from 'lucide-react';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+// Only create Supabase client if environment variables are available
+const supabase = supabaseUrl && supabaseAnonKey
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : null;
 
 interface CameraCaptureProps {
   onCapture: (imageData: string, recognitionData: any) => void;
@@ -30,6 +39,17 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
           // Create form data for the API
           const formData = new FormData();
           formData.append('image', file);
+
+          // Add the authenticated user's ID and token
+          if (supabase) {
+            const { data: { user } } = await supabase.auth.getUser();
+            const { data: { session } } = await supabase.auth.getSession();
+
+            if (user && session) {
+              formData.append('userId', user.id);
+              formData.append('authToken', session.access_token);
+            }
+          }
 
           setProcessingStep('Analyzing with AI...');
           const response = await fetch('http://localhost:3000/api/analyze-image', {

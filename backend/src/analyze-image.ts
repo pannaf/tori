@@ -4,12 +4,65 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import OpenAI from 'openai';
+import { createClient } from '@supabase/supabase-js';
 import { detectObject, cropImage } from './objectDetector.js';
 import { uploadImageFileToSupabase } from './storageUtils.js';
 import { createAnalysisSession, createInventoryItems, getInventoryItems, getAnalysisSessions, getInventoryItemsByCategory, getInventoryItemsByRoom, updateInventoryItem, deleteInventoryItem } from './databaseUtils.js';
 
 const router = Router();
 const upload = multer({ dest: 'uploads/' });
+
+// Create authenticated Supabase client using user's token
+function createAuthenticatedSupabaseClient(authToken: string) {
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+        throw new Error('Supabase configuration missing');
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+        global: {
+            headers: {
+                Authorization: `Bearer ${authToken}`
+            }
+        }
+    });
+
+    return supabase;
+}
+
+// Authenticated database operations
+async function createAnalysisSessionAuth(supabase: any, sessionData: any) {
+    const { data, error } = await supabase
+        .from('analysis_sessions')
+        .insert([sessionData])
+        .select()
+        .single();
+
+    if (error) {
+        console.error('Database error creating analysis session:', error);
+        throw new Error(`Failed to create analysis session: ${error.message}`);
+    }
+
+    return data;
+}
+
+async function createInventoryItemsAuth(supabase: any, items: any[], sessionId: string) {
+    const itemsWithSession = items.map(item => ({ ...item, session_id: sessionId }));
+
+    const { data, error } = await supabase
+        .from('inventory_items')
+        .insert(itemsWithSession)
+        .select();
+
+    if (error) {
+        console.error('Database error creating inventory items:', error);
+        throw new Error(`Failed to create inventory items: ${error.message}`);
+    }
+
+    return data;
+}
 
 interface ObjectWithCost {
     name: string;
@@ -46,14 +99,14 @@ router.post('/analyze-image', upload.single('image'), async (req, res) => {
         const base64Image = imageBuffer.toString('base64');
 
         const response = await openai.chat.completions.create({
-            model: "gpt-4o-mini",
+            model: "gpt-4.1-mini", // DO NOT CHANGE THIS MODEL MAME. THIS IS CORRECT as gpt-4.1-mini.
             messages: [
                 {
                     role: "user",
                     content: [
                         {
                             type: "text",
-                            text: "list all the objects in this image and estimate their costs. ALL of them. be comprehensive and thorough. don't say what it's on or touching or under or above. also do not attempt to indicate what size it is. that's just confusing. do not do compound objects, i.e., nothing that uses with to combine multiple objects. instead of large plant in black pot, for example, it should be an object for plant and an object for black pot. just list each individual object with its estimated cost in USD. Be realistic with cost estimates based on average market prices. Also give your best guess for which room in a home it is- the room can be one of the following: Living Room, Kitchen, Bedroom, Bathroom, Office, Garage, Dining Room. You should also include the object category, which can be one of the following: Electronics, Furniture, Appliances, Decorative, Sports, Tools, Other.\n\noutput format below. Return raw JSON only. Do not include triple backticks or formatting — just the raw JSON.\n\n{\"objects\": [{\"name\": \"object name\", \"category\": \"object category\", \"description\": \"object description\", \"estimated_cost_usd\": number}], \"room\": \"room name\", \"total_estimated_value_usd\": sum_of_all_objects}"
+                            text: "list all the objects in this image and estimate their costs. ALL of them. be comprehensive and thorough. don't say what it's on or touching or under or above. also do not attempt to indicate what size it is. that's just confusing. do not do compound objects, i.e., nothing that uses with to combine multiple objects. instead of large plant in black pot, for example, it should be an object for plant and an object for black pot. just list each individual object with its estimated cost in USD. Be realistic with cost estimates based on average market prices. Also give your best guess for which room in a home it is- the room can be one of the following: Living Room, Kitchen, Bedroom, Bathroom, Office, Garage, Dining Room. You should also include the object category, which can be one of the following: Electronics, Furniture, Appliances, Decorative, Sports, Tools, Other.\n\noutput format below. Return raw JSON only. Do not include triple backticks or formatting — just the raw JSON.\n\n```json\n{\"objects\": [{\"name\": \"object name\", \"category\": \"object category\", \"description\": \"object description\", \"estimated_cost_usd\": number}], \"room\": \"room name\", \"total_estimated_value_usd\": sum_of_all_objects}\n```"
                         },
                         {
                             type: "image_url",
@@ -112,10 +165,21 @@ router.post('/analyze-image', upload.single('image'), async (req, res) => {
                 return obj;
             }));
 
-            // Create analysis session in database
-            const session = await createAnalysisSession({
+            // Create authenticated Supabase client
+            const authToken = req.body.authToken;
+            if (!authToken) {
+                throw new Error('Authentication token required');
+            }
+
+            const authenticatedSupabase = createAuthenticatedSupabaseClient(authToken);
+
+            // Create analysis session in database using authenticated client
+            console.log('Creating analysis session with authenticated user');
+
+            const session = await createAnalysisSessionAuth(authenticatedSupabase, {
                 total_estimated_value_usd: result.total_estimated_value_usd,
-                room: result.room
+                room: result.room,
+                user_id: req.body.userId || null
             });
 
             // Prepare inventory items for database
@@ -133,8 +197,8 @@ router.post('/analyze-image', upload.single('image'), async (req, res) => {
                 user_id: req.body.userId || null // Optional user ID from request
             }));
 
-            // Save inventory items to database
-            const savedItems = await createInventoryItems(inventoryItems, session.id);
+            // Save inventory items to database using authenticated client
+            const savedItems = await createInventoryItemsAuth(authenticatedSupabase, inventoryItems, session.id);
 
             // Update the result with the processed objects and session info
             const finalResult = {

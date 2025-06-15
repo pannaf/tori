@@ -138,7 +138,7 @@ function App() {
                   <LogOut size={20} />
                 </button>
               </div>
-              
+
               <h1 className="text-3xl font-bold text-gray-900 mb-3 leading-tight">
                 {items.length === 0 ? (
                   <>Tori. Know what you own.</>
@@ -146,7 +146,7 @@ function App() {
                   <>Your home, effortlessly organized</>
                 )}
               </h1>
-              
+
               <p className="text-gray-600 leading-relaxed">
                 {items.length === 0
                   ? "Let's get started by adding your first item with AI-powered photo recognition"
@@ -192,8 +192,8 @@ function App() {
                     <ItemCard
                       key={item.id}
                       item={item}
-                      onEdit={updateItem}
-                      onDelete={deleteItem}
+                      onEdit={handleItemEdit}
+                      onDelete={handleItemDelete}
                       onClick={handleItemClick}
                     />
                   ))}
@@ -227,8 +227,8 @@ function App() {
                 <ItemCard
                   key={item.id}
                   item={item}
-                  onEdit={updateItem}
-                  onDelete={deleteItem}
+                  onEdit={handleItemEdit}
+                  onDelete={handleItemDelete}
                   onClick={handleItemClick}
                 />
               ))}
@@ -316,7 +316,7 @@ function App() {
         return (
           <div className="space-y-6">
             <div className="text-center py-6">
-              
+
               <h1 className="text-2xl font-bold text-gray-900 mb-2">Ask me anything!</h1>
               <p className="text-gray-600">I can help you find items, get stats, or organize your home</p>
             </div>
@@ -359,11 +359,10 @@ function App() {
                 <button
                   key={key}
                   onClick={() => setActiveTab(key as TabType)}
-                  className={`relative flex items-center gap-2 px-4 py-3 rounded-full transition-all duration-300 ${
-                    activeTab === key
-                      ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/25'
-                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-                  }`}
+                  className={`relative flex items-center gap-2 px-4 py-3 rounded-full transition-all duration-300 ${activeTab === key
+                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/25'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                    }`}
                 >
                   <Icon size={20} />
                   {activeTab === key && (
@@ -391,13 +390,12 @@ function App() {
                 <button
                   key={key}
                   onClick={() => setActiveTab(key as TabType)}
-                  className={`relative flex items-center gap-2 px-4 py-3 rounded-full transition-all duration-300 ${
-                    activeTab === key
-                      ? key === 'chat'
-                        ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-lg shadow-violet-500/25'
-                        : 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/25'
-                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-                  }`}
+                  className={`relative flex items-center gap-2 px-4 py-3 rounded-full transition-all duration-300 ${activeTab === key
+                    ? key === 'chat'
+                      ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-lg shadow-violet-500/25'
+                      : 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/25'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                    }`}
                 >
                   <Icon size={20} />
                   {activeTab === key && (

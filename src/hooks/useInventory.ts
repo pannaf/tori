@@ -43,7 +43,7 @@ export const useInventory = () => {
   const loadItems = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      
+
       if (!user) {
         setLoading(false);
         return;
@@ -95,7 +95,7 @@ export const useInventory = () => {
   const saveItemToSupabase = async (item: InventoryItem) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      
+
       if (!user) {
         throw new Error('User not authenticated');
       }
@@ -140,10 +140,10 @@ export const useInventory = () => {
       id: Date.now().toString(),
       dateAdded: new Date().toISOString(),
     };
-    
+
     const updatedItems = [...items, newItem];
     await saveItems(updatedItems);
-    
+
     // Try to save to Supabase
     await saveItemToSupabase(newItem);
   };
@@ -153,7 +153,7 @@ export const useInventory = () => {
       item.id === id ? { ...item, ...updates } : item
     );
     await saveItems(updatedItems);
-    
+
     // Try to save to Supabase
     const updatedItem = updatedItems.find(item => item.id === id);
     if (updatedItem) {
@@ -164,7 +164,7 @@ export const useInventory = () => {
   const deleteItem = async (id: string) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      
+
       if (user) {
         const { error } = await supabase
           .from('inventory_items')
@@ -179,21 +179,21 @@ export const useInventory = () => {
     } catch (error) {
       console.error('Error in deleteItem:', error);
     }
-    
+
     const updatedItems = items.filter(item => item.id !== id);
     await saveItems(updatedItems);
   };
 
   const searchItems = (query: string, roomFilter?: string, categoryFilter?: string) => {
     return items.filter(item => {
-      const matchesQuery = !query || 
+      const matchesQuery = !query ||
         item.name.toLowerCase().includes(query.toLowerCase()) ||
         item.description?.toLowerCase().includes(query.toLowerCase()) ||
         item.tags.some(tag => tag.toLowerCase().includes(query.toLowerCase()));
-      
+
       const matchesRoom = !roomFilter || item.room === roomFilter;
       const matchesCategory = !categoryFilter || item.category === categoryFilter;
-      
+
       return matchesQuery && matchesRoom && matchesCategory;
     });
   };
