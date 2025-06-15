@@ -16,125 +16,36 @@ interface CameraCaptureProps {
   onClose: () => void;
 }
 
-// Function to get EXIF orientation from image
-const getOrientation = (file: File): Promise<number> => {
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const view = new DataView(e.target?.result as ArrayBuffer);
-      if (view.getUint16(0, false) !== 0xFFD8) {
-        resolve(-2); // Not a JPEG
-        return;
-      }
-      const length = view.byteLength;
-      let offset = 2;
-      while (offset < length) {
-        if (view.getUint16(offset + 2, false) <= 8) {
-          resolve(-1); // Invalid EXIF
-          return;
-        }
-        const marker = view.getUint16(offset, false);
-        offset += 2;
-        if (marker === 0xFFE1) {
-          if (view.getUint32(offset + 4, false) !== 0x45786966) {
-            resolve(-1); // Invalid EXIF
-            return;
-          }
-          const little = view.getUint16(offset + 10, false) === 0x4949;
-          offset += view.getUint16(offset + 2, false);
-          if (offset > length) {
-            resolve(-1); // Invalid EXIF
-            return;
-          }
-          const tags = view.getUint16(offset, little);
-          offset += 2;
-          for (let i = 0; i < tags; i++) {
-            if (view.getUint16(offset + (i * 12), little) === 0x0112) {
-              const orientation = view.getUint16(offset + (i * 12) + 8, little);
-              resolve(orientation);
-              return;
-            }
-          }
-        } else if ((marker & 0xFF00) !== 0xFF00) {
-          break;
-        } else {
-          offset += view.getUint16(offset, false);
-        }
-      }
-      resolve(-1); // No orientation found
-    };
-    reader.readAsArrayBuffer(file);
-  });
-};
+// Function to fix image orientation using createImageBitmap
+const fixImageOrientation = async (file: File): Promise<string> => {
+  try {
+    // Use createImageBitmap with imageOrientation: 'from-image' to auto-correct orientation
+    const imageBitmap = await createImageBitmap(file, {
+      imageOrientation: 'from-image'
+    });
 
-// Function to rotate image based on EXIF orientation
-const rotateImage = (imageData: string, orientation: number): Promise<string> => {
-  return new Promise((resolve) => {
+    // Create canvas and draw the correctly oriented image
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
-    const img = new Image();
 
-    img.onload = () => {
-      let { width, height } = img;
+    canvas.width = imageBitmap.width;
+    canvas.height = imageBitmap.height;
 
-      // Set canvas dimensions based on orientation
-      if (orientation > 4) {
-        canvas.width = height;
-        canvas.height = width;
-      } else {
-        canvas.width = width;
-        canvas.height = height;
-      }
+    ctx?.drawImage(imageBitmap, 0, 0);
 
-      // Apply rotation based on EXIF orientation
-      switch (orientation) {
-        case 2:
-          // Horizontal flip
-          ctx?.scale(-1, 1);
-          ctx?.translate(-width, 0);
-          break;
-        case 3:
-          // 180° rotation
-          ctx?.translate(width, height);
-          ctx?.rotate(Math.PI);
-          break;
-        case 4:
-          // Vertical flip
-          ctx?.scale(1, -1);
-          ctx?.translate(0, -height);
-          break;
-        case 5:
-          // 90° CCW + horizontal flip
-          ctx?.rotate(0.5 * Math.PI);
-          ctx?.scale(1, -1);
-          break;
-        case 6:
-          // 90° CW rotation
-          ctx?.rotate(0.5 * Math.PI);
-          ctx?.translate(0, -height);
-          break;
-        case 7:
-          // 90° CW + horizontal flip
-          ctx?.rotate(0.5 * Math.PI);
-          ctx?.translate(width, -height);
-          ctx?.scale(-1, 1);
-          break;
-        case 8:
-          // 90° CCW rotation
-          ctx?.rotate(-0.5 * Math.PI);
-          ctx?.translate(-width, 0);
-          break;
-        default:
-          // No rotation needed
-          break;
-      }
+    // Clean up the bitmap
+    imageBitmap.close();
 
-      ctx?.drawImage(img, 0, 0);
-      resolve(canvas.toDataURL('image/jpeg', 0.8));
-    };
-
-    img.src = imageData;
-  });
+    return canvas.toDataURL('image/jpeg', 0.8);
+  } catch (error) {
+    console.warn('createImageBitmap not supported or failed, falling back to original image');
+    // Fallback: return original image as base64
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(e.target?.result as string);
+      reader.readAsDataURL(file);
+    });
+  }
 };
 
 export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose }) => {
@@ -152,102 +63,84 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
       setIsProcessing(true);
       setProcessingStep('Preparing image...');
 
-      // Get EXIF orientation
-      const orientation = await getOrientation(file);
+      // Fix image orientation
+      setProcessingStep('Correcting image orientation...');
+      const imageData = await fixImageOrientation(file);
 
-      // Convert file to base64 for preview
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        let imageData = e.target?.result as string;
+      try {
+        // Create form data for the API
+        const formData = new FormData();
 
-        // Rotate image if needed based on EXIF orientation
-        if (orientation > 1) {
-          setProcessingStep('Correcting image orientation...');
-          imageData = await rotateImage(imageData, orientation);
+        // Convert corrected image back to blob for upload
+        const response = await fetch(imageData);
+        const blob = await response.blob();
+        const correctedFile = new File([blob], file.name, { type: 'image/jpeg' });
+
+        formData.append('image', correctedFile);
+
+        // Add the authenticated user's ID and token
+        if (supabase) {
+          const { data: { user } } = await supabase.auth.getUser();
+          const { data: { session } } = await supabase.auth.getSession();
+
+          if (user && session) {
+            formData.append('userId', user.id);
+            formData.append('authToken', session.access_token);
+          }
         }
 
-        try {
-          // Create form data for the API
-          const formData = new FormData();
+        setProcessingStep('Analyzing with AI... (this may take up to 2 minutes)');
 
-          // Convert corrected image back to blob for upload
-          const response = await fetch(imageData);
-          const blob = await response.blob();
-          const correctedFile = new File([blob], file.name, { type: 'image/jpeg' });
+        // Create AbortController for timeout handling
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minute timeout
 
-          formData.append('image', correctedFile);
+        const apiResponse = await fetch(`${env.API_URL}/api/analyze-image`, {
+          method: 'POST',
+          body: formData,
+          signal: controller.signal,
+        });
 
-          // Add the authenticated user's ID and token
-          if (supabase) {
-            const { data: { user } } = await supabase.auth.getUser();
-            const { data: { session } } = await supabase.auth.getSession();
+        clearTimeout(timeoutId);
 
-            if (user && session) {
-              formData.append('userId', user.id);
-              formData.append('authToken', session.access_token);
-            }
-          }
-
-          setProcessingStep('Analyzing with AI... (this may take up to 2 minutes)');
-
-          // Create AbortController for timeout handling
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minute timeout
-
-          const apiResponse = await fetch(`${env.API_URL}/api/analyze-image`, {
-            method: 'POST',
-            body: formData,
-            signal: controller.signal,
-          });
-
-          clearTimeout(timeoutId);
-
-          if (!apiResponse.ok) {
-            throw new Error('Failed to analyze image');
-          }
-
-          const data = await apiResponse.json();
-
-          // Transform the analysis data to match the expected format
-          const recognitionData = {
-            objects: data.objects.map((obj: any) => ({
-              name: obj.name,
-              confidence: obj.confidence || 0.9,
-              category: obj.category || inferCategory(obj.name),
-              description: obj.description || '',
-              estimated_cost_usd: obj.estimated_cost_usd,
-              imageUrl: obj.imageUrl
-            })),
-            room: data.room,
-            suggestedName: data.objects[0]?.name || '',
-            suggestedCategory: data.objects[0]?.category || inferCategory(data.objects[0]?.name || ''),
-            estimatedValue: data.total_estimated_value_usd
-          };
-
-          onCapture(imageData, recognitionData);
-          setIsProcessing(false);
-        } catch (error) {
-          console.error('Recognition failed:', error);
-          if (error instanceof Error) {
-            if (error.name === 'AbortError') {
-              setError('Request timed out. AI processing takes time - try again or use a smaller image.');
-            } else {
-              setError(`Analysis failed: ${error.message}. Please try again.`);
-            }
-          } else {
-            setError('Failed to analyze image. Please try again.');
-          }
-          setIsProcessing(false);
-          setProcessingStep('');
+        if (!apiResponse.ok) {
+          throw new Error('Failed to analyze image');
         }
-      };
 
-      reader.onerror = () => {
-        setError('Failed to read image file. Please try again.');
+        const data = await apiResponse.json();
+
+        // Transform the analysis data to match the expected format
+        const recognitionData = {
+          objects: data.objects.map((obj: any) => ({
+            name: obj.name,
+            confidence: obj.confidence || 0.9,
+            category: obj.category || inferCategory(obj.name),
+            description: obj.description || '',
+            estimated_cost_usd: obj.estimated_cost_usd,
+            imageUrl: obj.imageUrl
+          })),
+          room: data.room,
+          suggestedName: data.objects[0]?.name || '',
+          suggestedCategory: data.objects[0]?.category || inferCategory(data.objects[0]?.name || ''),
+          estimatedValue: data.total_estimated_value_usd
+        };
+
+        onCapture(imageData, recognitionData);
         setIsProcessing(false);
-      };
-
-      reader.readAsDataURL(file);
+      } catch (error) {
+        console.error('Recognition failed:', error);
+        if (error instanceof Error) {
+          if (error.name === 'AbortError') {
+            setError('Request timed out. AI processing takes time - try again or use a smaller image.');
+          } else {
+            setError(`Analysis failed: ${error.message}. Please try again.`);
+          }
+        } else {
+          setError('Failed to analyze image. Please try again.');
+        }
+        setIsProcessing(false);
+        setProcessingStep('');
+      }
     } catch (error) {
       console.error('Error handling file:', error);
       setError('Failed to process image. Please try again.');
