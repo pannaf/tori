@@ -228,7 +228,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
           <button
             type="button"
             onClick={() => setShowCamera(true)}
-            className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-4 rounded-2xl font-bold hover:shadow-2xl hover:shadow-indigo-500/25 transition-all duration-300 hover:scale-105 flex items-center justify-center gap-3"
+            className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-4 rounded-full font-bold hover:shadow-2xl hover:shadow-indigo-500/25 transition-all duration-300 hover:scale-105 flex items-center justify-center gap-3"
           >
             <Camera size={22} />
             {formData.imageUrl ? 'Retake Photo' : 'Take Photo & Auto-Detect'}
@@ -258,7 +258,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
               required
               value={formData.room}
               onChange={(e) => setFormData(prev => ({ ...prev, room: e.target.value }))}
-              className={`w-full px-4 py-3 border rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors ${aiDetected ? 'border-indigo-300 bg-indigo-50' : 'border-gray-300'
+              className={`w-full px-6 py-4 border rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors appearance-none bg-white ${aiDetected ? 'border-indigo-300 bg-indigo-50' : 'border-gray-300'
                 }`}
             >
               <option value="">Select a room</option>
@@ -277,7 +277,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
               required
               value={formData.name}
               onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-              className={`w-full px-4 py-3 border rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors ${aiDetected ? 'border-indigo-300 bg-indigo-50' : 'border-gray-300'
+              className={`w-full px-6 py-4 border rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors ${aiDetected ? 'border-indigo-300 bg-indigo-50' : 'border-gray-300'
                 }`}
               placeholder="e.g., MacBook Pro, Coffee Mug, etc."
             />
@@ -291,7 +291,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
               required
               value={formData.category}
               onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
-              className={`w-full px-4 py-3 border rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors ${aiDetected ? 'border-indigo-300 bg-indigo-50' : 'border-gray-300'
+              className={`w-full px-6 py-4 border rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors appearance-none bg-white ${aiDetected ? 'border-indigo-300 bg-indigo-50' : 'border-gray-300'
                 }`}
             >
               <option value="">Select a category</option>
@@ -308,7 +308,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
             <textarea
               value={formData.description}
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              className={`w-full px-4 py-3 border rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors ${aiDetected ? 'border-indigo-300 bg-indigo-50' : 'border-gray-300'
+              className={`w-full px-6 py-4 border rounded-3xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors resize-none ${aiDetected ? 'border-indigo-300 bg-indigo-50' : 'border-gray-300'
                 }`}
               rows={3}
               placeholder="Any details you want to remember..."
@@ -323,7 +323,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
               <select
                 value={formData.condition}
                 onChange={(e) => setFormData(prev => ({ ...prev, condition: e.target.value as any }))}
-                className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
+                className="w-full px-4 py-4 border border-gray-300 rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors appearance-none bg-white"
               >
                 <option value="excellent">Great</option>
                 <option value="good">Good</option>
@@ -340,7 +340,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
                 type="number"
                 value={formData.estimatedValue}
                 onChange={(e) => setFormData(prev => ({ ...prev, estimatedValue: e.target.value }))}
-                className={`w-full px-4 py-3 border rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors ${aiDetected ? 'border-indigo-300 bg-indigo-50' : 'border-gray-300'
+                className={`w-full px-4 py-4 border rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors ${aiDetected ? 'border-indigo-300 bg-indigo-50' : 'border-gray-300'
                   }`}
                 placeholder="0.00"
                 step="0.01"
@@ -357,14 +357,14 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
               type="text"
               value={formData.tags}
               onChange={(e) => setFormData(prev => ({ ...prev, tags: e.target.value }))}
-              className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
+              className="w-full px-6 py-4 border border-gray-300 rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
               placeholder="vintage, gift, favorite (comma separated)"
             />
           </div>
 
           <button
             type="submit"
-            className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-4 rounded-2xl font-bold text-lg hover:shadow-2xl hover:shadow-indigo-500/25 transition-all duration-300 hover:scale-105"
+            className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-4 rounded-full font-bold text-lg hover:shadow-2xl hover:shadow-indigo-500/25 transition-all duration-300 hover:scale-105"
           >
             {currentObjectIndex < Math.min(detectedObjects.length - 1, 2)
               ? `Add Item (${currentObjectIndex + 1}/${Math.min(detectedObjects.length, 3)})`

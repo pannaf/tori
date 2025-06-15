@@ -104,7 +104,7 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
               required
               value={formData.room}
               onChange={(e) => setFormData(prev => ({ ...prev, room: e.target.value }))}
-              className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
+              className="w-full px-6 py-4 border border-gray-300 rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors appearance-none bg-white"
             >
               <option value="">Select a room</option>
               {rooms.map((room) => (
@@ -122,7 +122,7 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
               required
               value={formData.name}
               onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-              className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
+              className="w-full px-6 py-4 border border-gray-300 rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
               placeholder="e.g., MacBook Pro, Coffee Mug, etc."
             />
           </div>
@@ -135,7 +135,7 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
               required
               value={formData.category}
               onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
-              className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
+              className="w-full px-6 py-4 border border-gray-300 rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors appearance-none bg-white"
             >
               <option value="">Select a category</option>
               {categories.map((category) => (
@@ -151,7 +151,7 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
             <textarea
               value={formData.description}
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
+              className="w-full px-6 py-4 border border-gray-300 rounded-3xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors resize-none"
               rows={3}
               placeholder="Any details you want to remember..."
             />
@@ -165,7 +165,7 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
               <select
                 value={formData.condition}
                 onChange={(e) => setFormData(prev => ({ ...prev, condition: e.target.value as any }))}
-                className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
+                className="w-full px-4 py-4 border border-gray-300 rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors appearance-none bg-white"
               >
                 <option value="excellent">Great</option>
                 <option value="good">Good</option>
@@ -182,7 +182,7 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
                 type="number"
                 value={formData.estimatedValue}
                 onChange={(e) => setFormData(prev => ({ ...prev, estimatedValue: e.target.value }))}
-                className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
+                className="w-full px-4 py-4 border border-gray-300 rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
                 placeholder="0.00"
                 step="0.01"
                 min="0"
@@ -198,7 +198,7 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
               type="text"
               value={formData.tags}
               onChange={(e) => setFormData(prev => ({ ...prev, tags: e.target.value }))}
-              className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
+              className="w-full px-6 py-4 border border-gray-300 rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
               placeholder="vintage, gift, favorite (comma separated)"
             />
           </div>
@@ -207,13 +207,13 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 bg-gray-100 text-gray-700 py-4 rounded-2xl font-bold hover:bg-gray-200 transition-colors"
+              className="flex-1 bg-gray-100 text-gray-700 py-4 rounded-full font-bold hover:bg-gray-200 transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-4 rounded-2xl font-bold hover:shadow-2xl hover:shadow-indigo-500/25 transition-all duration-300 hover:scale-105 flex items-center justify-center gap-2"
+              className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-4 rounded-full font-bold hover:shadow-2xl hover:shadow-indigo-500/25 transition-all duration-300 hover:scale-105 flex items-center justify-center gap-2"
             >
               <Save size={18} />
               Save Changes
