@@ -90,8 +90,8 @@ function App() {
 
             {items.length === 0 ? (
               <div className="text-center py-12">
-                <div className="w-24 h-24 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-3xl flex items-center justify-center mx-auto mb-6 border border-indigo-100">
-                  <Plus className="text-indigo-600" size={36} />
+                <div className="w-24 h-24 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-3xl flex items-center justify-center mx-auto mb-6 border border-emerald-100">
+                  <Plus className="text-emerald-600" size={36} />
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 mb-3">Ready to get organized?</h3>
                 <p className="text-gray-600 mb-8 max-w-sm mx-auto leading-relaxed">
@@ -99,7 +99,7 @@ function App() {
                 </p>
                 <button
                   onClick={() => setShowAddModal(true)}
-                  className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-8 py-4 rounded-full font-bold hover:shadow-xl hover:shadow-indigo-500/25 transition-all duration-300 hover:scale-105"
+                  className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-8 py-4 rounded-full font-bold hover:shadow-xl hover:shadow-emerald-500/25 transition-all duration-300 hover:scale-105"
                 >
                   Add Your First Item
                 </button>
@@ -305,10 +305,10 @@ function App() {
                 </button>
               ))}
 
-              {/* Center Add Button - Outlined */}
+              {/* Center Add Button - Now Green! */}
               <button
                 onClick={() => setShowAddModal(true)}
-                className="flex items-center justify-center w-14 h-14 mx-2 border-2 border-indigo-600 text-indigo-600 rounded-full hover:bg-indigo-600 hover:text-white hover:shadow-xl hover:shadow-indigo-500/25 hover:scale-110 transition-all duration-300"
+                className="flex items-center justify-center w-14 h-14 mx-2 border-2 border-emerald-600 text-emerald-600 rounded-full hover:bg-emerald-600 hover:text-white hover:shadow-xl hover:shadow-emerald-500/25 hover:scale-110 transition-all duration-300"
                 title="Add new item"
               >
                 <Plus size={24} />
