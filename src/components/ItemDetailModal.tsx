@@ -94,7 +94,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
             {item.estimatedValue && (
               <div className="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-2xl px-4 py-2">
                 <DollarSign size={18} className="text-emerald-600" />
-                <span className="text-xl font-bold text-emerald-700">${item.estimatedValue.toFixed(0)}</span>
+                <span className="text-xl font-bold text-emerald-700">{item.estimatedValue.toFixed(0)}</span>
               </div>
             )}
           </div>
