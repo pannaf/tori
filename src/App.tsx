@@ -3,9 +3,11 @@ import { Plus, MessageSquare, Home, Search, BarChart3, Zap } from 'lucide-react'
 import { useInventory } from './hooks/useInventory';
 import { AddItemModal } from './components/AddItemModal';
 import { ItemCard } from './components/ItemCard';
+import { ItemDetailModal } from './components/ItemDetailModal';
 import { SearchAndFilters } from './components/SearchAndFilters';
 import { ChatInterface } from './components/ChatInterface';
 import { StatsOverview } from './components/StatsOverview';
+import { InventoryItem } from './types/inventory';
 
 type TabType = 'home' | 'search' | 'stats' | 'chat';
 
@@ -22,6 +24,8 @@ function App() {
 
   const [activeTab, setActiveTab] = useState<TabType>('home');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
+  const [showItemDetail, setShowItemDetail] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRoom, setSelectedRoom] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -30,6 +34,23 @@ function App() {
   const recentItems = items
     .sort((a, b) => new Date(b.dateAdded).getTime() - new Date(a.dateAdded).getTime())
     .slice(0, 6);
+
+  const handleItemClick = (item: InventoryItem) => {
+    setSelectedItem(item);
+    setShowItemDetail(true);
+  };
+
+  const handleItemEdit = (item: InventoryItem) => {
+    // For now, just close the modal. In a full implementation, 
+    // you'd open an edit modal with the item data pre-filled
+    setShowItemDetail(false);
+    console.log('Edit item:', item);
+  };
+
+  const handleItemDelete = (id: string) => {
+    deleteItem(id);
+    setShowItemDetail(false);
+  };
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -97,6 +118,7 @@ function App() {
                       item={item}
                       onEdit={updateItem}
                       onDelete={deleteItem}
+                      onClick={handleItemClick}
                     />
                   ))}
                 </div>
@@ -131,6 +153,7 @@ function App() {
                   item={item}
                   onEdit={updateItem}
                   onDelete={deleteItem}
+                  onClick={handleItemClick}
                 />
               ))}
             </div>
@@ -319,6 +342,14 @@ function App() {
           onAdd={addItem}
           rooms={rooms}
           categories={categories}
+        />
+
+        <ItemDetailModal
+          item={selectedItem}
+          isOpen={showItemDetail}
+          onClose={() => setShowItemDetail(false)}
+          onEdit={handleItemEdit}
+          onDelete={handleItemDelete}
         />
       </div>
     </div>

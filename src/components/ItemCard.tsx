@@ -1,23 +1,33 @@
 import React from 'react';
-import { MoreVertical, MapPin, Tag, DollarSign } from 'lucide-react';
+import { MapPin, Tag, DollarSign } from 'lucide-react';
 import { InventoryItem } from '../types/inventory';
 
 interface ItemCardProps {
   item: InventoryItem;
   onEdit?: (item: InventoryItem) => void;
   onDelete?: (id: string) => void;
+  onClick?: (item: InventoryItem) => void;
 }
 
-export const ItemCard: React.FC<ItemCardProps> = ({ item, onEdit, onDelete }) => {
+export const ItemCard: React.FC<ItemCardProps> = ({ item, onEdit, onDelete, onClick }) => {
   const conditionColors = {
-    excellent: 'bg-green-100 text-green-800',
+    excellent: 'bg-emerald-100 text-emerald-800',
     good: 'bg-blue-100 text-blue-800',
-    fair: 'bg-yellow-100 text-yellow-800',
+    fair: 'bg-amber-100 text-amber-800',
     poor: 'bg-red-100 text-red-800',
   };
 
+  const handleClick = () => {
+    if (onClick) {
+      onClick(item);
+    }
+  };
+
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
+    <div 
+      className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300 hover:scale-[1.02] cursor-pointer"
+      onClick={handleClick}
+    >
       {item.imageUrl && (
         <div className="aspect-square bg-gray-100">
           <img
@@ -31,9 +41,6 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, onEdit, onDelete }) =>
       <div className="p-4">
         <div className="flex items-start justify-between mb-2">
           <h3 className="font-semibold text-gray-900 text-lg leading-tight">{item.name}</h3>
-          <button className="text-gray-400 hover:text-gray-600 transition-colors">
-            <MoreVertical size={18} />
-          </button>
         </div>
 
         {item.description && (
