@@ -36,24 +36,28 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({ items, variant = '
       value: totalItems.toString(),
       icon: Package,
       gradient: 'from-indigo-500 to-purple-600',
+      subtitle: variant === 'default' ? `+${recentItems} this week` : undefined,
     },
     {
       label: totalRooms === 1 ? 'Room' : 'Rooms',
       value: totalRooms.toString(),
       icon: Home,
       gradient: 'from-emerald-500 to-teal-600',
+      subtitle: variant === 'default' ? 'Across home' : undefined,
     },
     {
       label: 'Total Value',
       value: formatValue(totalValue, variant === 'compact'), // Only use smart formatting for compact variant
       icon: DollarSign,
       gradient: 'from-purple-500 to-pink-600',
+      subtitle: variant === 'default' ? 'Estimated' : undefined,
     },
     {
       label: recentItems === 1 ? 'New Item' : 'New Items',
       value: recentItems > 0 ? `+${recentItems}` : '0',
       icon: TrendingUp,
       gradient: 'from-orange-500 to-red-600',
+      subtitle: variant === 'default' ? 'This week' : undefined,
     },
   ];
 
@@ -82,16 +86,19 @@ export const StatsOverview: React.FC<StatsOverviewProps> = ({ items, variant = '
       {stats.map((stat, index) => (
         <div
           key={index}
-          className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-lg transition-all duration-300 hover:scale-105"
+          className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-lg transition-all duration-300 hover:scale-105"
         >
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-4">
             <div className={`bg-gradient-to-r ${stat.gradient} p-3 rounded-xl shadow-lg`}>
               <stat.icon className="text-white" size={20} />
             </div>
           </div>
-          <div className="space-y-1">
-            <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+          <div className="space-y-2">
+            <p className="text-3xl font-bold text-gray-900">{stat.value}</p>
             <p className="text-sm font-semibold text-gray-900">{stat.label}</p>
+            {stat.subtitle && (
+              <p className="text-xs text-gray-500">{stat.subtitle}</p>
+            )}
           </div>
         </div>
       ))}
