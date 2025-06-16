@@ -89,11 +89,11 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
           }
         }
 
-        setProcessingStep('Analyzing with AI... (this may take up to 2 minutes)');
+        setProcessingStep('Analyzing with AI... (this may take up to 5 minutes)');
 
         // Create AbortController for timeout handling
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minute timeout
+        const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 minute timeout
 
         const apiResponse = await fetch(`${env.API_URL}/api/analyze-image`, {
           method: 'POST',

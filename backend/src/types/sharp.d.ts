@@ -3,7 +3,7 @@ declare module 'sharp' {
     resize(width?: number, height?: number, options?: any): Sharp;
     extract(options: { left: number; top: number; width: number; height: number }): Sharp;
     toFile(fileOut: string): Promise<any>;
-    metadata(): Promise<{ width?: number; height?: number; [key: string]: any }>;
+    metadata(): Promise<{ width?: number; height?: number;[key: string]: any }>;
     jpeg(options?: { quality?: number }): Sharp;
   }
 

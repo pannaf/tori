@@ -8,7 +8,8 @@
     "build": "tsc",
     "clean": "rm -rf dist",
     "railway:build": "npm run build",
-    "railway:start": "npm run start"
+    "railway:start": "npm run start",
+    "test:enhancer": "npm run build && node dist/test/testImageEnhancer.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.50.0",

@@ -42,6 +42,9 @@ app.use('/api', detectObjectRouter);
 app.use('/api', analyzeImageRouter);
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
-}); 
+});
+
+// Set server timeout to 5 minutes (300000ms) to handle long-running image processing
+server.timeout = 300000; 

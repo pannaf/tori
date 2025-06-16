@@ -6,7 +6,7 @@ import * as os from 'os';
 import OpenAI from 'openai';
 import { createClient } from '@supabase/supabase-js';
 import { detectObject, cropImage } from './objectDetector.js';
-import { uploadImageFileToSupabase } from './storageUtils.js';
+import { enhanceImageForPortrait } from './imageEnhancer.js';
 import { getInventoryItems, getInventoryItemsByCategory, getInventoryItemsByRoom, updateInventoryItem, deleteInventoryItem } from './databaseUtils.js';
 import { supabase } from './supabase.js';
 
@@ -101,7 +101,7 @@ router.post('/analyze-image', upload.single('image'), async (req, res) => {
             // Process only the first 3 objects
             const objectsToProcess = result.objects.slice(0, 3);
 
-            // For each object, detect its location and crop the image
+            // For each object, detect its location, crop the image, and enhance it
             const objectsWithImages = await Promise.all(objectsToProcess.map(async (obj) => {
                 try {
                     const detections = await detectObject(req.file!.path, obj.name);
@@ -109,22 +109,23 @@ router.post('/analyze-image', upload.single('image'), async (req, res) => {
                         // Use the first detection (highest confidence)
                         const detection = detections[0];
                         const cropFileName = `${obj.name.replace(/\s+/g, '_')}_${Date.now()}.jpg`;
+                        const enhancedFileName = `enhanced_${cropFileName}`;
 
-                        // Create temporary file for the crop
+                        // Create temporary file for cropping
                         const tempCropPath = path.join(os.tmpdir(), cropFileName);
 
                         // Crop the image to temporary file
                         await cropImage(req.file!.path, detection.boundingBox, tempCropPath);
 
-                        // Upload the cropped image to Supabase Storage (using service role)
-                        const imageUrl = await uploadImageFileToSupabase(tempCropPath, cropFileName);
+                        // Enhance the cropped image using OpenAI and upload to Supabase
+                        const imageUrl = await enhanceImageForPortrait(tempCropPath, enhancedFileName);
 
-                        // Clean up temporary file
+                        // Clean up temporary crop file
                         fs.unlinkSync(tempCropPath);
 
                         return {
                             ...obj,
-                            imageUrl: imageUrl, // URL to the image in Supabase Storage
+                            imageUrl: imageUrl, // URL to the enhanced image in Supabase Storage
                             confidence: detection.confidence
                         };
                     }

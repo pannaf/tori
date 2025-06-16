@@ -8,6 +8,7 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { analyzeImage } from './utils/imageAnalyzer.js';
 import { detectObject, cropImage } from '../src/utils/objectDetector.js';
+import { enhanceImageForPortrait } from './src/imageEnhancer.js';
 import dotenv from 'dotenv';
 
 // Load environment variables
@@ -65,7 +66,7 @@ app.post('/api/analyze-image', upload.single('image'), async (req, res) => {
         const gptAnalysis = await analyzeImage(req.file.path);
         console.log('GPT-4V Analysis:', gptAnalysis);
 
-        // Step 2: Process first 3 objects with Landing AI and crop images
+        // Step 2: Process first 3 objects with Landing AI, crop images, and enhance them
         const objectsToProcess = gptAnalysis.objects.slice(0, 3);
         const processedObjects = await Promise.all(
             objectsToProcess.map(async (obj) => {
@@ -77,19 +78,28 @@ app.post('/api/analyze-image', upload.single('image'), async (req, res) => {
                         // Use the first detection (highest confidence)
                         const detection = detections[0];
 
-                        // Generate a unique filename for the cropped image
+                        // Generate unique filenames for the cropped and enhanced images
                         const timestamp = Date.now();
                         const safeObjectName = obj.name.toLowerCase().replace(/\s+/g, '_');
                         const cropFileName = `${safeObjectName}_${timestamp}.jpg`;
+                        const enhancedFileName = `enhanced_${cropFileName}`;
                         const cropPath = path.join(cropsDir, cropFileName);
 
                         // Crop the image
                         await cropImage(req.file!.path, detection.boundingBox, cropPath);
 
-                        // Return object with crop URL
+                        // Enhance the cropped image using OpenAI and upload to Supabase
+                        const enhancedImageUrl = await enhanceImageForPortrait(cropPath, enhancedFileName);
+
+                        // Clean up the cropped file (we only need the enhanced version in Supabase)
+                        fs.unlink(cropPath, (err) => {
+                            if (err) console.error('Error deleting cropped file:', err);
+                        });
+
+                        // Return object with enhanced image URL from Supabase
                         return {
                             ...obj,
-                            imageUrl: `/crops/${cropFileName}`,
+                            imageUrl: enhancedImageUrl,
                             confidence: detection.confidence,
                             boundingBox: detection.boundingBox
                         };
@@ -165,7 +175,10 @@ app.post('/api/crop-image', upload.single('image'), async (req, res) => {
 });
 
 const port = process.env.PORT || 3000;
-app.listen(port, () => {
+const server = app.listen(port, () => {
     console.log(`Server running on port ${port}`);
     console.log(`Serving images from: ${cropsDir}`);
-}); 
+});
+
+// Set server timeout to 5 minutes (300000ms) to handle long-running image processing
+server.timeout = 300000; 
