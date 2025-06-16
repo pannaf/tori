@@ -22,7 +22,7 @@ function createAuthenticatedSupabaseClient(authToken: string) {
         throw new Error('Supabase configuration missing');
     }
 
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    const userSupabase = createClient(supabaseUrl, supabaseAnonKey, {
         global: {
             headers: {
                 Authorization: `Bearer ${authToken}`
@@ -30,7 +30,7 @@ function createAuthenticatedSupabaseClient(authToken: string) {
         }
     });
 
-    return supabase;
+    return userSupabase;
 }
 
 interface ObjectWithCost {
@@ -210,15 +210,22 @@ const requireAuth = async (req: Request, res: Response, next: NextFunction) => {
 
         const token = authHeader.substring(7); // Remove 'Bearer ' prefix
 
-        // Verify the token with Supabase
-        const { data: { user }, error } = await supabase.auth.getUser(token);
+        // Create authenticated Supabase client with the user's token
+        const userSupabase = createAuthenticatedSupabaseClient(token);
+
+        // Verify the token by getting the user
+        const { data: { user }, error } = await userSupabase.auth.getUser();
 
         if (error || !user) {
+            console.error('Token verification failed:', error);
             return res.status(401).json({ error: 'Invalid or expired token' });
         }
 
-        // Add user to request object for use in route handlers
+        console.log('User authenticated successfully:', user.id);
+
+        // Add user and authenticated supabase client to request object
         (req as any).user = user;
+        (req as any).userSupabase = userSupabase;
         next();
     } catch (error) {
         console.error('Auth middleware error:', error);
@@ -232,13 +239,14 @@ router.put('/inventory-items/:id', requireAuth, async (req, res) => {
         const { id } = req.params;
         const updates = req.body;
         const user = (req as any).user;
+        const userSupabase = (req as any).userSupabase;
 
         console.log('Updating item:', id, 'for user:', user.id);
         console.log('Updates received:', updates);
 
         // Add user validation - ensure the item belongs to the authenticated user
-        // First check if the item exists and belongs to the user
-        const { data: existingItem, error: fetchError } = await supabase
+        // First check if the item exists and belongs to the user using the authenticated client
+        const { data: existingItem, error: fetchError } = await userSupabase
             .from('inventory_items')
             .select('*')
             .eq('id', id)
@@ -253,7 +261,9 @@ router.put('/inventory-items/:id', requireAuth, async (req, res) => {
             return res.status(500).json({ error: 'Failed to verify item ownership' });
         }
 
-        // Update the item
+        console.log('Item found, proceeding with update...');
+
+        // Update the item using the database utility (which uses service role)
         const updatedItem = await updateInventoryItem(id, updates);
         console.log('Item updated successfully:', updatedItem);
 
