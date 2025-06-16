@@ -172,10 +172,32 @@ router.post('/analyze-image', upload.single('image'), async (req, res) => {
             // Process only the first 3 objects
             const objectsToProcess = result.objects.slice(0, 3);
 
-            // For each object, detect its location, crop the image, and enhance it
-            const objectsWithImages = await Promise.all(objectsToProcess.map(async (obj) => {
+            // Phase 1: Run all Landing AI detection calls in parallel first
+            console.log('Starting parallel Landing AI detection calls...');
+            const detectionPromises = objectsToProcess.map(async (obj) => {
                 try {
                     const detections = await detectObject(req.file!.path, obj.name);
+                    return {
+                        object: obj,
+                        detections: detections
+                    };
+                } catch (error) {
+                    console.error(`Error detecting object ${obj.name}:`, error);
+                    return {
+                        object: obj,
+                        detections: []
+                    };
+                }
+            });
+
+            // Wait for all detection calls to complete
+            const detectionResults = await Promise.all(detectionPromises);
+            console.log('All Landing AI detection calls completed');
+
+            // Phase 2: Process the detection results (cropping and enhancing) in parallel
+            console.log('Starting parallel image processing...');
+            const objectsWithImages = await Promise.all(detectionResults.map(async ({ object: obj, detections }) => {
+                try {
                     if (detections.length > 0) {
                         // Use the first detection (highest confidence)
                         const detection = detections[0];
@@ -189,7 +211,7 @@ router.post('/analyze-image', upload.single('image'), async (req, res) => {
                         await cropImage(req.file!.path, detection.boundingBox, tempCropPath);
 
                         // Save the original cropped image to Supabase
-                        console.log('Uploading original cropped image to Supabase...');
+                        console.log(`Uploading original cropped image for ${obj.name} to Supabase...`);
                         const originalCropImageUrl = await uploadImageFileToSupabase(tempCropPath, `original_${cropFileName}`);
 
                         // Enhance the cropped image using OpenAI and upload to Supabase (resized)
@@ -214,6 +236,8 @@ router.post('/analyze-image', upload.single('image'), async (req, res) => {
                     originalFullImageUrl: originalFullImageUrl // Include original full image URL even if processing fails
                 };
             }));
+
+            console.log('Image processing complete');
 
             // DON'T save to database yet - let frontend handle that when user confirms
             console.log('AI detection complete, returning data to frontend');

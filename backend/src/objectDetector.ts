@@ -48,12 +48,8 @@ export async function detectObject(imagePath: string, objectName: string): Promi
     formData.append('model', 'agentic');
 
     try {
-        console.log(`\nSending request to Landing AI for object: "${objectName}"`);
-        console.log('Request details:', {
-            url,
-            imageName: path.basename(imagePath),
-            prompt: objectName
-        });
+        console.log(`\n[${objectName}] Sending request to Landing AI...`);
+        const startTime = Date.now();
 
         const response = await fetch(url, {
             method: 'POST',
@@ -63,9 +59,12 @@ export async function detectObject(imagePath: string, objectName: string): Promi
             },
         });
 
+        const requestTime = Date.now() - startTime;
+        console.log(`[${objectName}] Landing AI request completed in ${requestTime}ms`);
+
         if (!response.ok) {
             const errorText = await response.text();
-            console.error('API Error Response:', {
+            console.error(`[${objectName}] API Error Response:`, {
                 status: response.status,
                 statusText: response.statusText,
                 body: errorText
@@ -74,17 +73,17 @@ export async function detectObject(imagePath: string, objectName: string): Promi
         }
 
         const data = await response.json() as LandingAIResponse;
-        console.log('\nRaw API Response:', JSON.stringify(data, null, 2));
+        console.log(`[${objectName}] Raw API Response:`, JSON.stringify(data, null, 2));
 
         if (!data.data || !Array.isArray(data.data) || data.data.length === 0) {
-            console.log('Warning: No detection results in response');
+            console.log(`[${objectName}] Warning: No detection results in response`);
             return [];
         }
 
         // Get the first array of results
         const detections = data.data[0];
         if (!Array.isArray(detections)) {
-            console.log('Warning: Detection results are not in expected format');
+            console.log(`[${objectName}] Warning: Detection results are not in expected format`);
             return [];
         }
 
@@ -103,11 +102,11 @@ export async function detectObject(imagePath: string, objectName: string): Promi
             };
         });
 
-        console.log(`\nProcessed ${results.length} detection(s) for "${objectName}"`);
+        console.log(`[${objectName}] Successfully processed ${results.length} detection(s)`);
         return results;
 
     } catch (error) {
-        console.error('Error detecting object:', error);
+        console.error(`[${objectName}] Error detecting object:`, error);
         throw error;
     }
 }

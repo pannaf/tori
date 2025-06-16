@@ -112,134 +112,6 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
     }));
   };
 
-  const simulateDetailedBackendProgress = async (data: any) => {
-    // Simulate the exact backend processing steps we see in the logs
-    const objects = data.objects.slice(0, 3);
-
-    // Step 1: Initial AI Analysis Complete
-    updateProgress({
-      step: 'detecting',
-      message: `Tori found ${objects.length} objects in your ${data.room}!`,
-      progress: 35,
-      detectedObjects: objects.map(obj => ({ ...obj, status: 'waiting' })),
-      room: data.room,
-      totalValue: data.total_estimated_value_usd,
-      currentlyProcessing: 'Starting object detection...'
-    });
-
-    addProcessingDetail(`🏠 Room detected: ${data.room}`, 'success', '🏠');
-    addProcessingDetail(`📊 Total estimated value: $${data.total_estimated_value_usd.toFixed(0)}`, 'info', '💰');
-    addProcessingDetail(`🔍 Processing ${objects.length} objects with Landing AI`, 'processing', '🤖');
-
-    await new Promise(resolve => setTimeout(resolve, 1200));
-
-    // Step 2: Process each object with detailed steps
-    for (let i = 0; i < objects.length; i++) {
-      const obj = objects[i];
-
-      // Start detecting this object
-      updateProgress({
-        step: 'processing',
-        message: `Processing "${obj.name}"...`,
-        progress: 40 + (i * 20),
-        currentlyProcessing: `Sending request to Landing AI for object: "${obj.name}"`,
-        currentObjectIndex: i,
-        detectedObjects: objects.map((o, idx) => ({
-          ...o,
-          status: idx < i ? 'complete' : idx === i ? 'detecting' : 'waiting'
-        }))
-      });
-
-      addProcessingDetail(`🔍 Detecting instances of "${obj.name}"`, 'processing', '👁️');
-      await new Promise(resolve => setTimeout(resolve, 800));
-
-      // Simulate detection results
-      const detectionCount = Math.floor(Math.random() * 3) + 1;
-      addProcessingDetail(`✅ Found ${detectionCount} instance(s) of "${obj.name}"`, 'success', '🎯');
-      await new Promise(resolve => setTimeout(resolve, 600));
-
-      // Start cropping
-      updateProgress({
-        currentlyProcessing: `Cropping image for "${obj.name}"`,
-        detectedObjects: objects.map((o, idx) => ({
-          ...o,
-          status: idx < i ? 'complete' : idx === i ? 'cropping' : 'waiting',
-          detectionCount: idx === i ? detectionCount : o.detectionCount
-        }))
-      });
-
-      addProcessingDetail(`✂️ Cropping image with dimensions for "${obj.name}"`, 'processing', '✂️');
-      await new Promise(resolve => setTimeout(resolve, 700));
-
-      // Upload original crop
-      addProcessingDetail(`📤 Uploading original cropped image to Supabase`, 'upload', '☁️');
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      // Start enhancing
-      updateProgress({
-        currentlyProcessing: `Enhancing "${obj.name}" with OpenAI`,
-        detectedObjects: objects.map((o, idx) => ({
-          ...o,
-          status: idx < i ? 'complete' : idx === i ? 'enhancing' : 'waiting'
-        }))
-      });
-
-      addProcessingDetail(`🎨 Enhancing image for "${obj.name}" with OpenAI`, 'processing', '✨');
-      await new Promise(resolve => setTimeout(resolve, 1200));
-
-      addProcessingDetail(`📏 Resizing enhanced image to max 512x512 pixels`, 'processing', '📐');
-      await new Promise(resolve => setTimeout(resolve, 400));
-
-      // Upload enhanced
-      updateProgress({
-        currentlyProcessing: `Uploading enhanced "${obj.name}"`,
-        detectedObjects: objects.map((o, idx) => ({
-          ...o,
-          status: idx < i ? 'complete' : idx === i ? 'uploading' : 'waiting'
-        }))
-      });
-
-      addProcessingDetail(`📤 Uploading enhanced image to Supabase`, 'upload', '☁️');
-      await new Promise(resolve => setTimeout(resolve, 600));
-
-      addProcessingDetail(`✅ Successfully processed "${obj.name}"`, 'success', '🎉');
-
-      // Mark as complete
-      updateProgress({
-        detectedObjects: objects.map((o, idx) => ({
-          ...o,
-          status: idx <= i ? 'complete' : 'waiting'
-        }))
-      });
-
-      await new Promise(resolve => setTimeout(resolve, 300));
-    }
-
-    // Step 3: Final steps
-    updateProgress({
-      step: 'enhancing',
-      message: 'Finalizing your inventory items...',
-      progress: 90,
-      currentlyProcessing: 'AI detection complete, preparing data',
-      detectedObjects: objects.map(obj => ({ ...obj, status: 'complete' }))
-    });
-
-    addProcessingDetail(`🔄 AI detection complete, returning data to frontend`, 'success', '✅');
-    await new Promise(resolve => setTimeout(resolve, 800));
-
-    // Step 4: Complete
-    updateProgress({
-      step: 'complete',
-      message: 'Perfect! Your items are ready to add.',
-      progress: 100,
-      currentlyProcessing: 'Ready to add to inventory!',
-      detectedObjects: objects.map(obj => ({ ...obj, status: 'complete' }))
-    });
-
-    addProcessingDetail(`🎊 All items processed and ready!`, 'success', '🏆');
-    await new Promise(resolve => setTimeout(resolve, 1500));
-  };
-
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -331,14 +203,16 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
 
         // Update progress but preserve the original full image URL that was set earlier
         updateProgress({
-          step: 'processing',
-          message: 'Processing detected objects...',
-          progress: 50
-          // Don't override originalFullImageUrl here - keep the one we set earlier
+          step: 'complete',
+          message: 'Perfect! Your items are ready to add.',
+          progress: 100,
+          detectedObjects: data.objects.map((obj: any) => ({ ...obj, status: 'complete' })),
+          room: data.room,
+          totalValue: data.total_estimated_value_usd,
+          currentlyProcessing: 'Ready to add to inventory!'
         });
 
-        // Start the detailed backend progress simulation
-        await simulateDetailedBackendProgress(data);
+        addProcessingDetail(`🎊 Found ${data.objects.length} items worth $${data.total_estimated_value_usd.toFixed(0)}!`, 'success', '🏆');
 
         // Transform the analysis data to match the expected format
         const recognitionData = {
@@ -358,8 +232,11 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
           estimatedValue: data.total_estimated_value_usd
         };
 
-        onCapture(imageData, recognitionData);
-        setIsProcessing(false);
+        // Small delay to show the completion state before proceeding
+        setTimeout(() => {
+          onCapture(imageData, recognitionData);
+          setIsProcessing(false);
+        }, 1000);
       } catch (error) {
         console.error('Recognition failed:', error);
         if (error instanceof Error) {
