@@ -334,7 +334,7 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
                 onClick={() => setShowMaintenanceSection(!showMaintenanceSection)}
                 className="text-indigo-600 hover:text-indigo-700 font-semibold text-sm"
               >
-                {showMaintenanceSection ? 'Hide' : existingSchedules.length > 0 ? 'Manage' : 'Add Maintenance'}
+                {showMaintenanceSection ? 'Hide' : existingSchedules.length > 0 ? 'Manage' : 'Add'}
               </button>
             </div>
 
