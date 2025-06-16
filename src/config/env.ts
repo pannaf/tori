@@ -3,7 +3,7 @@ export const env = {
   // API Configuration
   OPENAI_API_KEY: import.meta.env.VITE_OPENAI_API_KEY,
   LANDING_AI_API_KEY: import.meta.env.VITE_LANDING_AI_API_KEY,
-  API_URL: import.meta.env.VITE_API_URL || 'https://tori-production.up.railway.app', // 'http://localhost:3000',
+  API_URL: import.meta.env.VITE_API_URL || 'https://tori-production.up.railway.app',
   // API_URL: import.meta.env.VITE_API_URL || 'http://localhost:3000',
 
   // Debug mode
