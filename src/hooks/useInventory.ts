@@ -67,6 +67,7 @@ export const useInventory = () => {
           room: item.room,
           description: item.description || '',
           imageUrl: item.crop_image_data || item.image_data,
+          originalCropImageUrl: item.original_crop_image_url, // Add original image URL
           dateAdded: item.created_at,
           tags: item.tags || [],
           condition: item.condition || 'good',
@@ -100,6 +101,7 @@ export const useInventory = () => {
         tags: item.tags,
         condition: item.condition,
         crop_image_data: item.imageUrl,
+        original_crop_image_url: (item as any).originalCropImageUrl, // Include original image URL
         user_id: user.id,
         ai_detected: false,
         detection_confidence: null,
@@ -141,6 +143,7 @@ export const useInventory = () => {
         ...tempItem,
         id: supabaseItem.id, // Use Supabase-generated UUID
         dateAdded: supabaseItem.created_at,
+        originalCropImageUrl: supabaseItem.original_crop_image_url, // Include original image URL
       };
 
       // Update local state

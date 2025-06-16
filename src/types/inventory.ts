@@ -5,6 +5,7 @@ export interface InventoryItem {
   room: string;
   description?: string;
   imageUrl?: string;
+  originalCropImageUrl?: string; // Add original image URL field
   dateAdded: string;
   tags: string[];
   condition: 'excellent' | 'good' | 'fair' | 'poor';

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, MapPin, Tag, DollarSign, Calendar, Edit3, Trash2, AlertTriangle } from 'lucide-react';
+import { X, MapPin, Tag, DollarSign, Calendar, Edit3, Trash2, AlertTriangle, RotateCcw, Sparkles } from 'lucide-react';
 import { InventoryItem } from '../types/inventory';
 import { env } from '../config/env';
 
@@ -19,6 +19,8 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
   onDelete,
 }) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showOriginalImage, setShowOriginalImage] = useState(false);
+  const [imageTransitioning, setImageTransitioning] = useState(false);
 
   if (!isOpen || !item) return null;
 
@@ -68,6 +70,32 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
     setShowDeleteConfirm(false);
   };
 
+  const toggleImageView = () => {
+    setImageTransitioning(true);
+    setTimeout(() => {
+      setShowOriginalImage(!showOriginalImage);
+      setImageTransitioning(false);
+    }, 150);
+  };
+
+  // Get the appropriate image URL based on current view
+  const getCurrentImageUrl = () => {
+    if (showOriginalImage && (item as any).originalCropImageUrl) {
+      const originalUrl = (item as any).originalCropImageUrl;
+      return originalUrl.startsWith('data:') ? originalUrl :
+        originalUrl.startsWith('http') ? originalUrl :
+          `${env.API_URL}${originalUrl}`;
+    }
+    
+    // Fallback to enhanced/main image
+    return item.imageUrl?.startsWith('data:') ? item.imageUrl :
+      item.imageUrl?.startsWith('http') ? item.imageUrl :
+        `${env.API_URL}${item.imageUrl}`;
+  };
+
+  // Check if we have both images available
+  const hasOriginalImage = !!(item as any).originalCropImageUrl && (item as any).originalCropImageUrl !== item.imageUrl;
+
   // Delete Confirmation Modal
   if (showDeleteConfirm) {
     return (
@@ -110,16 +138,51 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
         {/* Header */}
         <div className="relative">
           {item.imageUrl && (
-            <div className="aspect-square bg-gray-100 rounded-t-3xl overflow-hidden">
+            <div className="aspect-square bg-gray-100 rounded-t-3xl overflow-hidden relative">
               <img
-                src={
-                  item.imageUrl.startsWith('data:') ? item.imageUrl :
-                    item.imageUrl.startsWith('http') ? item.imageUrl :
-                      `${env.API_URL}${item.imageUrl}`
-                }
+                src={getCurrentImageUrl()}
                 alt={item.name}
-                className="w-full h-full object-contain"
+                className={`w-full h-full object-contain transition-all duration-300 ${
+                  imageTransitioning ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
+                }`}
               />
+              
+              {/* Image Toggle Button - Only show if we have both images */}
+              {hasOriginalImage && (
+                <button
+                  onClick={toggleImageView}
+                  className={`absolute bottom-4 left-4 px-4 py-2 rounded-full text-sm font-semibold border-2 border-white backdrop-blur-sm transition-all duration-300 hover:scale-105 shadow-lg ${
+                    showOriginalImage
+                      ? 'bg-gradient-to-r from-purple-500 to-indigo-600 text-white'
+                      : 'bg-gradient-to-r from-amber-500 to-orange-600 text-white'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    {showOriginalImage ? (
+                      <>
+                        <Sparkles size={16} />
+                        <span>Enhanced</span>
+                      </>
+                    ) : (
+                      <>
+                        <RotateCcw size={16} />
+                        <span>Original</span>
+                      </>
+                    )}
+                  </div>
+                </button>
+              )}
+
+              {/* Image Type Indicator */}
+              {hasOriginalImage && (
+                <div className={`absolute top-4 left-4 px-3 py-1 rounded-full text-xs font-bold border-2 border-white backdrop-blur-sm ${
+                  showOriginalImage
+                    ? 'bg-blue-500 bg-opacity-90 text-white'
+                    : 'bg-purple-500 bg-opacity-90 text-white'
+                }`}>
+                  {showOriginalImage ? 'Original' : 'Enhanced'}
+                </div>
+              )}
             </div>
           )}
 
@@ -132,7 +195,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
           </button>
 
           {/* Pill-shaped condition badge overlay */}
-          <div className={`absolute top-4 left-4 px-4 py-2 rounded-full text-sm font-semibold border-2 border-white ${conditionColors[item.condition]} backdrop-blur-sm`}>
+          <div className={`absolute top-4 right-16 px-4 py-2 rounded-full text-sm font-semibold border-2 border-white ${conditionColors[item.condition]} backdrop-blur-sm`}>
             {conditionLabels[item.condition]}
           </div>
         </div>
@@ -149,6 +212,19 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
               </div>
             )}
           </div>
+
+          {/* Image Toggle Instructions - Only show if we have both images */}
+          {hasOriginalImage && (
+            <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-2xl p-4 text-center">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <Sparkles size={16} className="text-indigo-600" />
+                <span className="text-sm font-semibold text-indigo-700">AI Enhanced Image</span>
+              </div>
+              <p className="text-xs text-indigo-600">
+                Tap the button to switch between enhanced and original versions
+              </p>
+            </div>
+          )}
 
           {/* Location and Category */}
           <div className="grid grid-cols-2 gap-4">
