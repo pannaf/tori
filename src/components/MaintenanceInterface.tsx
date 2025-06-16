@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { 
-  Clock, 
-  AlertTriangle, 
-  CheckCircle, 
-  Calendar, 
-  Wrench, 
-  Shield, 
+import {
+  Clock,
+  AlertTriangle,
+  CheckCircle,
+  Calendar,
+  Wrench,
+  Shield,
   RefreshCw,
   X,
   Plus,
@@ -66,8 +66,8 @@ export const MaintenanceInterface: React.FC<MaintenanceInterfaceProps> = ({
     replacement: RefreshCw,
   };
 
-  const filteredReminders = activeFilter === 'all' 
-    ? reminders 
+  const filteredReminders = activeFilter === 'all'
+    ? reminders
     : getRemindersByPriority(activeFilter);
 
   const overdueCount = getOverdueReminders().length;
@@ -88,8 +88,8 @@ export const MaintenanceInterface: React.FC<MaintenanceInterfaceProps> = ({
     } else if (diffDays <= 7) {
       return `${diffDays}d`;
     } else {
-      return date.toLocaleDateString('en-US', { 
-        month: 'short', 
+      return date.toLocaleDateString('en-US', {
+        month: 'short',
         day: 'numeric'
       });
     }
@@ -129,35 +129,45 @@ export const MaintenanceInterface: React.FC<MaintenanceInterfaceProps> = ({
           </div>
         </div>
 
-        {/* Clean Single Row Filter Layout */}
+        {/* Clean Priority Filter with Clear Option */}
         <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <Filter size={16} className="text-gray-500" />
-            <span className="text-sm font-semibold text-gray-700">Filter by Priority</span>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Filter size={16} className="text-gray-500" />
+              <span className="text-sm font-semibold text-gray-700">Filter by Priority</span>
+            </div>
+
+            {/* Clear Filter Button - Only show when filter is active */}
+            {activeFilter !== 'all' && (
+              <button
+                onClick={() => setActiveFilter('all')}
+                className="text-xs font-semibold text-gray-500 hover:text-gray-700 px-2 py-1 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                Clear Filter
+              </button>
+            )}
           </div>
-          
-          <div className="flex gap-2 overflow-x-auto pb-2">
+
+          {/* 4 Priority Filters - No Overflow Issues */}
+          <div className="grid grid-cols-4 gap-2">
             {[
-              { key: 'all', label: 'All', count: reminders.length, gradient: 'from-indigo-600 to-purple-600' },
               { key: 'urgent', label: 'Urgent', count: getRemindersByPriority('urgent').length, gradient: 'from-red-500 to-pink-600' },
               { key: 'high', label: 'High', count: getRemindersByPriority('high').length, gradient: 'from-orange-500 to-red-500' },
-              { key: 'medium', label: 'Med', count: getRemindersByPriority('medium').length, gradient: 'from-yellow-500 to-orange-500' },
+              { key: 'medium', label: 'Medium', count: getRemindersByPriority('medium').length, gradient: 'from-yellow-500 to-orange-500' },
               { key: 'low', label: 'Low', count: getRemindersByPriority('low').length, gradient: 'from-blue-500 to-indigo-500' },
             ].map(({ key, label, count, gradient }) => (
               <button
                 key={key}
                 onClick={() => setActiveFilter(key as any)}
-                className={`flex-shrink-0 px-4 py-2.5 rounded-full text-sm font-bold transition-all duration-300 flex items-center gap-2 ${
-                  activeFilter === key
-                    ? `bg-gradient-to-r ${gradient} text-white shadow-lg scale-105`
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:scale-105'
-                }`}
+                className={`px-3 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 flex flex-col items-center gap-1 ${activeFilter === key
+                  ? `bg-gradient-to-r ${gradient} text-white shadow-lg scale-105`
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:scale-105'
+                  }`}
               >
-                <span>{label}</span>
+                <span className="text-xs">{label}</span>
                 {count > 0 && (
-                  <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
-                    activeFilter === key ? 'bg-white/20 text-white' : 'bg-gray-300 text-gray-700'
-                  }`}>
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${activeFilter === key ? 'bg-white/20 text-white' : 'bg-gray-300 text-gray-700'
+                    }`}>
                     {count}
                   </span>
                 )}
@@ -180,7 +190,7 @@ export const MaintenanceInterface: React.FC<MaintenanceInterfaceProps> = ({
               </div>
               <h3 className="text-lg font-bold text-gray-900 mb-2">All caught up!</h3>
               <p className="text-gray-600">
-                {activeFilter === 'all' 
+                {activeFilter === 'all'
                   ? "No maintenance needed right now. Your items are in great shape!"
                   : `No ${activeFilter} priority items to worry about.`
                 }
@@ -190,7 +200,7 @@ export const MaintenanceInterface: React.FC<MaintenanceInterfaceProps> = ({
             filteredReminders.map((reminder) => {
               const TypeIcon = typeIcons[reminder.type];
               const isExpanded = expandedReminder === reminder.id;
-              
+
               return (
                 <div
                   key={reminder.id}
