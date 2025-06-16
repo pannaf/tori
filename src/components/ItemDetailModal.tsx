@@ -214,7 +214,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                 }`}
               >
                 <Image size={16} />
-                Original Photo
+                Original
               </button>
               <button
                 onClick={() => showOriginalImage && toggleImageView()}
@@ -225,7 +225,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                 }`}
               >
                 <Sparkles size={16} />
-                Enhanced Photo
+                Enhanced
               </button>
             </div>
           )}
