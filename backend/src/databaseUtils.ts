@@ -63,12 +63,46 @@ export async function getInventoryItems(userId?: string): Promise<InventoryItem[
  */
 export async function updateInventoryItem(itemId: string, updates: Partial<InventoryItem>): Promise<InventoryItem> {
     try {
+        console.log('=== DATABASE UPDATE DEBUG ===');
+        console.log('Item ID:', itemId);
+        console.log('Updates to apply:', updates);
+
+        // First check if the item exists
+        console.log('Checking if item exists...');
+        const { data: existingItem, error: checkError } = await supabase
+            .from('inventory_items')
+            .select('*')
+            .eq('id', itemId)
+            .single();
+
+        console.log('Existing item check:');
+        console.log('- Data:', existingItem);
+        console.log('- Error:', checkError);
+
+        if (checkError) {
+            console.error('Item does not exist for update:', checkError);
+            throw new Error(`Item not found: ${checkError.message}`);
+        }
+
+        // Prepare the update data
+        const updateData = {
+            ...updates,
+            updated_at: new Date().toISOString()
+        };
+        console.log('Prepared update data:', updateData);
+
+        // Perform the update
+        console.log('Performing update...');
         const { data, error } = await supabase
             .from('inventory_items')
-            .update({ ...updates, updated_at: new Date().toISOString() })
+            .update(updateData)
             .eq('id', itemId)
             .select()
             .single();
+
+        console.log('Update result:');
+        console.log('- Data:', data);
+        console.log('- Error:', error);
 
         if (error) {
             console.error('Database error updating inventory item:', error);
@@ -76,6 +110,7 @@ export async function updateInventoryItem(itemId: string, updates: Partial<Inven
         }
 
         console.log('Successfully updated inventory item:', itemId);
+        console.log('=== END DATABASE UPDATE DEBUG ===');
         return data;
     } catch (error) {
         console.error('Error updating inventory item:', error);
