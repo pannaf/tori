@@ -70,14 +70,14 @@ router.post('/analyze-image', upload.single('image'), async (req, res) => {
         const base64Image = imageBuffer.toString('base64');
 
         const response = await openai.chat.completions.create({
-            model: "gpt-4.1-mini", // DO NOT CHANGE THIS MODEL MAME. THIS IS CORRECT as gpt-4.1-mini.
+            model: "gpt-4o-mini", // Updated to use structured outputs compatible model
             messages: [
                 {
                     role: "user",
                     content: [
                         {
                             type: "text",
-                            text: "list all the objects in this image and estimate their costs. ALL of them. be comprehensive and thorough. don't say what it's on or touching or under or above. also do not attempt to indicate what size it is. that's just confusing. do not do compound objects, i.e., nothing that uses with to combine multiple objects. instead of large plant in black pot, for example, it should be an object for plant and an object for black pot. just list each individual object with its estimated cost in USD. Be realistic with cost estimates based on average market prices. Also give your best guess for which room in a home it is- the room can be one of the following: Living Room, Kitchen, Bedroom, Bathroom, Office, Garage, Dining Room. You should also include the object category, which can be one of the following: Electronics, Furniture, Appliances, Decorative, Sports, Tools, Other.\n\noutput format below. Return raw JSON only. Do not include triple backticks or formatting — just the raw JSON.\n\n```json\n{\"objects\": [{\"name\": \"object name\", \"category\": \"object category\", \"description\": \"object description\", \"estimated_cost_usd\": number}], \"room\": \"room name\", \"total_estimated_value_usd\": sum_of_all_objects}\n```"
+                            text: "List all the objects in this image and estimate their costs. ALL of them. Be comprehensive and thorough. Don't say what it's on or touching or under or above. Also do not attempt to indicate what size it is. Do not do compound objects, i.e., nothing that uses 'with' to combine multiple objects. Instead of 'large plant in black pot', for example, it should be an object for 'plant' and an object for 'black pot'. Just list each individual object with its estimated cost in USD. Be realistic with cost estimates based on average market prices. Also give your best guess for which room in a home it is- the room can be one of the following: Living Room, Kitchen, Bedroom, Bathroom, Office, Garage, Dining Room. You should also include the object category, which can be one of the following: Electronics, Furniture, Appliances, Decorative, Sports, Tools, Other."
                         },
                         {
                             type: "image_url",
@@ -89,16 +89,79 @@ router.post('/analyze-image', upload.single('image'), async (req, res) => {
                 },
             ],
             max_tokens: 1000,
+            response_format: {
+                type: "json_schema",
+                json_schema: {
+                    name: "image_analysis",
+                    strict: true,
+                    schema: {
+                        type: "object",
+                        properties: {
+                            objects: {
+                                type: "array",
+                                items: {
+                                    type: "object",
+                                    properties: {
+                                        name: {
+                                            type: "string",
+                                            description: "The name of the object"
+                                        },
+                                        category: {
+                                            type: "string",
+                                            description: "The category of the object",
+                                            enum: ["Electronics", "Furniture", "Appliances", "Decorative", "Sports", "Tools", "Other"]
+                                        },
+                                        description: {
+                                            type: "string",
+                                            description: "A brief description of the object"
+                                        },
+                                        estimated_cost_usd: {
+                                            type: "number",
+                                            description: "The estimated cost in USD",
+                                            minimum: 0
+                                        }
+                                    },
+                                    required: ["name", "category", "description", "estimated_cost_usd"],
+                                    additionalProperties: false
+                                }
+                            },
+                            room: {
+                                type: "string",
+                                description: "The room where the image was likely taken",
+                                enum: ["Living Room", "Kitchen", "Bedroom", "Bathroom", "Office", "Garage", "Dining Room"]
+                            },
+                            total_estimated_value_usd: {
+                                type: "number",
+                                description: "The sum of all object costs",
+                                minimum: 0
+                            }
+                        },
+                        required: ["objects", "room", "total_estimated_value_usd"],
+                        additionalProperties: false
+                    }
+                }
+            }
         });
 
-        const content = response.choices[0]?.message?.content;
-        if (!content) {
-            throw new Error('No response content from GPT-4V');
+        const message = response.choices[0]?.message;
+        if (!message) {
+            throw new Error('No response message from GPT-4o-mini');
         }
 
-        // Parse the JSON response
+        // Check for refusal first
+        if (message.refusal) {
+            throw new Error(`Model refused to process the request: ${message.refusal}`);
+        }
+
+        const content = message.content;
+        if (!content) {
+            throw new Error('No response content from GPT-4o-mini');
+        }
+
+        // With structured outputs, the response should already be valid JSON
+        let result: AnalysisResult;
         try {
-            const result = JSON.parse(content) as AnalysisResult;
+            result = JSON.parse(content) as AnalysisResult;
 
             // Process only the first 3 objects
             const objectsToProcess = result.objects.slice(0, 3);
@@ -157,8 +220,8 @@ router.post('/analyze-image', upload.single('image'), async (req, res) => {
 
             res.json(finalResult);
         } catch (error) {
-            console.error('Error parsing GPT-4V response:', content);
-            throw new Error('Failed to parse GPT-4V response as JSON');
+            console.error('Error parsing structured output response:', content);
+            throw new Error('Failed to parse structured output response as JSON');
         }
     } catch (error) {
         console.error('Error analyzing image:', error);
