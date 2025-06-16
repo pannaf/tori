@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { X, MapPin, Tag, DollarSign, Calendar, Edit3, Trash2, AlertTriangle, RotateCcw, Sparkles } from 'lucide-react';
 import { InventoryItem } from '../types/inventory';
 import { env } from '../config/env';
@@ -21,6 +21,11 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showOriginalImage, setShowOriginalImage] = useState(false);
   const [imageTransitioning, setImageTransitioning] = useState(false);
+  
+  // Touch/swipe handling
+  const touchStartX = useRef<number>(0);
+  const touchStartY = useRef<number>(0);
+  const imageContainerRef = useRef<HTMLDivElement>(null);
 
   if (!isOpen || !item) return null;
 
@@ -78,6 +83,31 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
     }, 150);
   };
 
+  // Touch event handlers for swipe
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!hasOriginalImage) return;
+
+    const touchEndX = e.changedTouches[0].clientX;
+    const touchEndY = e.changedTouches[0].clientY;
+    const deltaX = touchEndX - touchStartX.current;
+    const deltaY = touchEndY - touchStartY.current;
+
+    // Check if it's a horizontal swipe (more horizontal than vertical movement)
+    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50) {
+      // Swipe right to show original, swipe left to show enhanced
+      if (deltaX > 0 && !showOriginalImage) {
+        toggleImageView();
+      } else if (deltaX < 0 && showOriginalImage) {
+        toggleImageView();
+      }
+    }
+  };
+
   // Get the appropriate image URL based on current view
   const getCurrentImageUrl = () => {
     if (showOriginalImage && (item as any).originalCropImageUrl) {
@@ -93,20 +123,10 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
         `${env.API_URL}${item.imageUrl}`;
   };
 
-  // Check if we have both images available - more robust checking
+  // Check if we have both images available
   const hasOriginalImage = !!(item as any).originalCropImageUrl && 
     (item as any).originalCropImageUrl !== item.imageUrl &&
     (item as any).originalCropImageUrl.trim() !== '';
-
-  // Debug logging
-  console.log('ItemDetailModal Debug:', {
-    itemName: item.name,
-    hasMainImage: !!item.imageUrl,
-    mainImageUrl: item.imageUrl,
-    hasOriginalImage,
-    originalImageUrl: (item as any).originalCropImageUrl,
-    showToggleButton: hasOriginalImage
-  });
 
   // Delete Confirmation Modal
   if (showDeleteConfirm) {
@@ -150,7 +170,12 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
         {/* Header */}
         <div className="relative">
           {item.imageUrl && (
-            <div className="aspect-square bg-gray-100 rounded-t-3xl overflow-hidden relative">
+            <div 
+              ref={imageContainerRef}
+              className="aspect-square bg-gray-100 rounded-t-3xl overflow-hidden relative"
+              onTouchStart={handleTouchStart}
+              onTouchEnd={handleTouchEnd}
+            >
               <img
                 src={getCurrentImageUrl()}
                 alt={item.name}
@@ -159,47 +184,73 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                 }`}
               />
               
-              {/* Image Toggle Button - Always visible for testing, then conditional */}
-              {hasOriginalImage && (
-                <button
-                  onClick={toggleImageView}
-                  className={`absolute bottom-4 left-4 px-4 py-2 rounded-full text-sm font-semibold border-2 border-white backdrop-blur-sm transition-all duration-300 hover:scale-105 shadow-lg z-10 ${
-                    showOriginalImage
-                      ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white'
-                      : 'bg-gradient-to-r from-purple-500 to-pink-600 text-white'
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    {showOriginalImage ? (
-                      <>
-                        <Sparkles size={16} />
-                        <span>Enhanced</span>
-                      </>
-                    ) : (
-                      <>
-                        <RotateCcw size={16} />
-                        <span>Original</span>
-                      </>
-                    )}
-                  </div>
-                </button>
-              )}
+              {/* Condition badge overlay - moved back to left */}
+              <div className={`absolute top-4 left-4 px-4 py-2 rounded-full text-sm font-semibold border-2 border-white ${conditionColors[item.condition]} backdrop-blur-sm z-10`}>
+                {conditionLabels[item.condition]}
+              </div>
 
-              {/* Debug indicator - remove this after testing */}
-              {process.env.NODE_ENV === 'development' && (
-                <div className="absolute top-4 left-4 bg-black bg-opacity-75 text-white text-xs px-2 py-1 rounded">
-                  {hasOriginalImage ? 'Has Both Images' : 'Single Image Only'}
+              {/* Enhanced Toggle Button - Much clearer design */}
+              {hasOriginalImage && (
+                <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10">
+                  <button
+                    onClick={toggleImageView}
+                    className="bg-white bg-opacity-95 backdrop-blur-sm border-2 border-gray-200 rounded-full px-6 py-3 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105"
+                  >
+                    <div className="flex items-center gap-3">
+                      {/* Current State Indicator */}
+                      <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm font-bold ${
+                        showOriginalImage 
+                          ? 'bg-blue-100 text-blue-700' 
+                          : 'bg-purple-100 text-purple-700'
+                      }`}>
+                        {showOriginalImage ? (
+                          <>
+                            <RotateCcw size={14} />
+                            <span>Original</span>
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles size={14} />
+                            <span>Enhanced</span>
+                          </>
+                        )}
+                      </div>
+
+                      {/* Arrow/Switch Indicator */}
+                      <div className="text-gray-400">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                          <path d="M8 3l3 3H9v4H7V6H5l3-3z"/>
+                          <path d="M8 13l-3-3h2V6h2v4h2l-3 3z"/>
+                        </svg>
+                      </div>
+
+                      {/* Next State Indicator */}
+                      <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm font-bold ${
+                        !showOriginalImage 
+                          ? 'bg-blue-100 text-blue-700' 
+                          : 'bg-purple-100 text-purple-700'
+                      }`}>
+                        {!showOriginalImage ? (
+                          <>
+                            <RotateCcw size={14} />
+                            <span>Original</span>
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles size={14} />
+                            <span>Enhanced</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </button>
                 </div>
               )}
 
-              {/* Image Type Indicator */}
+              {/* Swipe Instructions - Only show briefly on first load */}
               {hasOriginalImage && (
-                <div className={`absolute top-4 right-16 px-3 py-1 rounded-full text-xs font-bold border-2 border-white backdrop-blur-sm ${
-                  showOriginalImage
-                    ? 'bg-blue-500 bg-opacity-90 text-white'
-                    : 'bg-purple-500 bg-opacity-90 text-white'
-                }`}>
-                  {showOriginalImage ? 'Original' : 'Enhanced'}
+                <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-75 text-white text-xs px-3 py-2 rounded-full z-10 animate-pulse">
+                  ← Swipe to toggle →
                 </div>
               )}
             </div>
@@ -212,11 +263,6 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
           >
             <X size={20} />
           </button>
-
-          {/* Condition badge overlay */}
-          <div className={`absolute top-4 right-16 px-4 py-2 rounded-full text-sm font-semibold border-2 border-white ${conditionColors[item.condition]} backdrop-blur-sm ${hasOriginalImage ? 'right-20' : 'right-16'}`}>
-            {conditionLabels[item.condition]}
-          </div>
         </div>
 
         {/* Content */}
@@ -240,7 +286,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                 <span className="text-sm font-semibold text-indigo-700">AI Enhanced Image</span>
               </div>
               <p className="text-xs text-indigo-600">
-                Tap the button to switch between enhanced and original versions
+                Tap the toggle button or swipe left/right to switch between enhanced and original versions
               </p>
             </div>
           )}
