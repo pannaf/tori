@@ -93,8 +93,20 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
         `${env.API_URL}${item.imageUrl}`;
   };
 
-  // Check if we have both images available
-  const hasOriginalImage = !!(item as any).originalCropImageUrl && (item as any).originalCropImageUrl !== item.imageUrl;
+  // Check if we have both images available - more robust checking
+  const hasOriginalImage = !!(item as any).originalCropImageUrl && 
+    (item as any).originalCropImageUrl !== item.imageUrl &&
+    (item as any).originalCropImageUrl.trim() !== '';
+
+  // Debug logging
+  console.log('ItemDetailModal Debug:', {
+    itemName: item.name,
+    hasMainImage: !!item.imageUrl,
+    mainImageUrl: item.imageUrl,
+    hasOriginalImage,
+    originalImageUrl: (item as any).originalCropImageUrl,
+    showToggleButton: hasOriginalImage
+  });
 
   // Delete Confirmation Modal
   if (showDeleteConfirm) {
@@ -147,14 +159,14 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                 }`}
               />
               
-              {/* Image Toggle Button - Only show if we have both images */}
+              {/* Image Toggle Button - Always visible for testing, then conditional */}
               {hasOriginalImage && (
                 <button
                   onClick={toggleImageView}
-                  className={`absolute bottom-4 left-4 px-4 py-2 rounded-full text-sm font-semibold border-2 border-white backdrop-blur-sm transition-all duration-300 hover:scale-105 shadow-lg ${
+                  className={`absolute bottom-4 left-4 px-4 py-2 rounded-full text-sm font-semibold border-2 border-white backdrop-blur-sm transition-all duration-300 hover:scale-105 shadow-lg z-10 ${
                     showOriginalImage
-                      ? 'bg-gradient-to-r from-purple-500 to-indigo-600 text-white'
-                      : 'bg-gradient-to-r from-amber-500 to-orange-600 text-white'
+                      ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white'
+                      : 'bg-gradient-to-r from-purple-500 to-pink-600 text-white'
                   }`}
                 >
                   <div className="flex items-center gap-2">
@@ -173,9 +185,16 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                 </button>
               )}
 
+              {/* Debug indicator - remove this after testing */}
+              {process.env.NODE_ENV === 'development' && (
+                <div className="absolute top-4 left-4 bg-black bg-opacity-75 text-white text-xs px-2 py-1 rounded">
+                  {hasOriginalImage ? 'Has Both Images' : 'Single Image Only'}
+                </div>
+              )}
+
               {/* Image Type Indicator */}
               {hasOriginalImage && (
-                <div className={`absolute top-4 left-4 px-3 py-1 rounded-full text-xs font-bold border-2 border-white backdrop-blur-sm ${
+                <div className={`absolute top-4 right-16 px-3 py-1 rounded-full text-xs font-bold border-2 border-white backdrop-blur-sm ${
                   showOriginalImage
                     ? 'bg-blue-500 bg-opacity-90 text-white'
                     : 'bg-purple-500 bg-opacity-90 text-white'
@@ -189,13 +208,13 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
           {/* Close button overlay */}
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 bg-white bg-opacity-90 backdrop-blur-sm text-gray-600 hover:text-gray-800 rounded-full p-2 transition-colors shadow-lg"
+            className="absolute top-4 right-4 bg-white bg-opacity-90 backdrop-blur-sm text-gray-600 hover:text-gray-800 rounded-full p-2 transition-colors shadow-lg z-10"
           >
             <X size={20} />
           </button>
 
-          {/* Pill-shaped condition badge overlay */}
-          <div className={`absolute top-4 right-16 px-4 py-2 rounded-full text-sm font-semibold border-2 border-white ${conditionColors[item.condition]} backdrop-blur-sm`}>
+          {/* Condition badge overlay */}
+          <div className={`absolute top-4 right-16 px-4 py-2 rounded-full text-sm font-semibold border-2 border-white ${conditionColors[item.condition]} backdrop-blur-sm ${hasOriginalImage ? 'right-20' : 'right-16'}`}>
             {conditionLabels[item.condition]}
           </div>
         </div>
@@ -277,7 +296,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
             </div>
           </div>
 
-          {/* Action Buttons - Now just Edit and Delete */}
+          {/* Action Buttons */}
           <div className="grid grid-cols-2 gap-4 pt-2">
             <button
               onClick={handleEdit}
