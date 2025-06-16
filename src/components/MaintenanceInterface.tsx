@@ -102,30 +102,30 @@ export const MaintenanceInterface: React.FC<MaintenanceInterfaceProps> = ({
   if (embedded) {
     return (
       <div className="space-y-5">
-        {/* Beautiful Stats Cards */}
-        <div className="grid grid-cols-3 gap-4">
-          <div className="bg-gradient-to-br from-red-50 to-pink-50 border border-red-200 rounded-2xl p-4 text-center shadow-sm">
-            <div className="w-10 h-10 bg-gradient-to-r from-red-500 to-pink-600 rounded-xl flex items-center justify-center mx-auto mb-3 shadow-lg shadow-red-500/25">
-              <AlertTriangle size={18} className="text-white" />
+        {/* Beautiful Stats Cards - Fixed mobile spacing */}
+        <div className="grid grid-cols-3 gap-3">
+          <div className="bg-gradient-to-br from-red-50 to-pink-50 border border-red-200 rounded-2xl p-3 text-center shadow-sm">
+            <div className="w-8 h-8 bg-gradient-to-r from-red-500 to-pink-600 rounded-xl flex items-center justify-center mx-auto mb-2 shadow-lg shadow-red-500/25">
+              <AlertTriangle size={16} className="text-white" />
             </div>
-            <p className="text-2xl font-bold text-red-700 mb-1">{overdueCount}</p>
-            <p className="text-sm font-semibold text-red-600">Overdue</p>
+            <p className="text-xl font-bold text-red-700 mb-1">{overdueCount}</p>
+            <p className="text-xs font-semibold text-red-600">Overdue</p>
           </div>
 
-          <div className="bg-gradient-to-br from-yellow-50 to-orange-50 border border-yellow-200 rounded-2xl p-4 text-center shadow-sm">
-            <div className="w-10 h-10 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center mx-auto mb-3 shadow-lg shadow-yellow-500/25">
-              <Clock size={18} className="text-white" />
+          <div className="bg-gradient-to-br from-yellow-50 to-orange-50 border border-yellow-200 rounded-2xl p-3 text-center shadow-sm">
+            <div className="w-8 h-8 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center mx-auto mb-2 shadow-lg shadow-yellow-500/25">
+              <Clock size={16} className="text-white" />
             </div>
-            <p className="text-2xl font-bold text-yellow-700 mb-1">{upcomingCount}</p>
-            <p className="text-sm font-semibold text-yellow-600">This Week</p>
+            <p className="text-xl font-bold text-yellow-700 mb-1">{upcomingCount}</p>
+            <p className="text-xs font-semibold text-yellow-600">Week</p>
           </div>
 
-          <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-2xl p-4 text-center shadow-sm">
-            <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl flex items-center justify-center mx-auto mb-3 shadow-lg shadow-green-500/25">
-              <CheckCircle size={18} className="text-white" />
+          <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-2xl p-3 text-center shadow-sm">
+            <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl flex items-center justify-center mx-auto mb-2 shadow-lg shadow-green-500/25">
+              <CheckCircle size={16} className="text-white" />
             </div>
-            <p className="text-2xl font-bold text-green-700 mb-1">{completedReminders.length}</p>
-            <p className="text-sm font-semibold text-green-600">Done</p>
+            <p className="text-xl font-bold text-green-700 mb-1">{completedReminders.length}</p>
+            <p className="text-xs font-semibold text-green-600">Done</p>
           </div>
         </div>
 
@@ -148,25 +148,25 @@ export const MaintenanceInterface: React.FC<MaintenanceInterfaceProps> = ({
             )}
           </div>
 
-          {/* 4 Priority Filters - No Overflow Issues */}
+          {/* 4 Priority Filters - Improved mobile spacing */}
           <div className="grid grid-cols-4 gap-2">
             {[
               { key: 'urgent', label: 'Urgent', count: getRemindersByPriority('urgent').length, gradient: 'from-red-500 to-pink-600' },
               { key: 'high', label: 'High', count: getRemindersByPriority('high').length, gradient: 'from-orange-500 to-red-500' },
-              { key: 'medium', label: 'Medium', count: getRemindersByPriority('medium').length, gradient: 'from-yellow-500 to-orange-500' },
+              { key: 'medium', label: 'Med', count: getRemindersByPriority('medium').length, gradient: 'from-yellow-500 to-orange-500' },
               { key: 'low', label: 'Low', count: getRemindersByPriority('low').length, gradient: 'from-blue-500 to-indigo-500' },
             ].map(({ key, label, count, gradient }) => (
               <button
                 key={key}
                 onClick={() => setActiveFilter(key as any)}
-                className={`px-3 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 flex flex-col items-center gap-1 ${activeFilter === key
+                className={`px-2 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 flex flex-col items-center gap-1 ${activeFilter === key
                   ? `bg-gradient-to-r ${gradient} text-white shadow-lg scale-105`
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:scale-105'
                   }`}
               >
-                <span className="text-xs">{label}</span>
+                <span className="text-xs leading-tight">{label}</span>
                 {count > 0 && (
-                  <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${activeFilter === key ? 'bg-white/20 text-white' : 'bg-gray-300 text-gray-700'
+                  <span className={`px-1.5 py-0.5 rounded-full text-xs font-bold min-w-[18px] h-[18px] flex items-center justify-center ${activeFilter === key ? 'bg-white/20 text-white' : 'bg-gray-300 text-gray-700'
                     }`}>
                     {count}
                   </span>
