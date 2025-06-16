@@ -184,73 +184,65 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                 }`}
               />
               
-              {/* Condition badge overlay - moved back to left */}
+              {/* Condition badge overlay - back on the left */}
               <div className={`absolute top-4 left-4 px-4 py-2 rounded-full text-sm font-semibold border-2 border-white ${conditionColors[item.condition]} backdrop-blur-sm z-10`}>
                 {conditionLabels[item.condition]}
               </div>
 
-              {/* Enhanced Toggle Button - Much clearer design */}
+              {/* Much clearer toggle interface */}
               {hasOriginalImage && (
                 <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10">
-                  <button
-                    onClick={toggleImageView}
-                    className="bg-white bg-opacity-95 backdrop-blur-sm border-2 border-gray-200 rounded-full px-6 py-3 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105"
-                  >
-                    <div className="flex items-center gap-3">
-                      {/* Current State Indicator */}
-                      <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm font-bold ${
+                  <div className="bg-white bg-opacity-95 backdrop-blur-sm border-2 border-gray-200 rounded-2xl p-2 shadow-xl">
+                    {/* Current view indicator */}
+                    <div className="text-center mb-3">
+                      <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm ${
                         showOriginalImage 
-                          ? 'bg-blue-100 text-blue-700' 
-                          : 'bg-purple-100 text-purple-700'
+                          ? 'bg-blue-500 text-white' 
+                          : 'bg-purple-500 text-white'
                       }`}>
                         {showOriginalImage ? (
                           <>
-                            <RotateCcw size={14} />
-                            <span>Original</span>
+                            <RotateCcw size={16} />
+                            <span>Viewing Original</span>
                           </>
                         ) : (
                           <>
-                            <Sparkles size={14} />
-                            <span>Enhanced</span>
-                          </>
-                        )}
-                      </div>
-
-                      {/* Arrow/Switch Indicator */}
-                      <div className="text-gray-400">
-                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                          <path d="M8 3l3 3H9v4H7V6H5l3-3z"/>
-                          <path d="M8 13l-3-3h2V6h2v4h2l-3 3z"/>
-                        </svg>
-                      </div>
-
-                      {/* Next State Indicator */}
-                      <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm font-bold ${
-                        !showOriginalImage 
-                          ? 'bg-blue-100 text-blue-700' 
-                          : 'bg-purple-100 text-purple-700'
-                      }`}>
-                        {!showOriginalImage ? (
-                          <>
-                            <RotateCcw size={14} />
-                            <span>Original</span>
-                          </>
-                        ) : (
-                          <>
-                            <Sparkles size={14} />
-                            <span>Enhanced</span>
+                            <Sparkles size={16} />
+                            <span>Viewing Enhanced</span>
                           </>
                         )}
                       </div>
                     </div>
-                  </button>
-                </div>
-              )}
 
-              {/* Swipe Instructions - Only show briefly on first load */}
-              {hasOriginalImage && (
-                <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-75 text-white text-xs px-3 py-2 rounded-full z-10 animate-pulse">
-                  ← Swipe to toggle →
+                    {/* Toggle button */}
+                    <button
+                      onClick={toggleImageView}
+                      className={`w-full px-6 py-3 rounded-xl font-bold text-sm transition-all duration-300 hover:scale-105 ${
+                        showOriginalImage
+                          ? 'bg-purple-500 hover:bg-purple-600 text-white shadow-lg shadow-purple-500/25'
+                          : 'bg-blue-500 hover:bg-blue-600 text-white shadow-lg shadow-blue-500/25'
+                      }`}
+                    >
+                      {showOriginalImage ? (
+                        <div className="flex items-center justify-center gap-2">
+                          <Sparkles size={16} />
+                          <span>Switch to Enhanced</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center gap-2">
+                          <RotateCcw size={16} />
+                          <span>Switch to Original</span>
+                        </div>
+                      )}
+                    </button>
+
+                    {/* Swipe hint */}
+                    <div className="text-center mt-2">
+                      <span className="text-xs text-gray-500 font-medium">
+                        or swipe ← →
+                      </span>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -283,10 +275,10 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
             <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-2xl p-4 text-center">
               <div className="flex items-center justify-center gap-2 mb-2">
                 <Sparkles size={16} className="text-indigo-600" />
-                <span className="text-sm font-semibold text-indigo-700">AI Enhanced Image</span>
+                <span className="text-sm font-semibold text-indigo-700">AI Enhanced Image Available</span>
               </div>
               <p className="text-xs text-indigo-600">
-                Tap the toggle button or swipe left/right to switch between enhanced and original versions
+                Use the toggle button or swipe left/right to switch between enhanced and original versions
               </p>
             </div>
           )}
