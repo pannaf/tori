@@ -370,21 +370,21 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
                 {/* Add New Maintenance */}
                 <div className="border-t border-gray-200 pt-4">
                   <div className="flex items-center justify-between p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl border border-indigo-200">
-                    <div className="flex items-center gap-3">
-                      <Calendar className="text-indigo-600" size={20} />
-                      <div>
-                        <p className="font-semibold text-indigo-900">Add New Maintenance Schedule</p>
-                        <p className="text-sm text-indigo-600">Create additional maintenance reminders</p>
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <Calendar className="text-indigo-600 flex-shrink-0" size={20} />
+                      <div className="min-w-0">
+                        <p className="font-semibold text-indigo-900 text-sm">Add New Maintenance Schedule</p>
+                        <p className="text-xs text-indigo-600">Create additional maintenance reminders</p>
                       </div>
                     </div>
                     <button
                       type="button"
                       onClick={() => setNewMaintenanceEnabled(!newMaintenanceEnabled)}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${newMaintenanceEnabled ? 'bg-indigo-600' : 'bg-gray-300'
+                      className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors flex-shrink-0 ml-3 ${newMaintenanceEnabled ? 'bg-indigo-600' : 'bg-gray-300'
                         }`}
                     >
                       <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${newMaintenanceEnabled ? 'translate-x-6' : 'translate-x-1'
+                        className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${newMaintenanceEnabled ? 'translate-x-5' : 'translate-x-1'
                           }`}
                       />
                     </button>
@@ -444,18 +444,19 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
                         />
                       </div>
 
-                      <div className="grid grid-cols-2 gap-4">
+                      {/* Mobile-friendly stacked layout */}
+                      <div className="space-y-4">
                         <div>
                           <label className="block text-sm font-semibold text-gray-700 mb-3">
                             Repeat Every
                           </label>
-                          <div className="flex gap-2">
+                          <div className="flex gap-3">
                             <input
                               type="number"
                               min="1"
                               value={newMaintenanceData.intervalValue}
                               onChange={(e) => setNewMaintenanceData(prev => ({ ...prev, intervalValue: parseInt(e.target.value) || 1 }))}
-                              className="w-20 px-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
+                              className="w-20 px-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors text-center"
                             />
                             <select
                               value={newMaintenanceData.intervalType}

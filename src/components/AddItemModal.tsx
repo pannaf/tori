@@ -501,21 +501,21 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
               <div className="space-y-4">
                 {/* Enable Maintenance Toggle */}
                 <div className="flex items-center justify-between p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl border border-indigo-200">
-                  <div className="flex items-center gap-3">
-                    <Calendar className="text-indigo-600" size={20} />
-                    <div>
-                      <p className="font-semibold text-indigo-900">Enable Maintenance Reminders</p>
-                      <p className="text-sm text-indigo-600">Get notified when maintenance is due</p>
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <Calendar className="text-indigo-600 flex-shrink-0" size={20} />
+                    <div className="min-w-0">
+                      <p className="font-semibold text-indigo-900 text-sm">Enable Maintenance Reminders</p>
+                      <p className="text-xs text-indigo-600">Get notified when maintenance is due</p>
                     </div>
                   </div>
                   <button
                     type="button"
                     onClick={() => setMaintenanceEnabled(!maintenanceEnabled)}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${maintenanceEnabled ? 'bg-indigo-600' : 'bg-gray-300'
+                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors flex-shrink-0 ml-3 ${maintenanceEnabled ? 'bg-indigo-600' : 'bg-gray-300'
                       }`}
                   >
                     <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${maintenanceEnabled ? 'translate-x-6' : 'translate-x-1'
+                      className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${maintenanceEnabled ? 'translate-x-5' : 'translate-x-1'
                         }`}
                     />
                   </button>
@@ -575,18 +575,19 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
                       />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    {/* Mobile-friendly stacked layout */}
+                    <div className="space-y-4">
                       <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-3">
                           Repeat Every
                         </label>
-                        <div className="flex gap-2">
+                        <div className="flex gap-3">
                           <input
                             type="number"
                             min="1"
                             value={maintenanceData.intervalValue}
                             onChange={(e) => setMaintenanceData(prev => ({ ...prev, intervalValue: parseInt(e.target.value) || 1 }))}
-                            className="w-20 px-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
+                            className="w-20 px-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors text-center"
                           />
                           <select
                             value={maintenanceData.intervalType}
