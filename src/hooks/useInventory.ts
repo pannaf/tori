@@ -7,6 +7,11 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
+interface User {
+  id: string;
+  email: string;
+}
+
 // Default rooms and categories
 const defaultRooms: Room[] = [
   { id: '1', name: 'Living Room', icon: 'sofa', color: '#6366F1' },
@@ -29,23 +34,27 @@ const defaultCategories: Category[] = [
   { id: '7', name: 'Other', icon: 'package', color: '#6B7280' },
 ];
 
-export const useInventory = () => {
+export const useInventory = (user: User | null = null, authLoading: boolean = false) => {
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [rooms] = useState<Room[]>(defaultRooms);
   const [categories] = useState<Category[]>(defaultCategories);
   const [loading, setLoading] = useState(true);
 
-  // Load items from Supabase
+  // Load items from Supabase when user changes
   useEffect(() => {
+    if (authLoading) {
+      setLoading(true);
+      return;
+    }
+
     loadItems();
-  }, []);
+  }, [user, authLoading]);
 
   const loadItems = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-
       if (!user) {
         setLoading(false);
+        setItems([]);
         return;
       }
 

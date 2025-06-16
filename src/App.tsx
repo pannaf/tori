@@ -27,7 +27,7 @@ function App() {
     updateItem,
     deleteItem,
     searchItems,
-  } = useInventory();
+  } = useInventory(user, authLoading);
 
   const [activeTab, setActiveTab] = useState<TabType>('home');
   const [showAddModal, setShowAddModal] = useState(false);
@@ -168,7 +168,9 @@ function App() {
               </div>
 
               <h1 className="text-3xl font-bold text-gray-900 mb-3 leading-tight">
-                {items.length === 0 ? (
+                {inventoryLoading ? (
+                  <>Loading your inventory...</>
+                ) : items.length === 0 ? (
                   <>Tori. Know what you own.</>
                 ) : (
                   <>Your home, effortlessly organized</>
@@ -176,24 +178,31 @@ function App() {
               </h1>
 
               <p className="text-gray-600 leading-relaxed">
-                {items.length === 0
-                  ? "Let's get started by adding your first item with AI-powered photo recognition"
-                  : `Let's go! You've got ${items.length} items inventoried`
+                {inventoryLoading
+                  ? "Getting everything ready for you"
+                  : items.length === 0
+                    ? "Let's get started by adding your first item with AI-powered photo recognition"
+                    : `Let's go! You've got ${items.length} items inventoried`
                 }
               </p>
             </div>
 
             {/* Click outside to close user menu */}
             {showUserMenu && (
-              <div 
-                className="fixed inset-0 z-5" 
+              <div
+                className="fixed inset-0 z-5"
                 onClick={() => setShowUserMenu(false)}
               />
             )}
 
-            {items.length > 0 && <StatsOverview items={items} variant="compact" />}
+            {!inventoryLoading && items.length > 0 && <StatsOverview items={items} variant="compact" />}
 
-            {items.length === 0 ? (
+            {inventoryLoading ? (
+              <div className="text-center py-12">
+                <div className="w-16 h-16 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-4"></div>
+                <p className="text-gray-600">Loading your inventory...</p>
+              </div>
+            ) : items.length === 0 ? (
               <div className="text-center py-12">
                 <div className="w-24 h-24 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-3xl flex items-center justify-center mx-auto mb-6 border border-emerald-100">
                   <Plus className="text-emerald-600" size={36} />
