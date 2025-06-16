@@ -150,6 +150,27 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
     setAiDetected(true);
   };
 
+  const handleSkipItem = () => {
+    // If there are more objects to process, move to the next one
+    if (currentObjectIndex < Math.min(detectedObjects.length - 1, 2)) { // Only process up to 3 objects
+      const nextObject = detectedObjects[currentObjectIndex + 1];
+      setCurrentObjectIndex(prev => prev + 1);
+      setFormData(prev => ({
+        ...prev,
+        // Use the cropped image URL for the next object
+        imageUrl: nextObject.imageUrl || imageData,
+        name: nextObject.name || '',
+        category: nextObject.category || '',
+        estimatedValue: nextObject.estimatedValue?.toString() || '',
+        description: nextObject.landingAiObjects?.length
+          ? `AI detected: ${nextObject.landingAiObjects.map((obj: LandingAiObject) => `${obj.label} (${Math.round(obj.confidence * 100)}% confidence)`).join(', ')}`
+          : `Detected: ${nextObject.name || ''}`
+      }));
+    } else {
+      onClose();
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -238,15 +259,17 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
             </div>
           )}
 
-          <button
-            type="button"
-            onClick={() => setShowCamera(true)}
-            className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-4 rounded-full font-bold hover:shadow-2xl hover:shadow-indigo-500/25 transition-all duration-300 hover:scale-105 flex items-center justify-center gap-3"
-          >
-            <Camera size={22} />
-            {formData.imageUrl ? 'Retake Photo' : 'Take Photo & Auto-Detect'}
-            <Zap size={18} className="text-amber-300" />
-          </button>
+          {!formData.imageUrl && (
+            <button
+              type="button"
+              onClick={() => setShowCamera(true)}
+              className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-4 rounded-full font-bold hover:shadow-2xl hover:shadow-indigo-500/25 transition-all duration-300 hover:scale-105 flex items-center justify-center gap-3"
+            >
+              <Camera size={22} />
+              Take Photo & Auto-Detect
+              <Zap size={18} className="text-amber-300" />
+            </button>
+          )}
 
           {aiDetected && (
             <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-2xl p-4">
@@ -375,14 +398,27 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
             />
           </div>
 
-          <button
-            type="submit"
-            className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-4 rounded-full font-bold text-lg hover:shadow-2xl hover:shadow-indigo-500/25 transition-all duration-300 hover:scale-105"
-          >
-            {currentObjectIndex < Math.min(detectedObjects.length - 1, 2)
-              ? `Add Item (${currentObjectIndex + 1}/${Math.min(detectedObjects.length, 3)})`
-              : 'Add Item'}
-          </button>
+          <div className="flex gap-3">
+            {/* Skip button - only show when there are more objects to process */}
+            {aiDetected && currentObjectIndex < Math.min(detectedObjects.length - 1, 2) && (
+              <button
+                type="button"
+                onClick={handleSkipItem}
+                className="flex-1 bg-gray-100 text-gray-700 py-4 rounded-full font-bold hover:bg-gray-200 transition-colors"
+              >
+                Skip Item
+              </button>
+            )}
+
+            <button
+              type="submit"
+              className={`${aiDetected && currentObjectIndex < Math.min(detectedObjects.length - 1, 2) ? 'flex-1' : 'w-full'} bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-4 rounded-full font-bold text-lg hover:shadow-2xl hover:shadow-indigo-500/25 transition-all duration-300 hover:scale-105`}
+            >
+              {currentObjectIndex < Math.min(detectedObjects.length - 1, 2)
+                ? `Add Item (${currentObjectIndex + 1}/${Math.min(detectedObjects.length, 3)})`
+                : 'Add Item'}
+            </button>
+          </div>
         </form>
       </div>
     </div>

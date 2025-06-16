@@ -277,8 +277,8 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center">
-      <div className="w-full max-w-md mx-4">
-        <div className="bg-white rounded-3xl overflow-hidden shadow-2xl">
+      <div className="w-full max-w-md mx-4 max-h-[90vh] flex flex-col">
+        <div className="bg-white rounded-3xl overflow-hidden shadow-2xl flex flex-col">
           <div className="flex items-center justify-between p-6 bg-gradient-to-r from-indigo-600 to-purple-600">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-white bg-opacity-20 rounded-2xl flex items-center justify-center">
@@ -297,7 +297,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
             </button>
           </div>
 
-          <div className="relative">
+          <div className="relative overflow-y-auto overflow-x-hidden">
             {error && (
               <div className="aspect-square bg-red-50 flex items-center justify-center p-8">
                 <div className="text-center">
@@ -331,25 +331,8 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
             )}
 
             {isProcessing && (
-              <div className="min-h-[600px] bg-gradient-to-br from-indigo-50 to-purple-50 p-6">
-                {/* Original Image Display */}
-                {progress.originalFullImageUrl && (
-                  <div className="bg-white rounded-2xl p-4 mb-4 shadow-sm border border-gray-200">
-                    <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                      <Camera size={14} />
-                      Your home captured by Tori
-                    </h4>
-                    <div className="relative aspect-square bg-gray-100 rounded-xl overflow-hidden">
-                      <img
-                        src={progress.originalFullImageUrl}
-                        alt="Original photo being processed"
-                        className="w-full h-full object-contain"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                <div className="text-center mb-6">
+              <div className="bg-gradient-to-br from-indigo-50 to-purple-50 p-6 space-y-4 max-h-[28rem] overflow-y-auto overflow-x-hidden">
+                <div className="text-center">
                   <div className="relative mb-4">
                     <Zap className="animate-pulse mx-auto text-amber-400" size={48} />
                     <div className="absolute inset-0 animate-ping">
@@ -357,14 +340,6 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
                     </div>
                   </div>
                   <p className="font-bold text-xl mb-2 text-gray-900">{progress.message}</p>
-
-                  {/* Progress Bar */}
-                  <div className="w-full bg-gray-200 rounded-full h-3 mb-4">
-                    <div
-                      className="bg-gradient-to-r from-indigo-600 to-purple-600 h-3 rounded-full transition-all duration-500 ease-out"
-                      style={{ width: `${progress.progress}%` }}
-                    />
-                  </div>
 
                   {progress.currentlyProcessing && (
                     <p className="text-sm text-indigo-600 font-medium mb-4">
@@ -377,7 +352,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
 
                 {/* Room and Total Value */}
                 {progress.room && progress.totalValue && (
-                  <div className="bg-white rounded-2xl p-4 shadow-sm border border-indigo-200 mb-4">
+                  <div className="bg-white rounded-2xl p-4 shadow-sm border border-indigo-200">
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
                         <MapPin size={16} className="text-indigo-600" />
@@ -462,6 +437,23 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
                       <div className="w-2 h-2 bg-amber-400 rounded-full animate-bounce"></div>
                       <div className="w-2 h-2 bg-amber-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
                       <div className="w-2 h-2 bg-amber-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Original Image Display - Moved to bottom */}
+                {progress.originalFullImageUrl && (
+                  <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-200">
+                    <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                      <Camera size={14} />
+                      Your home captured by Tori
+                    </h4>
+                    <div className="relative aspect-square bg-gray-100 rounded-xl overflow-hidden">
+                      <img
+                        src={progress.originalFullImageUrl}
+                        alt="Original photo being processed"
+                        className="w-full h-full object-contain"
+                      />
                     </div>
                   </div>
                 )}
