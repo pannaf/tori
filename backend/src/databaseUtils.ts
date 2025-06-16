@@ -59,21 +59,28 @@ export async function getInventoryItems(userId?: string): Promise<InventoryItem[
  * Update an inventory item
  * @param itemId - ID of the item to update
  * @param updates - Partial item data to update
+ * @param userId - Optional user ID to ensure proper access control
  * @returns Promise with updated item or error
  */
-export async function updateInventoryItem(itemId: string, updates: Partial<InventoryItem>): Promise<InventoryItem> {
+export async function updateInventoryItem(itemId: string, updates: Partial<InventoryItem>, userId?: string): Promise<InventoryItem> {
     try {
         console.log('=== DATABASE UPDATE DEBUG ===');
         console.log('Item ID:', itemId);
+        console.log('User ID:', userId);
         console.log('Updates to apply:', updates);
 
-        // First check if the item exists
+        // First check if the item exists (with user filter if provided)
         console.log('Checking if item exists...');
-        const { data: existingItem, error: checkError } = await supabase
+        let checkQuery = supabase
             .from('inventory_items')
             .select('*')
-            .eq('id', itemId)
-            .single();
+            .eq('id', itemId);
+
+        if (userId) {
+            checkQuery = checkQuery.eq('user_id', userId);
+        }
+
+        const { data: existingItem, error: checkError } = await checkQuery.single();
 
         console.log('Existing item check:');
         console.log('- Data:', existingItem);
@@ -91,14 +98,18 @@ export async function updateInventoryItem(itemId: string, updates: Partial<Inven
         };
         console.log('Prepared update data:', updateData);
 
-        // Perform the update
+        // Perform the update (with user filter if provided)
         console.log('Performing update...');
-        const { data, error } = await supabase
+        let updateQuery = supabase
             .from('inventory_items')
             .update(updateData)
-            .eq('id', itemId)
-            .select()
-            .single();
+            .eq('id', itemId);
+
+        if (userId) {
+            updateQuery = updateQuery.eq('user_id', userId);
+        }
+
+        const { data, error } = await updateQuery.select().single();
 
         console.log('Update result:');
         console.log('- Data:', data);

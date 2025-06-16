@@ -263,8 +263,8 @@ router.put('/inventory-items/:id', requireAuth, async (req, res) => {
 
         console.log('Item found, proceeding with update...');
 
-        // Update the item using the database utility (which uses service role)
-        const updatedItem = await updateInventoryItem(id, updates);
+        // Update the item using the database utility (with user ID for proper access control)
+        const updatedItem = await updateInventoryItem(id, updates, user.id);
         console.log('Item updated successfully:', updatedItem);
 
         res.json(updatedItem);

@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { InventoryItem, Room, Category } from '../types/inventory';
-import { env } from '../config/env';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -153,30 +152,18 @@ export const useInventory = () => {
   };
 
   const updateItem = async (id: string, updates: Partial<InventoryItem>) => {
-    console.log('=== UPDATE ITEM DEBUG ===');
-    console.log('Item ID:', id);
-    console.log('Updates:', updates);
-
     // Update local state immediately for responsive UI
     setItems(prevItems =>
       prevItems.map(item =>
         item.id === id ? { ...item, ...updates } : item
       )
     );
-    console.log('Local state updated');
 
-    // Save to database via API
+    // Update database directly with Supabase
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      const { data: { session } } = await supabase.auth.getSession();
-
-      console.log('User:', user?.id);
-      console.log('Session exists:', !!session);
-      console.log('Access token exists:', !!session?.access_token);
-
-      if (user && session) {
-        // Transform the updates to match the database schema
-        const databaseUpdates = {
+      const { data, error } = await supabase
+        .from('inventory_items')
+        .update({
           name: updates.name,
           category: updates.category,
           room: updates.room,
@@ -184,57 +171,23 @@ export const useInventory = () => {
           estimated_value: updates.estimatedValue,
           tags: updates.tags,
           condition: updates.condition,
-          // Don't update image data or other fields during regular edits
-        };
+        })
+        .eq('id', id)
+        .select()
+        .single();
 
-        // Only include fields that are actually being updated
-        const cleanUpdates = Object.fromEntries(
-          Object.entries(databaseUpdates).filter(([_, value]) => value !== undefined)
-        );
-
-        console.log('Database updates to send:', cleanUpdates);
-        console.log('API URL:', `${env.API_URL}/api/inventory-items/${id}`);
-
-        const response = await fetch(`${env.API_URL}/api/inventory-items/${id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify(cleanUpdates),
-        });
-
-        console.log('Response status:', response.status);
-        console.log('Response ok:', response.ok);
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.log('Error response:', errorText);
-
-          let errorData;
-          try {
-            errorData = JSON.parse(errorText);
-          } catch {
-            errorData = { error: errorText };
-          }
-
-          throw new Error(`Failed to update item: ${errorData.error || response.statusText}`);
-        }
-
-        const responseData = await response.json();
-        console.log('Success response:', responseData);
-        console.log('Successfully updated item in database:', id);
-      } else {
-        console.warn('User not authenticated, skipping database update');
+      if (error) {
+        console.error('Failed to update item in database:', error);
+        throw error;
       }
+
+      console.log('Successfully updated item:', data);
     } catch (error) {
-      console.error('Error updating item in database:', error);
+      console.error('Error updating item:', error);
       // Revert local state on error
       await loadItems();
       throw error; // Let the UI handle the error
     }
-
-    console.log('=== END UPDATE ITEM DEBUG ===');
   };
 
   const deleteItem = async (id: string) => {
