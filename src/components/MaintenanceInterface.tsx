@@ -129,34 +129,65 @@ export const MaintenanceInterface: React.FC<MaintenanceInterfaceProps> = ({
           </div>
         </div>
 
-        {/* Elegant Filter Buttons */}
-        <div className="flex gap-2 overflow-x-auto pb-2">
-          {[
-            { key: 'all', label: 'All', count: reminders.length },
-            { key: 'urgent', label: 'Urgent', count: getRemindersByPriority('urgent').length },
-            { key: 'high', label: 'High', count: getRemindersByPriority('high').length },
-            { key: 'medium', label: 'Medium', count: getRemindersByPriority('medium').length },
-            { key: 'low', label: 'Low', count: getRemindersByPriority('low').length },
-          ].map(({ key, label, count }) => (
-            <button
-              key={key}
-              onClick={() => setActiveFilter(key as any)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-300 ${
-                activeFilter === key
-                  ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/25 scale-105'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:scale-105'
-              }`}
-            >
-              {label}
-              {count > 0 && (
-                <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
-                  activeFilter === key ? 'bg-white/20 text-white' : 'bg-gray-300 text-gray-700'
-                }`}>
-                  {count}
-                </span>
-              )}
-            </button>
-          ))}
+        {/* Clean Vertical Filter Layout */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 mb-3">
+            <Filter size={16} className="text-gray-500" />
+            <span className="text-sm font-semibold text-gray-700">Filter by Priority</span>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { key: 'all', label: 'All Tasks', count: reminders.length, gradient: 'from-indigo-600 to-purple-600' },
+              { key: 'urgent', label: 'Urgent', count: getRemindersByPriority('urgent').length, gradient: 'from-red-500 to-pink-600' },
+              { key: 'high', label: 'High', count: getRemindersByPriority('high').length, gradient: 'from-orange-500 to-red-500' },
+              { key: 'medium', label: 'Medium', count: getRemindersByPriority('medium').length, gradient: 'from-yellow-500 to-orange-500' },
+            ].map(({ key, label, count, gradient }) => (
+              <button
+                key={key}
+                onClick={() => setActiveFilter(key as any)}
+                className={`p-3 rounded-2xl text-sm font-bold transition-all duration-300 ${
+                  activeFilter === key
+                    ? `bg-gradient-to-r ${gradient} text-white shadow-lg scale-105`
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:scale-105'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span>{label}</span>
+                  {count > 0 && (
+                    <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+                      activeFilter === key ? 'bg-white/20 text-white' : 'bg-gray-300 text-gray-700'
+                    }`}>
+                      {count}
+                    </span>
+                  )}
+                </div>
+              </button>
+            ))}
+            
+            {/* Low priority gets its own row for better spacing */}
+            <div className="col-span-2">
+              <button
+                onClick={() => setActiveFilter('low')}
+                className={`w-full p-3 rounded-2xl text-sm font-bold transition-all duration-300 ${
+                  activeFilter === 'low'
+                    ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg scale-105'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:scale-105'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span>Low Priority</span>
+                  {getRemindersByPriority('low').length > 0 && (
+                    <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+                      activeFilter === 'low' ? 'bg-white/20 text-white' : 'bg-gray-300 text-gray-700'
+                    }`}>
+                      {getRemindersByPriority('low').length}
+                    </span>
+                  )}
+                </div>
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Beautiful Reminders List */}
