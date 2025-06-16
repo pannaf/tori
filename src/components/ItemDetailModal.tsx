@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, MapPin, Tag, DollarSign, Calendar, Edit3, Trash2, AlertTriangle, RotateCcw, Sparkles } from 'lucide-react';
+import { X, MapPin, Tag, DollarSign, Calendar, Edit3, Trash2, AlertTriangle, Image, Sparkles } from 'lucide-react';
 import { InventoryItem } from '../types/inventory';
 import { env } from '../config/env';
 
@@ -213,39 +213,29 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
             )}
           </div>
 
-          {/* Simple Image Toggle - Only show if we have both images */}
+          {/* Simple Image Toggle - Clean horizontal layout below content */}
           {hasOriginalImage && (
-            <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-2xl p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  {showOriginalImage ? (
-                    <>
-                      <RotateCcw size={18} className="text-blue-600" />
-                      <span className="text-sm font-semibold text-blue-700">Viewing Original</span>
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles size={18} className="text-purple-600" />
-                      <span className="text-sm font-semibold text-purple-700">Viewing Enhanced</span>
-                    </>
-                  )}
-                </div>
-                
-                <button
-                  onClick={toggleImageView}
-                  className={`px-4 py-2 rounded-xl font-semibold text-sm transition-all duration-300 hover:scale-105 ${
-                    showOriginalImage
-                      ? 'bg-purple-500 hover:bg-purple-600 text-white'
-                      : 'bg-blue-500 hover:bg-blue-600 text-white'
-                  }`}
-                >
-                  Switch
-                </button>
+            <div className="flex items-center justify-between bg-gray-50 rounded-2xl p-4">
+              <div className="flex items-center gap-3">
+                {showOriginalImage ? (
+                  <>
+                    <Image size={18} className="text-gray-600" />
+                    <span className="text-sm font-semibold text-gray-700">Original Photo</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles size={18} className="text-purple-600" />
+                    <span className="text-sm font-semibold text-gray-700">Enhanced Photo</span>
+                  </>
+                )}
               </div>
               
-              <p className="text-xs text-indigo-600 mt-2 text-center">
-                Tap switch button or swipe left/right to toggle
-              </p>
+              <button
+                onClick={toggleImageView}
+                className="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-xl font-semibold text-sm transition-all duration-300 hover:scale-105"
+              >
+                Switch
+              </button>
             </div>
           )}
 
