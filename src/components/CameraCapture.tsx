@@ -29,14 +29,6 @@ interface DetectedObject {
   detectionCount?: number;
 }
 
-interface ProcessingDetail {
-  id: string;
-  message: string;
-  timestamp: number;
-  type: 'info' | 'success' | 'processing' | 'upload';
-  icon?: string;
-}
-
 interface ProgressState {
   step: 'preparing' | 'analyzing' | 'detecting' | 'processing' | 'enhancing' | 'complete';
   message: string;
@@ -45,7 +37,6 @@ interface ProgressState {
   room?: string;
   totalValue?: number;
   currentlyProcessing?: string;
-  processingDetails?: ProcessingDetail[];
   currentObjectIndex?: number;
   originalFullImageUrl?: string;
 }
@@ -87,29 +78,13 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
   const [progress, setProgress] = useState<ProgressState>({
     step: 'preparing',
     message: '',
-    progress: 0,
-    processingDetails: []
+    progress: 0
   });
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const updateProgress = (newProgress: Partial<ProgressState>) => {
     setProgress(prev => ({ ...prev, ...newProgress }));
-  };
-
-  const addProcessingDetail = (message: string, type: 'info' | 'success' | 'processing' | 'upload' = 'info', icon?: string) => {
-    const detail: ProcessingDetail = {
-      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      message,
-      timestamp: Date.now(),
-      type,
-      icon
-    };
-
-    setProgress(prev => ({
-      ...prev,
-      processingDetails: [...(prev.processingDetails || []), detail].slice(-8)
-    }));
   };
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -123,11 +98,8 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
       updateProgress({
         step: 'preparing',
         message: 'Preparing your photo...',
-        progress: 5,
-        processingDetails: []
+        progress: 5
       });
-
-      addProcessingDetail('📸 Processing uploaded image', 'info', '📷');
 
       // Fix image orientation
       updateProgress({
@@ -136,7 +108,6 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
         progress: 15
       });
 
-      addProcessingDetail('🔄 Correcting image orientation with createImageBitmap', 'processing', '🔄');
       const imageData = await fixImageOrientation(file);
 
       // Set the original image URL immediately so it shows during processing
@@ -173,11 +144,8 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
           step: 'analyzing',
           message: 'Tori is analyzing your photo with AI...',
           progress: 25,
-          currentlyProcessing: 'Sending to GPT-4o-mini for analysis...'
+          currentlyProcessing: 'Tori is seeing what you have...'
         });
-
-        addProcessingDetail('🤖 Sending request to GPT-4o-mini', 'processing', '🧠');
-        addProcessingDetail('📊 Using structured outputs for reliable parsing', 'info', '📋');
 
         // Create AbortController for timeout handling
         const controller = new AbortController();
@@ -196,8 +164,6 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
           throw new Error('Failed to analyze image');
         }
 
-        addProcessingDetail('📊 Received AI analysis results', 'success', '📈');
-
         // Parse the response
         const data = await apiResponse.json();
 
@@ -211,8 +177,6 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
           totalValue: data.total_estimated_value_usd,
           currentlyProcessing: 'Ready to add to inventory!'
         });
-
-        addProcessingDetail(`🎊 Found ${data.objects.length} items worth $${data.total_estimated_value_usd.toFixed(0)}!`, 'success', '🏆');
 
         // Transform the analysis data to match the expected format
         const recognitionData = {
@@ -232,11 +196,9 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
           estimatedValue: data.total_estimated_value_usd
         };
 
-        // Small delay to show the completion state before proceeding
-        setTimeout(() => {
-          onCapture(imageData, recognitionData);
-          setIsProcessing(false);
-        }, 1000);
+        // Go directly to the next screen
+        onCapture(imageData, recognitionData);
+        setIsProcessing(false);
       } catch (error) {
         console.error('Recognition failed:', error);
         if (error instanceof Error) {
@@ -311,15 +273,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
     }
   };
 
-  const getDetailIcon = (type: string, customIcon?: string) => {
-    if (customIcon) return customIcon;
-    switch (type) {
-      case 'success': return '✅';
-      case 'processing': return '⚡';
-      case 'upload': return '☁️';
-      default: return 'ℹ️';
-    }
-  };
+
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center">
@@ -383,7 +337,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
                   <div className="bg-white rounded-2xl p-4 mb-4 shadow-sm border border-gray-200">
                     <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
                       <Camera size={14} />
-                      Tori is analyzing your photo...
+                      Your home captured by Tori
                     </h4>
                     <div className="relative aspect-square bg-gray-100 rounded-xl overflow-hidden">
                       <img
@@ -419,27 +373,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
                   )}
                 </div>
 
-                {/* Real-time Processing Log */}
-                {progress.processingDetails && progress.processingDetails.length > 0 && (
-                  <div className="bg-white rounded-2xl p-4 mb-4 shadow-sm border border-gray-200">
-                    <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                      <Brain size={14} />
-                      Tori's AI Brain
-                    </h4>
-                    <div className="space-y-2 max-h-32 overflow-y-auto">
-                      {progress.processingDetails.slice(-6).map((detail) => (
-                        <div key={detail.id} className={`text-xs rounded-lg px-3 py-2 transition-all duration-300 ${detail.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' :
-                          detail.type === 'processing' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
-                            detail.type === 'upload' ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' :
-                              'bg-gray-50 text-gray-700 border border-gray-200'
-                          }`}>
-                          <span className="mr-2">{getDetailIcon(detail.type, detail.icon)}</span>
-                          {detail.message}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+
 
                 {/* Room and Total Value */}
                 {progress.room && progress.totalValue && (
