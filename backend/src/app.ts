@@ -21,7 +21,7 @@ const app = express();
 // Configure CORS - allow both local development and Railway deployment
 const corsOptions = {
     origin: process.env.NODE_ENV === 'production'
-        ? ['https://bejewelled-llama-eb8279.netlify.app', 'https://tori-production.up.railway.app'] // Replace your-frontend-domain.com with actual frontend domain
+        ? ['https://bejewelled-llama-eb8279.netlify.app', 'https://tori-production.up.railway.app', 'https://mytori.xyz'] // Replace your-frontend-domain.com with actual frontend domain
         : ['http://localhost:5173', 'http://localhost:3000'], // Local development
     credentials: true,
     optionsSuccessStatus: 200
