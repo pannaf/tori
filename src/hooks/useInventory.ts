@@ -8,26 +8,26 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-const STORAGE_KEY = 'home-inventory';
-
+// Default rooms and categories
 const defaultRooms: Room[] = [
   { id: '1', name: 'Living Room', icon: 'sofa', color: '#6366F1' },
   { id: '2', name: 'Kitchen', icon: 'chef-hat', color: '#EC4899' },
   { id: '3', name: 'Bedroom', icon: 'bed', color: '#8B5CF6' },
   { id: '4', name: 'Bathroom', icon: 'bath', color: '#14B8A6' },
-  { id: '5', name: 'Garage', icon: 'car', color: '#F59E0B' },
-  { id: '6', name: 'Office', icon: 'briefcase', color: '#EF4444' },
+  { id: '5', name: 'Office', icon: 'briefcase', color: '#EF4444' },
+  { id: '6', name: 'Garage', icon: 'car', color: '#F59E0B' },
+  { id: '7', name: 'Dining Room', icon: 'utensils', color: '#10B981' },
+  { id: '8', name: 'Other', icon: 'package', color: '#6B7280' },
 ];
 
 const defaultCategories: Category[] = [
   { id: '1', name: 'Electronics', icon: 'smartphone', color: '#6366F1' },
   { id: '2', name: 'Furniture', icon: 'armchair', color: '#EC4899' },
   { id: '3', name: 'Appliances', icon: 'refrigerator', color: '#8B5CF6' },
-  { id: '4', name: 'Clothing', icon: 'shirt', color: '#14B8A6' },
-  { id: '5', name: 'Books', icon: 'book', color: '#F59E0B' },
-  { id: '6', name: 'Kitchen', icon: 'utensils', color: '#EF4444' },
-  { id: '7', name: 'Decorative', icon: 'picture-in-picture', color: '#10B981' },
-  { id: '8', name: 'Sports', icon: 'dumbbell', color: '#F97316' },
+  { id: '4', name: 'Decorative', icon: 'picture-in-picture', color: '#14B8A6' },
+  { id: '5', name: 'Sports', icon: 'dumbbell', color: '#F97316' },
+  { id: '6', name: 'Tools', icon: 'hammer', color: '#F59E0B' },
+  { id: '7', name: 'Other', icon: 'package', color: '#6B7280' },
 ];
 
 export const useInventory = () => {
@@ -58,11 +58,7 @@ export const useInventory = () => {
 
       if (error) {
         console.error('Error loading items:', error);
-        // Fallback to localStorage if Supabase fails
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) {
-          setItems(JSON.parse(saved));
-        }
+        setItems([]); // Clear items on error
       } else {
         // Transform Supabase data to match our interface
         const transformedItems = data.map(item => ({
@@ -78,16 +74,10 @@ export const useInventory = () => {
           estimatedValue: item.estimated_value,
         }));
         setItems(transformedItems);
-        // Also save to localStorage as backup
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(transformedItems));
       }
     } catch (error) {
       console.error('Error in loadItems:', error);
-      // Fallback to localStorage
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        setItems(JSON.parse(saved));
-      }
+      setItems([]); // Clear items on error
     } finally {
       setLoading(false);
     }
@@ -131,26 +121,20 @@ export const useInventory = () => {
       return data;
     } catch (error) {
       console.error('Error in saveItemToSupabase:', error);
-      // Continue with localStorage save even if Supabase fails
       throw error;
     }
   };
 
-  const saveItems = async (newItems: InventoryItem[]) => {
-    setItems(newItems);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newItems));
-  };
-
   const addItem = async (item: Omit<InventoryItem, 'id' | 'dateAdded'>) => {
     try {
-      // First create the item locally with a temporary ID
+      // Create the item with a temporary ID for immediate UI update
       const tempItem: InventoryItem = {
         ...item,
-        id: Date.now().toString(), // Temporary ID for local storage
+        id: Date.now().toString(), // Temporary ID
         dateAdded: new Date().toISOString(),
       };
 
-      // Try to save to Supabase first
+      // Save to Supabase first
       const supabaseItem = await saveItemToSupabase(tempItem);
 
       // Create the final item with Supabase UUID
@@ -160,34 +144,35 @@ export const useInventory = () => {
         dateAdded: supabaseItem.created_at,
       };
 
-      const updatedItems = [...items, finalItem];
-      await saveItems(updatedItems);
+      // Update local state
+      setItems(prevItems => [...prevItems, finalItem]);
     } catch (error) {
-      console.error('Failed to save to Supabase, saving locally only:', error);
-
-      // Fallback: save locally with timestamp ID
-      const localItem: InventoryItem = {
-        ...item,
-        id: Date.now().toString(),
-        dateAdded: new Date().toISOString(),
-      };
-
-      const updatedItems = [...items, localItem];
-      await saveItems(updatedItems);
+      console.error('Failed to save item:', error);
+      throw error; // Let the UI handle the error
     }
   };
 
   const updateItem = async (id: string, updates: Partial<InventoryItem>) => {
+    console.log('=== UPDATE ITEM DEBUG ===');
+    console.log('Item ID:', id);
+    console.log('Updates:', updates);
+
     // Update local state immediately for responsive UI
-    const updatedItems = items.map(item =>
-      item.id === id ? { ...item, ...updates } : item
+    setItems(prevItems =>
+      prevItems.map(item =>
+        item.id === id ? { ...item, ...updates } : item
+      )
     );
-    await saveItems(updatedItems);
+    console.log('Local state updated');
 
     // Save to database via API
     try {
       const { data: { user } } = await supabase.auth.getUser();
       const { data: { session } } = await supabase.auth.getSession();
+
+      console.log('User:', user?.id);
+      console.log('Session exists:', !!session);
+      console.log('Access token exists:', !!session?.access_token);
 
       if (user && session) {
         // Transform the updates to match the database schema
@@ -207,6 +192,9 @@ export const useInventory = () => {
           Object.entries(databaseUpdates).filter(([_, value]) => value !== undefined)
         );
 
+        console.log('Database updates to send:', cleanUpdates);
+        console.log('API URL:', `${env.API_URL}/api/inventory-items/${id}`);
+
         const response = await fetch(`${env.API_URL}/api/inventory-items/${id}`, {
           method: 'PUT',
           headers: {
@@ -216,20 +204,37 @@ export const useInventory = () => {
           body: JSON.stringify(cleanUpdates),
         });
 
+        console.log('Response status:', response.status);
+        console.log('Response ok:', response.ok);
+
         if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
+          const errorText = await response.text();
+          console.log('Error response:', errorText);
+
+          let errorData;
+          try {
+            errorData = JSON.parse(errorText);
+          } catch {
+            errorData = { error: errorText };
+          }
+
           throw new Error(`Failed to update item: ${errorData.error || response.statusText}`);
         }
 
+        const responseData = await response.json();
+        console.log('Success response:', responseData);
         console.log('Successfully updated item in database:', id);
       } else {
         console.warn('User not authenticated, skipping database update');
       }
     } catch (error) {
       console.error('Error updating item in database:', error);
-      // The local state is already updated, so the UI shows the changes
-      // We could show a warning to the user here that the change wasn't saved
+      // Revert local state on error
+      await loadItems();
+      throw error; // Let the UI handle the error
     }
+
+    console.log('=== END UPDATE ITEM DEBUG ===');
   };
 
   const deleteItem = async (id: string) => {
@@ -245,14 +250,16 @@ export const useInventory = () => {
 
         if (error) {
           console.error('Error deleting from Supabase:', error);
+          throw error;
         }
       }
+
+      // Update local state
+      setItems(prevItems => prevItems.filter(item => item.id !== id));
     } catch (error) {
       console.error('Error in deleteItem:', error);
+      throw error; // Let the UI handle the error
     }
-
-    const updatedItems = items.filter(item => item.id !== id);
-    await saveItems(updatedItems);
   };
 
   const searchItems = (query: string, roomFilter?: string, categoryFilter?: string) => {

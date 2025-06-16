@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import multer from 'multer';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -8,6 +8,7 @@ import { createClient } from '@supabase/supabase-js';
 import { detectObject, cropImage } from './objectDetector.js';
 import { uploadImageFileToSupabase } from './storageUtils.js';
 import { getInventoryItems, getInventoryItemsByCategory, getInventoryItemsByRoom, updateInventoryItem, deleteInventoryItem } from './databaseUtils.js';
+import { supabase } from './supabase.js';
 
 const router = Router();
 const upload = multer({ dest: 'uploads/' });
@@ -199,12 +200,63 @@ router.get('/inventory-items/room/:room', async (req, res) => {
     }
 });
 
-// Update an inventory item
-router.put('/inventory-items/:id', async (req, res) => {
+// Authentication middleware for user-specific operations
+const requireAuth = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const authHeader = req.headers.authorization;
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return res.status(401).json({ error: 'Missing or invalid authorization header' });
+        }
+
+        const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+
+        // Verify the token with Supabase
+        const { data: { user }, error } = await supabase.auth.getUser(token);
+
+        if (error || !user) {
+            return res.status(401).json({ error: 'Invalid or expired token' });
+        }
+
+        // Add user to request object for use in route handlers
+        (req as any).user = user;
+        next();
+    } catch (error) {
+        console.error('Auth middleware error:', error);
+        return res.status(401).json({ error: 'Authentication failed' });
+    }
+};
+
+// Update an inventory item (requires authentication)
+router.put('/inventory-items/:id', requireAuth, async (req, res) => {
     try {
         const { id } = req.params;
         const updates = req.body;
+        const user = (req as any).user;
+
+        console.log('Updating item:', id, 'for user:', user.id);
+        console.log('Updates received:', updates);
+
+        // Add user validation - ensure the item belongs to the authenticated user
+        // First check if the item exists and belongs to the user
+        const { data: existingItem, error: fetchError } = await supabase
+            .from('inventory_items')
+            .select('*')
+            .eq('id', id)
+            .eq('user_id', user.id)
+            .single();
+
+        if (fetchError) {
+            console.error('Error fetching item for update:', fetchError);
+            if (fetchError.code === 'PGRST116') {
+                return res.status(404).json({ error: 'Item not found or not authorized to update' });
+            }
+            return res.status(500).json({ error: 'Failed to verify item ownership' });
+        }
+
+        // Update the item
         const updatedItem = await updateInventoryItem(id, updates);
+        console.log('Item updated successfully:', updatedItem);
+
         res.json(updatedItem);
     } catch (error) {
         console.error('Error updating inventory item:', error);
@@ -212,10 +264,28 @@ router.put('/inventory-items/:id', async (req, res) => {
     }
 });
 
-// Delete an inventory item
-router.delete('/inventory-items/:id', async (req, res) => {
+// Delete an inventory item (requires authentication)
+router.delete('/inventory-items/:id', requireAuth, async (req, res) => {
     try {
         const { id } = req.params;
+        const user = (req as any).user;
+
+        // Verify the item belongs to the authenticated user
+        const { data: existingItem, error: fetchError } = await supabase
+            .from('inventory_items')
+            .select('*')
+            .eq('id', id)
+            .eq('user_id', user.id)
+            .single();
+
+        if (fetchError) {
+            console.error('Error fetching item for deletion:', fetchError);
+            if (fetchError.code === 'PGRST116') {
+                return res.status(404).json({ error: 'Item not found or not authorized to delete' });
+            }
+            return res.status(500).json({ error: 'Failed to verify item ownership' });
+        }
+
         const success = await deleteInventoryItem(id);
         if (success) {
             res.json({ message: 'Item deleted successfully' });
