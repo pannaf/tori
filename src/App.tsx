@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Wrench, Home, Search, BarChart3, Zap, LogOut, User } from 'lucide-react';
+import { Plus, Heart, Home, Search, BarChart3, Zap, LogOut, User } from 'lucide-react';
 import { useInventory } from './hooks/useInventory';
 import { useAuth } from './hooks/useAuth';
 import { AddItemModal } from './components/AddItemModal';
@@ -12,7 +12,7 @@ import { StatsOverview } from './components/StatsOverview';
 import { AuthModal } from './components/AuthModal';
 import { InventoryItem } from './types/inventory';
 
-type TabType = 'home' | 'search' | 'stats' | 'maintenance';
+type TabType = 'home' | 'search' | 'stats' | 'care';
 
 function App() {
   const { user, loading: authLoading, signIn, signUp, signOut } = useAuth();
@@ -348,12 +348,12 @@ function App() {
           </div>
         );
 
-      case 'maintenance':
+      case 'care':
         return (
           <div className="space-y-6">
             <div className="text-center py-6">
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">Smart Maintenance</h1>
-              <p className="text-gray-600">Keep your items in perfect condition</p>
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">Item Care</h1>
+              <p className="text-gray-600">Keep your belongings in perfect condition</p>
             </div>
 
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
@@ -420,14 +420,14 @@ function App() {
               {/* Right Navigation Items */}
               {[
                 { key: 'search', icon: Search, label: 'Search' },
-                { key: 'maintenance', icon: Wrench, label: 'Maintenance' },
+                { key: 'care', icon: Heart, label: 'Care' },
               ].map(({ key, icon: Icon, label }) => (
                 <button
                   key={key}
                   onClick={() => setActiveTab(key as TabType)}
                   className={`relative flex items-center gap-2 px-4 py-3 rounded-full transition-all duration-300 ${activeTab === key
-                    ? key === 'maintenance'
-                      ? 'bg-gradient-to-r from-orange-600 to-red-600 text-white shadow-lg shadow-orange-500/25'
+                    ? key === 'care'
+                      ? 'bg-gradient-to-r from-pink-600 to-rose-600 text-white shadow-lg shadow-pink-500/25'
                       : 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/25'
                     : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
                     }`}
