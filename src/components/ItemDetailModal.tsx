@@ -202,7 +202,35 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
 
         {/* Content */}
         <div className="p-6 space-y-6">
-          {/* Title and Value */}
+          {/* Simple Toggle - Right under the image, like "All Athletes / Top Performers" */}
+          {hasOriginalImage && (
+            <div className="flex bg-gray-100 rounded-full p-1">
+              <button
+                onClick={() => !showOriginalImage && toggleImageView()}
+                className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-full font-semibold text-sm transition-all duration-300 ${
+                  showOriginalImage
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-800'
+                }`}
+              >
+                <Image size={16} />
+                Original Photo
+              </button>
+              <button
+                onClick={() => showOriginalImage && toggleImageView()}
+                className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-full font-semibold text-sm transition-all duration-300 ${
+                  !showOriginalImage
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-800'
+                }`}
+              >
+                <Sparkles size={16} />
+                Enhanced Photo
+              </button>
+            </div>
+          )}
+
+          {/* Title and Value - NOW BELOW the toggle */}
           <div className="text-center">
             <h1 className="text-2xl font-bold text-gray-900 mb-2">{item.name}</h1>
             {item.estimatedValue && (
@@ -212,32 +240,6 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
               </div>
             )}
           </div>
-
-          {/* Simple Image Toggle - Clean horizontal layout below content */}
-          {hasOriginalImage && (
-            <div className="flex items-center justify-between bg-gray-50 rounded-2xl p-4">
-              <div className="flex items-center gap-3">
-                {showOriginalImage ? (
-                  <>
-                    <Image size={18} className="text-gray-600" />
-                    <span className="text-sm font-semibold text-gray-700">Original Photo</span>
-                  </>
-                ) : (
-                  <>
-                    <Sparkles size={18} className="text-purple-600" />
-                    <span className="text-sm font-semibold text-gray-700">Enhanced Photo</span>
-                  </>
-                )}
-              </div>
-              
-              <button
-                onClick={toggleImageView}
-                className="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-xl font-semibold text-sm transition-all duration-300 hover:scale-105"
-              >
-                Switch
-              </button>
-            </div>
-          )}
 
           {/* Location and Category */}
           <div className="grid grid-cols-2 gap-4">
