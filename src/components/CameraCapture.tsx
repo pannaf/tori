@@ -97,15 +97,8 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
 
       updateProgress({
         step: 'preparing',
-        message: 'Preparing your photo...',
+        message: 'Tori is working  magic...',
         progress: 5
-      });
-
-      // Fix image orientation
-      updateProgress({
-        step: 'preparing',
-        message: 'Correcting image orientation...',
-        progress: 15
       });
 
       const imageData = await fixImageOrientation(file);
@@ -113,7 +106,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
       // Set the original image URL immediately so it shows during processing
       updateProgress({
         step: 'preparing',
-        message: 'Preparing your photo for AI analysis...',
+        message: 'Tori is working  magic...',
         progress: 20,
         originalFullImageUrl: imageData // Set the base64 image data to show during processing
       });
@@ -142,9 +135,8 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
 
         updateProgress({
           step: 'analyzing',
-          message: 'Tori is analyzing your photo with AI...',
-          progress: 25,
-          currentlyProcessing: 'Tori is seeing what you have...'
+          message: 'Tori is working some magic...',
+          progress: 25
         });
 
         // Create AbortController for timeout handling
@@ -174,8 +166,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
           progress: 100,
           detectedObjects: data.objects.map((obj: any) => ({ ...obj, status: 'complete' })),
           room: data.room,
-          totalValue: data.total_estimated_value_usd,
-          currentlyProcessing: 'Ready to add to inventory!'
+          totalValue: data.total_estimated_value_usd
         });
 
         // Transform the analysis data to match the expected format
@@ -333,19 +324,10 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
             {isProcessing && (
               <div className="bg-gradient-to-br from-indigo-50 to-purple-50 p-6 space-y-4 max-h-[28rem] overflow-y-auto overflow-x-hidden">
                 <div className="text-center">
-                  <div className="relative mb-4">
-                    <Zap className="animate-pulse mx-auto text-amber-400" size={48} />
-                    <div className="absolute inset-0 animate-ping">
-                      <Zap className="mx-auto text-amber-400 opacity-30" size={48} />
-                    </div>
-                  </div>
-                  <p className="font-bold text-xl mb-2 text-gray-900">{progress.message}</p>
-
-                  {progress.currentlyProcessing && (
-                    <p className="text-sm text-indigo-600 font-medium mb-4">
-                      {progress.currentlyProcessing}
-                    </p>
-                  )}
+                  <p className="font-bold text-xl mb-6 text-gray-900 flex items-center justify-center gap-2">
+                    <Zap className="animate-pulse text-amber-400" size={24} />
+                    {progress.message}
+                  </p>
                 </div>
 
 
@@ -430,16 +412,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
                   </div>
                 )}
 
-                {/* Loading animation for early stages */}
-                {(!progress.detectedObjects || progress.detectedObjects.length === 0) && progress.step !== 'complete' && (
-                  <div className="flex justify-center">
-                    <div className="flex space-x-1">
-                      <div className="w-2 h-2 bg-amber-400 rounded-full animate-bounce"></div>
-                      <div className="w-2 h-2 bg-amber-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                      <div className="w-2 h-2 bg-amber-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                    </div>
-                  </div>
-                )}
+
 
                 {/* Original Image Display - Moved to bottom */}
                 {progress.originalFullImageUrl && (
