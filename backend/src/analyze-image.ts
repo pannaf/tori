@@ -41,6 +41,7 @@ interface ObjectWithCost {
     estimated_cost_usd: number;
     imageUrl?: string;  // URL to the enhanced image
     originalCropImageUrl?: string;  // URL to the original cropped image
+    originalFullImageUrl?: string;  // URL to the original full image
     confidence?: number;
 }
 
@@ -48,6 +49,7 @@ interface AnalysisResult {
     objects: ObjectWithCost[];
     room: string;
     total_estimated_value_usd: number;
+    originalFullImageUrl?: string;
 }
 
 // No auth middleware needed - using service role for storage
@@ -163,6 +165,10 @@ router.post('/analyze-image', upload.single('image'), async (req, res) => {
         try {
             result = JSON.parse(content) as AnalysisResult;
 
+            // Save the original full image to Supabase first
+            console.log('Uploading original full image to Supabase...');
+            const originalFullImageUrl = await uploadImageFileToSupabase(req.file!.path, `original_full_${Date.now()}.jpg`);
+
             // Process only the first 3 objects
             const objectsToProcess = result.objects.slice(0, 3);
 
@@ -196,13 +202,17 @@ router.post('/analyze-image', upload.single('image'), async (req, res) => {
                             ...obj,
                             imageUrl: enhancedImageUrl, // URL to the enhanced image in Supabase Storage
                             originalCropImageUrl: originalCropImageUrl, // URL to the original cropped image
+                            originalFullImageUrl: originalFullImageUrl, // URL to the original full image
                             confidence: detection.confidence
                         };
                     }
                 } catch (error) {
                     console.error(`Error processing object ${obj.name}:`, error);
                 }
-                return obj;
+                return {
+                    ...obj,
+                    originalFullImageUrl: originalFullImageUrl // Include original full image URL even if processing fails
+                };
             }));
 
             // DON'T save to database yet - let frontend handle that when user confirms
@@ -212,6 +222,7 @@ router.post('/analyze-image', upload.single('image'), async (req, res) => {
             const finalResult = {
                 ...result,
                 objects: objectsWithImages,
+                originalFullImageUrl: originalFullImageUrl, // Include original full image URL in the result
                 message: 'AI detection complete - items ready for user confirmation'
             };
 

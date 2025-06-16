@@ -30,6 +30,7 @@ interface DetectedObject {
   landingAiObjects?: LandingAiObject[];
   imageUrl?: string;
   originalCropImageUrl?: string;
+  originalFullImageUrl?: string;
 }
 
 export const AddItemModal: React.FC<AddItemModalProps> = ({
@@ -114,13 +115,15 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
       estimated_cost_usd: number;
       imageUrl?: string;
       originalCropImageUrl?: string;
+      originalFullImageUrl?: string;
     }) => ({
       name: obj.name,
       category: obj.category,
       description: obj.description,
       estimatedValue: obj.estimated_cost_usd,
       imageUrl: obj.imageUrl,
-      originalCropImageUrl: obj.originalCropImageUrl
+      originalCropImageUrl: obj.originalCropImageUrl,
+      originalFullImageUrl: obj.originalFullImageUrl
     }));
 
     // Take only the first 3 objects
@@ -156,6 +159,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
       // Use the cropped image URL from the current object if available
       imageUrl: currentObject?.imageUrl || formData.imageUrl,
       originalCropImageUrl: currentObject?.originalCropImageUrl, // Include original cropped image URL
+      originalFullImageUrl: currentObject?.originalFullImageUrl, // Include original full image URL
       estimatedValue: formData.estimatedValue ? parseFloat(formData.estimatedValue) : undefined,
       tags: formData.tags.split(',').map(tag => tag.trim()).filter(Boolean),
       // Add any Landing AI detection results as tags

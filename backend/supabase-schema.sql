@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS inventory_items (
     image_data TEXT,
     crop_image_data TEXT,
     original_crop_image_url TEXT,
+    original_full_image_url TEXT,
     ai_detected BOOLEAN DEFAULT true,
     detection_confidence DECIMAL(5,4),
     user_id UUID,

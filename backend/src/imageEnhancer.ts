@@ -8,8 +8,8 @@ import { uploadImageToSupabase } from './storageUtils.js';
 export async function enhanceImageForPortrait(
     imagePath: string,
     fileName?: string,
-    maxWidth: number = 256,
-    maxHeight: number = 256
+    maxWidth: number = 512,
+    maxHeight: number = 512
 ): Promise<string> {
     try {
         if (!process.env.OPENAI_API_KEY) {

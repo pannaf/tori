@@ -6,6 +6,7 @@ export interface InventoryItem {
   description?: string;
   imageUrl?: string;
   originalCropImageUrl?: string; // Add original image URL field
+  originalFullImageUrl?: string; // Add original full image URL field
   dateAdded: string;
   tags: string[];
   condition: 'excellent' | 'good' | 'fair' | 'poor';

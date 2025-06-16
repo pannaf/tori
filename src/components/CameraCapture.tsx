@@ -23,6 +23,7 @@ interface DetectedObject {
   estimated_cost_usd: number;
   imageUrl?: string;
   originalCropImageUrl?: string;
+  originalFullImageUrl?: string;
   confidence?: number;
   status?: 'waiting' | 'detecting' | 'cropping' | 'enhancing' | 'uploading' | 'complete';
   detectionCount?: number;
@@ -46,6 +47,7 @@ interface ProgressState {
   currentlyProcessing?: string;
   processingDetails?: ProcessingDetail[];
   currentObjectIndex?: number;
+  originalFullImageUrl?: string;
 }
 
 // Function to fix image orientation using createImageBitmap
@@ -97,23 +99,23 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
 
   const addProcessingDetail = (message: string, type: 'info' | 'success' | 'processing' | 'upload' = 'info', icon?: string) => {
     const detail: ProcessingDetail = {
-      id: Date.now().toString(),
+      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       message,
       timestamp: Date.now(),
       type,
       icon
     };
-    
+
     setProgress(prev => ({
       ...prev,
-      processingDetails: [...(prev.processingDetails || []), detail].slice(-8) // Keep last 8 details
+      processingDetails: [...(prev.processingDetails || []), detail].slice(-8)
     }));
   };
 
   const simulateDetailedBackendProgress = async (data: any) => {
     // Simulate the exact backend processing steps we see in the logs
     const objects = data.objects.slice(0, 3);
-    
+
     // Step 1: Initial AI Analysis Complete
     updateProgress({
       step: 'detecting',
@@ -134,7 +136,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
     // Step 2: Process each object with detailed steps
     for (let i = 0; i < objects.length; i++) {
       const obj = objects[i];
-      
+
       // Start detecting this object
       updateProgress({
         step: 'processing',
@@ -185,7 +187,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
       addProcessingDetail(`🎨 Enhancing image for "${obj.name}" with OpenAI`, 'processing', '✨');
       await new Promise(resolve => setTimeout(resolve, 1200));
 
-      addProcessingDetail(`📏 Resizing enhanced image to max 256x256 pixels`, 'processing', '📐');
+      addProcessingDetail(`📏 Resizing enhanced image to max 512x512 pixels`, 'processing', '📐');
       await new Promise(resolve => setTimeout(resolve, 400));
 
       // Upload enhanced
@@ -201,7 +203,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
       await new Promise(resolve => setTimeout(resolve, 600));
 
       addProcessingDetail(`✅ Successfully processed "${obj.name}"`, 'success', '🎉');
-      
+
       // Mark as complete
       updateProgress({
         detectedObjects: objects.map((o, idx) => ({
@@ -245,7 +247,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
     try {
       setError(null);
       setIsProcessing(true);
-      
+
       updateProgress({
         step: 'preparing',
         message: 'Preparing your photo...',
@@ -264,6 +266,14 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
 
       addProcessingDetail('🔄 Correcting image orientation with createImageBitmap', 'processing', '🔄');
       const imageData = await fixImageOrientation(file);
+
+      // Set the original image URL immediately so it shows during processing
+      updateProgress({
+        step: 'preparing',
+        message: 'Preparing your photo for AI analysis...',
+        progress: 20,
+        originalFullImageUrl: imageData // Set the base64 image data to show during processing
+      });
 
       try {
         // Create form data for the API
@@ -319,6 +329,14 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
         // Parse the response
         const data = await apiResponse.json();
 
+        // Update progress but preserve the original full image URL that was set earlier
+        updateProgress({
+          step: 'processing',
+          message: 'Processing detected objects...',
+          progress: 50
+          // Don't override originalFullImageUrl here - keep the one we set earlier
+        });
+
         // Start the detailed backend progress simulation
         await simulateDetailedBackendProgress(data);
 
@@ -331,7 +349,8 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
             description: obj.description || '',
             estimated_cost_usd: obj.estimated_cost_usd,
             imageUrl: obj.imageUrl,
-            originalCropImageUrl: obj.originalCropImageUrl
+            originalCropImageUrl: obj.originalCropImageUrl,
+            originalFullImageUrl: obj.originalFullImageUrl
           })),
           room: data.room,
           suggestedName: data.objects[0]?.name || '',
@@ -482,6 +501,23 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
 
             {isProcessing && (
               <div className="min-h-[600px] bg-gradient-to-br from-indigo-50 to-purple-50 p-6">
+                {/* Original Image Display */}
+                {progress.originalFullImageUrl && (
+                  <div className="bg-white rounded-2xl p-4 mb-4 shadow-sm border border-gray-200">
+                    <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                      <Camera size={14} />
+                      Tori is analyzing your photo...
+                    </h4>
+                    <div className="relative aspect-square bg-gray-100 rounded-xl overflow-hidden">
+                      <img
+                        src={progress.originalFullImageUrl}
+                        alt="Original photo being processed"
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
+                  </div>
+                )}
+
                 <div className="text-center mb-6">
                   <div className="relative mb-4">
                     <Zap className="animate-pulse mx-auto text-amber-400" size={48} />
@@ -490,15 +526,15 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
                     </div>
                   </div>
                   <p className="font-bold text-xl mb-2 text-gray-900">{progress.message}</p>
-                  
+
                   {/* Progress Bar */}
                   <div className="w-full bg-gray-200 rounded-full h-3 mb-4">
-                    <div 
+                    <div
                       className="bg-gradient-to-r from-indigo-600 to-purple-600 h-3 rounded-full transition-all duration-500 ease-out"
                       style={{ width: `${progress.progress}%` }}
                     />
                   </div>
-                  
+
                   {progress.currentlyProcessing && (
                     <p className="text-sm text-indigo-600 font-medium mb-4">
                       {progress.currentlyProcessing}
@@ -515,12 +551,11 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
                     </h4>
                     <div className="space-y-2 max-h-32 overflow-y-auto">
                       {progress.processingDetails.slice(-6).map((detail) => (
-                        <div key={detail.id} className={`text-xs rounded-lg px-3 py-2 transition-all duration-300 ${
-                          detail.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' :
+                        <div key={detail.id} className={`text-xs rounded-lg px-3 py-2 transition-all duration-300 ${detail.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' :
                           detail.type === 'processing' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
-                          detail.type === 'upload' ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' :
-                          'bg-gray-50 text-gray-700 border border-gray-200'
-                        }`}>
+                            detail.type === 'upload' ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' :
+                              'bg-gray-50 text-gray-700 border border-gray-200'
+                          }`}>
                           <span className="mr-2">{getDetailIcon(detail.type, detail.icon)}</span>
                           {detail.message}
                         </div>
@@ -556,9 +591,8 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
                       Processing Items {progress.currentObjectIndex !== undefined && `(${progress.currentObjectIndex + 1}/${progress.detectedObjects.length})`}
                     </h4>
                     {progress.detectedObjects.map((obj, index) => (
-                      <div key={index} className={`bg-white rounded-xl p-3 shadow-sm border transition-all duration-300 ${getStatusColor(obj.status)} ${
-                        progress.currentObjectIndex === index ? 'ring-2 ring-indigo-300 ring-opacity-50' : ''
-                      }`}>
+                      <div key={index} className={`bg-white rounded-xl p-3 shadow-sm border transition-all duration-300 ${getStatusColor(obj.status)} ${progress.currentObjectIndex === index ? 'ring-2 ring-indigo-300 ring-opacity-50' : ''
+                        }`}>
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-xl flex items-center justify-center flex-shrink-0">
                             {getStatusIcon(obj.status)}
@@ -573,14 +607,13 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
                                 </span>
                               )}
                               {obj.status && obj.status !== 'waiting' && (
-                                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                                  obj.status === 'detecting' ? 'bg-blue-100 text-blue-700' :
+                                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${obj.status === 'detecting' ? 'bg-blue-100 text-blue-700' :
                                   obj.status === 'cropping' ? 'bg-orange-100 text-orange-700' :
-                                  obj.status === 'enhancing' ? 'bg-purple-100 text-purple-700' :
-                                  obj.status === 'uploading' ? 'bg-indigo-100 text-indigo-700' :
-                                  obj.status === 'complete' ? 'bg-green-100 text-green-700' :
-                                  'bg-gray-100 text-gray-700'
-                                }`}>
+                                    obj.status === 'enhancing' ? 'bg-purple-100 text-purple-700' :
+                                      obj.status === 'uploading' ? 'bg-indigo-100 text-indigo-700' :
+                                        obj.status === 'complete' ? 'bg-green-100 text-green-700' :
+                                          'bg-gray-100 text-gray-700'
+                                  }`}>
                                   {obj.status === 'detecting' && 'Detecting...'}
                                   {obj.status === 'cropping' && 'Cropping...'}
                                   {obj.status === 'enhancing' && 'Enhancing...'}

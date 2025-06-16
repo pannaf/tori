@@ -111,6 +111,7 @@ export const useInventory = (user: User | null = null, authLoading: boolean = fa
         condition: item.condition,
         crop_image_data: item.imageUrl,
         original_crop_image_url: item.originalCropImageUrl, // Include original image URL
+        original_full_image_url: item.originalFullImageUrl, // Include original full image URL
         user_id: user.id,
         ai_detected: false,
         detection_confidence: null,
@@ -153,6 +154,7 @@ export const useInventory = (user: User | null = null, authLoading: boolean = fa
         id: supabaseItem.id, // Use Supabase-generated UUID
         dateAdded: supabaseItem.created_at,
         originalCropImageUrl: supabaseItem.original_crop_image_url, // Include original image URL
+        originalFullImageUrl: supabaseItem.original_full_image_url, // Include original full image URL
       };
 
       // Update local state
