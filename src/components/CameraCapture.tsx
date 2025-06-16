@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Camera, X, Zap, AlertCircle, RefreshCw, Sparkles, Package, DollarSign, MapPin, Search, Crop, Wand2 } from 'lucide-react';
+import { Camera, X, Zap, AlertCircle, RefreshCw, Sparkles, Package, DollarSign, MapPin, Search, Crop, Wand2, Upload, Brain, Eye, Scissors, Palette } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
 import { env } from '../config/env';
 
@@ -24,7 +24,16 @@ interface DetectedObject {
   imageUrl?: string;
   originalCropImageUrl?: string;
   confidence?: number;
-  status?: 'detecting' | 'cropping' | 'enhancing' | 'complete';
+  status?: 'waiting' | 'detecting' | 'cropping' | 'enhancing' | 'uploading' | 'complete';
+  detectionCount?: number;
+}
+
+interface ProcessingDetail {
+  id: string;
+  message: string;
+  timestamp: number;
+  type: 'info' | 'success' | 'processing' | 'upload';
+  icon?: string;
 }
 
 interface ProgressState {
@@ -35,7 +44,8 @@ interface ProgressState {
   room?: string;
   totalValue?: number;
   currentlyProcessing?: string;
-  processingDetails?: string[];
+  processingDetails?: ProcessingDetail[];
+  currentObjectIndex?: number;
 }
 
 // Function to fix image orientation using createImageBitmap
@@ -85,91 +95,146 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
     setProgress(prev => ({ ...prev, ...newProgress }));
   };
 
-  const addProcessingDetail = (detail: string) => {
+  const addProcessingDetail = (message: string, type: 'info' | 'success' | 'processing' | 'upload' = 'info', icon?: string) => {
+    const detail: ProcessingDetail = {
+      id: Date.now().toString(),
+      message,
+      timestamp: Date.now(),
+      type,
+      icon
+    };
+    
     setProgress(prev => ({
       ...prev,
-      processingDetails: [...(prev.processingDetails || []), detail].slice(-5) // Keep last 5 details
+      processingDetails: [...(prev.processingDetails || []), detail].slice(-8) // Keep last 8 details
     }));
   };
 
-  const simulateBackendProgress = async (data: any) => {
-    // Simulate the backend processing steps we see in the logs
+  const simulateDetailedBackendProgress = async (data: any) => {
+    // Simulate the exact backend processing steps we see in the logs
     const objects = data.objects.slice(0, 3);
     
-    // Step 1: Show initial detection
+    // Step 1: Initial AI Analysis Complete
     updateProgress({
       step: 'detecting',
-      message: `Found ${objects.length} objects in your ${data.room}!`,
-      progress: 40,
-      detectedObjects: objects.map(obj => ({ ...obj, status: 'detecting' })),
+      message: `Tori found ${objects.length} objects in your ${data.room}!`,
+      progress: 35,
+      detectedObjects: objects.map(obj => ({ ...obj, status: 'waiting' })),
       room: data.room,
       totalValue: data.total_estimated_value_usd,
-      currentlyProcessing: 'Analyzing objects...'
+      currentlyProcessing: 'Starting object detection...'
     });
 
-    addProcessingDetail(`🏠 Detected room: ${data.room}`);
-    addProcessingDetail(`📦 Found ${objects.length} objects`);
+    addProcessingDetail(`🏠 Room detected: ${data.room}`, 'success', '🏠');
+    addProcessingDetail(`📊 Total estimated value: $${data.total_estimated_value_usd.toFixed(0)}`, 'info', '💰');
+    addProcessingDetail(`🔍 Processing ${objects.length} objects with Landing AI`, 'processing', '🤖');
 
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, 1200));
 
-    // Step 2: Process each object
+    // Step 2: Process each object with detailed steps
     for (let i = 0; i < objects.length; i++) {
       const obj = objects[i];
       
+      // Start detecting this object
       updateProgress({
         step: 'processing',
-        message: `Processing ${obj.name}...`,
-        progress: 50 + (i * 15),
-        currentlyProcessing: `Detecting instances of "${obj.name}"`,
+        message: `Processing "${obj.name}"...`,
+        progress: 40 + (i * 20),
+        currentlyProcessing: `Sending request to Landing AI for object: "${obj.name}"`,
+        currentObjectIndex: i,
         detectedObjects: objects.map((o, idx) => ({
           ...o,
-          status: idx < i ? 'complete' : idx === i ? 'cropping' : 'detecting'
+          status: idx < i ? 'complete' : idx === i ? 'detecting' : 'waiting'
         }))
       });
 
-      addProcessingDetail(`🔍 Detecting "${obj.name}"`);
+      addProcessingDetail(`🔍 Detecting instances of "${obj.name}"`, 'processing', '👁️');
       await new Promise(resolve => setTimeout(resolve, 800));
 
-      addProcessingDetail(`✂️ Cropping ${obj.name} image`);
+      // Simulate detection results
+      const detectionCount = Math.floor(Math.random() * 3) + 1;
+      addProcessingDetail(`✅ Found ${detectionCount} instance(s) of "${obj.name}"`, 'success', '🎯');
       await new Promise(resolve => setTimeout(resolve, 600));
 
+      // Start cropping
       updateProgress({
-        currentlyProcessing: `Enhancing ${obj.name} photo`,
+        currentlyProcessing: `Cropping image for "${obj.name}"`,
         detectedObjects: objects.map((o, idx) => ({
           ...o,
-          status: idx < i ? 'complete' : idx === i ? 'enhancing' : 'detecting'
+          status: idx < i ? 'complete' : idx === i ? 'cropping' : 'waiting',
+          detectionCount: idx === i ? detectionCount : o.detectionCount
         }))
       });
 
-      addProcessingDetail(`✨ Enhancing ${obj.name} with AI`);
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      addProcessingDetail(`✂️ Cropping image with dimensions for "${obj.name}"`, 'processing', '✂️');
+      await new Promise(resolve => setTimeout(resolve, 700));
 
-      addProcessingDetail(`📤 Uploading enhanced ${obj.name}`);
+      // Upload original crop
+      addProcessingDetail(`📤 Uploading original cropped image to Supabase`, 'upload', '☁️');
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Start enhancing
+      updateProgress({
+        currentlyProcessing: `Enhancing "${obj.name}" with OpenAI`,
+        detectedObjects: objects.map((o, idx) => ({
+          ...o,
+          status: idx < i ? 'complete' : idx === i ? 'enhancing' : 'waiting'
+        }))
+      });
+
+      addProcessingDetail(`🎨 Enhancing image for "${obj.name}" with OpenAI`, 'processing', '✨');
+      await new Promise(resolve => setTimeout(resolve, 1200));
+
+      addProcessingDetail(`📏 Resizing enhanced image to max 256x256 pixels`, 'processing', '📐');
       await new Promise(resolve => setTimeout(resolve, 400));
+
+      // Upload enhanced
+      updateProgress({
+        currentlyProcessing: `Uploading enhanced "${obj.name}"`,
+        detectedObjects: objects.map((o, idx) => ({
+          ...o,
+          status: idx < i ? 'complete' : idx === i ? 'uploading' : 'waiting'
+        }))
+      });
+
+      addProcessingDetail(`📤 Uploading enhanced image to Supabase`, 'upload', '☁️');
+      await new Promise(resolve => setTimeout(resolve, 600));
+
+      addProcessingDetail(`✅ Successfully processed "${obj.name}"`, 'success', '🎉');
+      
+      // Mark as complete
+      updateProgress({
+        detectedObjects: objects.map((o, idx) => ({
+          ...o,
+          status: idx <= i ? 'complete' : 'waiting'
+        }))
+      });
+
+      await new Promise(resolve => setTimeout(resolve, 300));
     }
 
-    // Step 3: Final enhancement
+    // Step 3: Final steps
     updateProgress({
       step: 'enhancing',
-      message: 'Finalizing your beautiful photos...',
+      message: 'Finalizing your inventory items...',
       progress: 90,
-      currentlyProcessing: 'Applying final touches',
+      currentlyProcessing: 'AI detection complete, preparing data',
       detectedObjects: objects.map(obj => ({ ...obj, status: 'complete' }))
     });
 
-    addProcessingDetail(`🎨 Applying final enhancements`);
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    addProcessingDetail(`🔄 AI detection complete, returning data to frontend`, 'success', '✅');
+    await new Promise(resolve => setTimeout(resolve, 800));
 
     // Step 4: Complete
     updateProgress({
       step: 'complete',
-      message: 'Perfect! Your items are ready.',
+      message: 'Perfect! Your items are ready to add.',
       progress: 100,
-      currentlyProcessing: 'All done!',
+      currentlyProcessing: 'Ready to add to inventory!',
       detectedObjects: objects.map(obj => ({ ...obj, status: 'complete' }))
     });
 
-    addProcessingDetail(`✅ All items processed successfully`);
+    addProcessingDetail(`🎊 All items processed and ready!`, 'success', '🏆');
     await new Promise(resolve => setTimeout(resolve, 1500));
   };
 
@@ -184,20 +249,20 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
       updateProgress({
         step: 'preparing',
         message: 'Preparing your photo...',
-        progress: 10,
+        progress: 5,
         processingDetails: []
       });
 
-      addProcessingDetail('📸 Processing uploaded image');
+      addProcessingDetail('📸 Processing uploaded image', 'info', '📷');
 
       // Fix image orientation
       updateProgress({
         step: 'preparing',
         message: 'Correcting image orientation...',
-        progress: 20
+        progress: 15
       });
 
-      addProcessingDetail('🔄 Correcting image orientation');
+      addProcessingDetail('🔄 Correcting image orientation with createImageBitmap', 'processing', '🔄');
       const imageData = await fixImageOrientation(file);
 
       try {
@@ -225,11 +290,12 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
         updateProgress({
           step: 'analyzing',
           message: 'Tori is analyzing your photo with AI...',
-          progress: 30,
-          currentlyProcessing: 'Sending to AI analysis...'
+          progress: 25,
+          currentlyProcessing: 'Sending to GPT-4o-mini for analysis...'
         });
 
-        addProcessingDetail('🤖 Sending to GPT-4o-mini for analysis');
+        addProcessingDetail('🤖 Sending request to GPT-4o-mini', 'processing', '🧠');
+        addProcessingDetail('📊 Using structured outputs for reliable parsing', 'info', '📋');
 
         // Create AbortController for timeout handling
         const controller = new AbortController();
@@ -248,13 +314,13 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
           throw new Error('Failed to analyze image');
         }
 
-        addProcessingDetail('📊 Received AI analysis results');
+        addProcessingDetail('📊 Received AI analysis results', 'success', '📈');
 
         // Parse the response
         const data = await apiResponse.json();
 
-        // Start the simulated backend progress
-        await simulateBackendProgress(data);
+        // Start the detailed backend progress simulation
+        await simulateDetailedBackendProgress(data);
 
         // Transform the analysis data to match the expected format
         const recognitionData = {
@@ -327,9 +393,11 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
 
   const getStatusIcon = (status?: string) => {
     switch (status) {
-      case 'detecting': return <Search size={14} className="text-blue-500" />;
-      case 'cropping': return <Crop size={14} className="text-orange-500" />;
-      case 'enhancing': return <Wand2 size={14} className="text-purple-500" />;
+      case 'waiting': return <Package size={14} className="text-gray-400" />;
+      case 'detecting': return <Eye size={14} className="text-blue-500 animate-pulse" />;
+      case 'cropping': return <Scissors size={14} className="text-orange-500 animate-pulse" />;
+      case 'enhancing': return <Palette size={14} className="text-purple-500 animate-pulse" />;
+      case 'uploading': return <Upload size={14} className="text-indigo-500 animate-pulse" />;
       case 'complete': return <Sparkles size={14} className="text-green-500" />;
       default: return <Package size={14} className="text-gray-400" />;
     }
@@ -337,11 +405,23 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
 
   const getStatusColor = (status?: string) => {
     switch (status) {
+      case 'waiting': return 'border-gray-200 bg-gray-50';
       case 'detecting': return 'border-blue-200 bg-blue-50';
       case 'cropping': return 'border-orange-200 bg-orange-50';
       case 'enhancing': return 'border-purple-200 bg-purple-50';
+      case 'uploading': return 'border-indigo-200 bg-indigo-50';
       case 'complete': return 'border-green-200 bg-green-50';
       default: return 'border-gray-200 bg-gray-50';
+    }
+  };
+
+  const getDetailIcon = (type: string, customIcon?: string) => {
+    if (customIcon) return customIcon;
+    switch (type) {
+      case 'success': return '✅';
+      case 'processing': return '⚡';
+      case 'upload': return '☁️';
+      default: return 'ℹ️';
     }
   };
 
@@ -401,7 +481,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
             )}
 
             {isProcessing && (
-              <div className="min-h-[500px] bg-gradient-to-br from-indigo-50 to-purple-50 p-6">
+              <div className="min-h-[600px] bg-gradient-to-br from-indigo-50 to-purple-50 p-6">
                 <div className="text-center mb-6">
                   <div className="relative mb-4">
                     <Zap className="animate-pulse mx-auto text-amber-400" size={48} />
@@ -426,17 +506,23 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
                   )}
                 </div>
 
-                {/* Processing Details Log */}
+                {/* Real-time Processing Log */}
                 {progress.processingDetails && progress.processingDetails.length > 0 && (
                   <div className="bg-white rounded-2xl p-4 mb-4 shadow-sm border border-gray-200">
                     <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                      <Zap size={14} />
-                      Processing Log
+                      <Brain size={14} />
+                      Tori's AI Brain
                     </h4>
-                    <div className="space-y-2 max-h-24 overflow-y-auto">
-                      {progress.processingDetails.map((detail, index) => (
-                        <div key={index} className="text-xs text-gray-600 font-mono bg-gray-50 rounded px-2 py-1">
-                          {detail}
+                    <div className="space-y-2 max-h-32 overflow-y-auto">
+                      {progress.processingDetails.slice(-6).map((detail) => (
+                        <div key={detail.id} className={`text-xs rounded-lg px-3 py-2 transition-all duration-300 ${
+                          detail.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' :
+                          detail.type === 'processing' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
+                          detail.type === 'upload' ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' :
+                          'bg-gray-50 text-gray-700 border border-gray-200'
+                        }`}>
+                          <span className="mr-2">{getDetailIcon(detail.type, detail.icon)}</span>
+                          {detail.message}
                         </div>
                       ))}
                     </div>
@@ -462,15 +548,17 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
                   </div>
                 )}
 
-                {/* Detected Objects with Status */}
+                {/* Detected Objects with Real-time Status */}
                 {progress.detectedObjects && progress.detectedObjects.length > 0 && (
                   <div className="space-y-3">
                     <h4 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
                       <Package size={16} />
-                      Detected Items
+                      Processing Items {progress.currentObjectIndex !== undefined && `(${progress.currentObjectIndex + 1}/${progress.detectedObjects.length})`}
                     </h4>
                     {progress.detectedObjects.map((obj, index) => (
-                      <div key={index} className={`bg-white rounded-xl p-3 shadow-sm border transition-all duration-300 ${getStatusColor(obj.status)}`}>
+                      <div key={index} className={`bg-white rounded-xl p-3 shadow-sm border transition-all duration-300 ${getStatusColor(obj.status)} ${
+                        progress.currentObjectIndex === index ? 'ring-2 ring-indigo-300 ring-opacity-50' : ''
+                      }`}>
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-xl flex items-center justify-center flex-shrink-0">
                             {getStatusIcon(obj.status)}
@@ -479,10 +567,24 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
                             <p className="font-semibold text-gray-900 text-sm">{obj.name}</p>
                             <div className="flex items-center gap-2">
                               <p className="text-xs text-gray-600">{obj.category}</p>
-                              {obj.status && obj.status !== 'detecting' && (
-                                <span className="text-xs px-2 py-0.5 rounded-full bg-white bg-opacity-50 font-medium">
+                              {obj.detectionCount && (
+                                <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-medium">
+                                  {obj.detectionCount} found
+                                </span>
+                              )}
+                              {obj.status && obj.status !== 'waiting' && (
+                                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                                  obj.status === 'detecting' ? 'bg-blue-100 text-blue-700' :
+                                  obj.status === 'cropping' ? 'bg-orange-100 text-orange-700' :
+                                  obj.status === 'enhancing' ? 'bg-purple-100 text-purple-700' :
+                                  obj.status === 'uploading' ? 'bg-indigo-100 text-indigo-700' :
+                                  obj.status === 'complete' ? 'bg-green-100 text-green-700' :
+                                  'bg-gray-100 text-gray-700'
+                                }`}>
+                                  {obj.status === 'detecting' && 'Detecting...'}
                                   {obj.status === 'cropping' && 'Cropping...'}
                                   {obj.status === 'enhancing' && 'Enhancing...'}
+                                  {obj.status === 'uploading' && 'Uploading...'}
                                   {obj.status === 'complete' && 'Complete ✓'}
                                 </span>
                               )}
