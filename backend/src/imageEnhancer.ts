@@ -47,7 +47,7 @@ export async function enhanceImageForPortrait(
         // Create FormData for the API request
         const formData = new FormData();
         formData.append('image', new Blob([imageBuffer], { type: mimeType }), path.basename(imagePath));
-        formData.append('prompt', 'make the object in this image look like a professional portrait was taken. do NOT change the object fundamentally. just make it look pro. preference for transparent backgrounds');
+        formData.append('prompt', 'make the object in this image look like a professional portrait was taken. do NOT change the object fundamentally. just make it look pro. preference for white backgrounds');
         formData.append('model', 'gpt-image-1');
         formData.append('quality', 'low');
         formData.append('size', 'auto');

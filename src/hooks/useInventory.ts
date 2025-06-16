@@ -101,7 +101,7 @@ export const useInventory = () => {
         tags: item.tags,
         condition: item.condition,
         crop_image_data: item.imageUrl,
-        original_crop_image_url: (item as any).originalCropImageUrl, // Include original image URL
+        original_crop_image_url: item.originalCropImageUrl, // Include original image URL
         user_id: user.id,
         ai_detected: false,
         detection_confidence: null,

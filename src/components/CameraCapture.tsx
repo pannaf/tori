@@ -117,7 +117,8 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
             category: obj.category || inferCategory(obj.name),
             description: obj.description || '',
             estimated_cost_usd: obj.estimated_cost_usd,
-            imageUrl: obj.imageUrl
+            imageUrl: obj.imageUrl,
+            originalCropImageUrl: obj.originalCropImageUrl // Include original cropped image URL
           })),
           room: data.room,
           suggestedName: data.objects[0]?.name || '',
