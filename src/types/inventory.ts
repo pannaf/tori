@@ -9,6 +9,36 @@ export interface InventoryItem {
   tags: string[];
   condition: 'excellent' | 'good' | 'fair' | 'poor';
   estimatedValue?: number;
+  // New maintenance fields
+  maintenanceSchedule?: MaintenanceSchedule;
+  lastMaintenance?: string;
+  nextMaintenance?: string;
+  warrantyExpiry?: string;
+  purchaseDate?: string;
+}
+
+export interface MaintenanceSchedule {
+  id: string;
+  type: 'monthly' | 'quarterly' | 'biannual' | 'annual' | 'custom';
+  intervalMonths: number;
+  description: string;
+  isActive: boolean;
+}
+
+export interface MaintenanceReminder {
+  id: string;
+  itemId: string;
+  itemName: string;
+  itemRoom: string;
+  itemImageUrl?: string;
+  type: 'maintenance' | 'warranty' | 'replacement';
+  title: string;
+  description: string;
+  dueDate: string;
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  isCompleted: boolean;
+  completedDate?: string;
+  notes?: string;
 }
 
 export interface Room {
