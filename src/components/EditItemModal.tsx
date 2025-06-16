@@ -521,7 +521,7 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
               className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-4 rounded-full font-bold hover:shadow-2xl hover:shadow-indigo-500/25 transition-all duration-300 hover:scale-105 flex items-center justify-center gap-2"
             >
               <Save size={18} />
-              Save Changes
+              Save
             </button>
           </div>
         </form>
