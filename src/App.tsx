@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Plus, Wrench, Home, Search, BarChart3, Zap, LogOut, User } from 'lucide-react';
 import { useInventory } from './hooks/useInventory';
 import { useAuth } from './hooks/useAuth';
+import { useMaintenanceDB } from './hooks/useMaintenanceDB';
 import { AddItemModal } from './components/AddItemModal';
 import { ItemCard } from './components/ItemCard';
 import { ItemDetailModal } from './components/ItemDetailModal';
@@ -28,6 +29,8 @@ function App() {
     deleteItem,
     searchItems,
   } = useInventory(user, authLoading);
+
+  const { createMaintenanceSchedule } = useMaintenanceDB(user);
 
   const [activeTab, setActiveTab] = useState<TabType>('home');
   const [showAddModal, setShowAddModal] = useState(false);
@@ -79,6 +82,56 @@ function App() {
   const handleSignOut = () => {
     signOut();
     setShowUserMenu(false);
+  };
+
+  const handleAddItemWithMaintenance = async (
+    item: Omit<InventoryItem, 'id' | 'dateAdded'>,
+    maintenanceData?: {
+      title: string;
+      description: string;
+      intervalType: 'days' | 'weeks' | 'months' | 'years';
+      intervalValue: number;
+      priority: 'low' | 'medium' | 'high' | 'urgent';
+    }
+  ) => {
+    try {
+      // Add the item first and get its ID
+      const itemId = await addItem(item);
+
+      // If maintenance is enabled and we have maintenance data, create the schedule
+      if (itemId && maintenanceData && maintenanceData.title && user) {
+        // Calculate the next due date
+        const nextDueDate = new Date();
+        switch (maintenanceData.intervalType) {
+          case 'days':
+            nextDueDate.setDate(nextDueDate.getDate() + maintenanceData.intervalValue);
+            break;
+          case 'weeks':
+            nextDueDate.setDate(nextDueDate.getDate() + (maintenanceData.intervalValue * 7));
+            break;
+          case 'months':
+            nextDueDate.setMonth(nextDueDate.getMonth() + maintenanceData.intervalValue);
+            break;
+          case 'years':
+            nextDueDate.setFullYear(nextDueDate.getFullYear() + maintenanceData.intervalValue);
+            break;
+        }
+
+        await createMaintenanceSchedule(itemId, {
+          title: maintenanceData.title,
+          description: maintenanceData.description,
+          intervalType: maintenanceData.intervalType,
+          intervalValue: maintenanceData.intervalValue,
+          nextDueDate: nextDueDate.toISOString().split('T')[0],
+          priority: maintenanceData.priority,
+          isActive: true,
+        });
+      }
+    } catch (error) {
+      console.error('Error adding item with maintenance:', error);
+      // Let the UI handle the error
+      throw error;
+    }
   };
 
   // Show loading screen
@@ -371,6 +424,7 @@ function App() {
                 isOpen={true}
                 onClose={() => setActiveTab('home')}
                 embedded={true}
+                user={user}
               />
             </div>
           </div>
@@ -457,9 +511,10 @@ function App() {
         <AddItemModal
           isOpen={showAddModal}
           onClose={() => setShowAddModal(false)}
-          onAdd={addItem}
+          onAdd={handleAddItemWithMaintenance}
           rooms={rooms}
           categories={categories}
+          user={user}
         />
 
         <ItemDetailModal
@@ -477,6 +532,7 @@ function App() {
           onSave={handleSaveEdit}
           rooms={rooms}
           categories={categories}
+          user={user}
         />
       </div>
     </div>

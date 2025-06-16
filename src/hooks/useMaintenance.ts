@@ -1,229 +1,260 @@
 import { useState, useEffect } from 'react';
-import { InventoryItem, MaintenanceReminder, MaintenanceSchedule } from '../types/inventory';
+import { InventoryItem, MaintenanceReminder } from '../types/inventory';
+import { useMaintenanceDB } from './useMaintenanceDB';
 
-// Predefined maintenance schedules for common items
-const defaultMaintenanceSchedules: Record<string, MaintenanceSchedule[]> = {
-  'Electronics': [
-    {
-      id: 'electronics-cleaning',
-      type: 'quarterly',
-      intervalMonths: 3,
-      description: 'Clean dust and check connections',
-      isActive: true,
-    },
-    {
-      id: 'electronics-software',
-      type: 'monthly',
-      intervalMonths: 1,
-      description: 'Update software and security patches',
-      isActive: true,
-    },
-  ],
-  'Appliances': [
-    {
-      id: 'appliance-filter',
-      type: 'quarterly',
-      intervalMonths: 3,
-      description: 'Replace or clean filters',
-      isActive: true,
-    },
-    {
-      id: 'appliance-deep-clean',
-      type: 'biannual',
-      intervalMonths: 6,
-      description: 'Deep clean and descale',
-      isActive: true,
-    },
-  ],
-  'Furniture': [
-    {
-      id: 'furniture-polish',
-      type: 'quarterly',
-      intervalMonths: 3,
-      description: 'Polish and condition wood',
-      isActive: true,
-    },
-    {
-      id: 'furniture-inspect',
-      type: 'annual',
-      intervalMonths: 12,
-      description: 'Inspect for wear and tighten joints',
-      isActive: true,
-    },
-  ],
-  'Tools': [
-    {
-      id: 'tools-sharpen',
-      type: 'biannual',
-      intervalMonths: 6,
-      description: 'Sharpen blades and cutting edges',
-      isActive: true,
-    },
-    {
-      id: 'tools-oil',
-      type: 'quarterly',
-      intervalMonths: 3,
-      description: 'Oil moving parts and check for rust',
-      isActive: true,
-    },
-  ],
-};
+interface User {
+  id: string;
+  email: string;
+}
 
-export const useMaintenance = (items: InventoryItem[]) => {
+export const useMaintenance = (items: InventoryItem[], user: User | null = null) => {
   const [reminders, setReminders] = useState<MaintenanceReminder[]>([]);
+  const [completedReminders, setCompletedReminders] = useState<MaintenanceReminder[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Generate reminders based on items and their maintenance schedules
+  const { getAllMaintenanceSchedules, completeMaintenanceTask } = useMaintenanceDB(user);
+
+  // Generate reminders from database maintenance schedules
   useEffect(() => {
-    generateReminders();
-  }, [items]);
+    if (!user?.id || items.length === 0) return;
 
-  const generateReminders = () => {
-    setLoading(true);
-    const newReminders: MaintenanceReminder[] = [];
-    const now = new Date();
+    let isMounted = true;
 
-    items.forEach(item => {
-      // Generate maintenance reminders
-      if (item.maintenanceSchedule?.isActive) {
-        const lastMaintenance = item.lastMaintenance ? new Date(item.lastMaintenance) : new Date(item.dateAdded);
-        const nextDue = new Date(lastMaintenance);
-        nextDue.setMonth(nextDue.getMonth() + item.maintenanceSchedule.intervalMonths);
+    const generateReminders = async () => {
+      setLoading(true);
+      try {
+        const newReminders: MaintenanceReminder[] = [];
+        const now = new Date();
 
-        if (nextDue <= new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)) { // Due within 30 days
-          const daysUntilDue = Math.ceil((nextDue.getTime() - now.getTime()) / (24 * 60 * 60 * 1000));
-          
-          newReminders.push({
-            id: `maintenance-${item.id}-${Date.now()}`,
-            itemId: item.id,
-            itemName: item.name,
-            itemRoom: item.room,
-            itemImageUrl: item.imageUrl,
-            type: 'maintenance',
-            title: `${item.name} Maintenance Due`,
-            description: item.maintenanceSchedule.description,
-            dueDate: nextDue.toISOString(),
-            priority: daysUntilDue < 0 ? 'urgent' : daysUntilDue <= 7 ? 'high' : 'medium',
-            isCompleted: false,
-          });
-        }
-      }
+        console.log('🔧 Fetching maintenance schedules for user:', user?.email);
+        // Get all maintenance schedules from database
+        const schedules = await getAllMaintenanceSchedules();
+        console.log('🔧 Found', schedules.length, 'maintenance schedules:', schedules);
 
-      // Generate warranty expiry reminders
-      if (item.warrantyExpiry) {
-        const warrantyDate = new Date(item.warrantyExpiry);
-        const daysUntilExpiry = Math.ceil((warrantyDate.getTime() - now.getTime()) / (24 * 60 * 60 * 1000));
-
-        if (daysUntilExpiry <= 60 && daysUntilExpiry >= 0) { // Warn 60 days before expiry
-          newReminders.push({
-            id: `warranty-${item.id}-${Date.now()}`,
-            itemId: item.id,
-            itemName: item.name,
-            itemRoom: item.room,
-            itemImageUrl: item.imageUrl,
-            type: 'warranty',
-            title: `${item.name} Warranty Expiring`,
-            description: `Warranty expires in ${daysUntilExpiry} days`,
-            dueDate: warrantyDate.toISOString(),
-            priority: daysUntilExpiry <= 30 ? 'high' : 'medium',
-            isCompleted: false,
-          });
-        }
-      }
-
-      // Generate replacement suggestions for poor condition items
-      if (item.condition === 'poor') {
-        newReminders.push({
-          id: `replacement-${item.id}-${Date.now()}`,
-          itemId: item.id,
-          itemName: item.name,
-          itemRoom: item.room,
-          itemImageUrl: item.imageUrl,
-          type: 'replacement',
-          title: `Consider Replacing ${item.name}`,
-          description: 'Item is in poor condition and may need replacement',
-          dueDate: now.toISOString(),
-          priority: 'low',
-          isCompleted: false,
-        });
-      }
-    });
-
-    // Sort by priority and due date
-    newReminders.sort((a, b) => {
-      const priorityOrder = { urgent: 4, high: 3, medium: 2, low: 1 };
-      const priorityDiff = priorityOrder[b.priority] - priorityOrder[a.priority];
-      if (priorityDiff !== 0) return priorityDiff;
-      
-      return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
-    });
-
-    setReminders(newReminders);
-    setLoading(false);
-  };
-
-  const completeReminder = (reminderId: string, notes?: string) => {
-    setReminders(prev => prev.map(reminder => 
-      reminder.id === reminderId 
-        ? { 
-            ...reminder, 
-            isCompleted: true, 
-            completedDate: new Date().toISOString(),
-            notes 
+        // Convert schedules to reminders
+        schedules.forEach(schedule => {
+          const item = items.find(item => item.id === schedule.itemId);
+          if (!item) {
+            console.log('🔧 Item not found for schedule:', schedule.itemId);
+            return; // Skip if item not found
           }
-        : reminder
-    ));
+
+          const dueDate = new Date(schedule.nextDueDate);
+          const daysUntilDue = Math.ceil((dueDate.getTime() - now.getTime()) / (24 * 60 * 60 * 1000));
+
+          console.log('🔧 Processing schedule:', schedule.title, 'due in', daysUntilDue, 'days');
+
+          // Show reminders that are due within the next 90 days or overdue
+          if (daysUntilDue <= 90) {
+            newReminders.push({
+              id: schedule.id,
+              itemId: schedule.itemId,
+              itemName: item.name,
+              itemRoom: item.room,
+              itemImageUrl: item.imageUrl,
+              type: 'maintenance',
+              title: schedule.title,
+              description: schedule.description || 'Maintenance due',
+              dueDate: schedule.nextDueDate,
+              priority: daysUntilDue < 0 ? 'urgent' : daysUntilDue <= 7 ? 'high' : schedule.priority,
+              isCompleted: false,
+            });
+          }
+        });
+
+        // Generate replacement suggestions for poor condition items
+        items.forEach(item => {
+          if (item.condition === 'poor') {
+            newReminders.push({
+              id: `replacement-${item.id}`,
+              itemId: item.id,
+              itemName: item.name,
+              itemRoom: item.room,
+              itemImageUrl: item.imageUrl,
+              type: 'replacement',
+              title: `Consider Replacing ${item.name}`,
+              description: 'Item is in poor condition and may need replacement',
+              dueDate: now.toISOString(),
+              priority: 'low',
+              isCompleted: false,
+            });
+          }
+        });
+
+        // Sort by priority and due date
+        newReminders.sort((a, b) => {
+          const priorityOrder = { urgent: 4, high: 3, medium: 2, low: 1 };
+          const priorityDiff = priorityOrder[b.priority] - priorityOrder[a.priority];
+          if (priorityDiff !== 0) return priorityDiff;
+
+          return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+        });
+
+        console.log('🔧 Generated', newReminders.length, 'reminders:', newReminders);
+
+        if (isMounted) {
+          setReminders(newReminders);
+        }
+
+        // Fetch completed reminders
+        await fetchCompletedReminders();
+
+      } catch (error) {
+        console.error('Error generating maintenance reminders:', error);
+        if (isMounted) {
+          setReminders([]);
+          setCompletedReminders([]);
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    const fetchCompletedReminders = async () => {
+      if (!user) return;
+
+      try {
+        const { createClient } = await import('@supabase/supabase-js');
+        const supabase = createClient(
+          import.meta.env.VITE_SUPABASE_URL,
+          import.meta.env.VITE_SUPABASE_ANON_KEY
+        );
+
+        // Get maintenance records from the last 30 days
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+        const { data: records, error } = await supabase
+          .from('maintenance_records')
+          .select('*')
+          .eq('user_id', user.id)
+          .gte('completed_date', thirtyDaysAgo.toISOString().split('T')[0])
+          .order('completed_date', { ascending: false });
+
+        if (error) {
+          console.error('Error fetching completed records:', error);
+          return;
+        }
+
+        console.log('🔧 Found', records.length, 'completed maintenance records');
+
+        // Convert records to reminders
+        const completedReminders: MaintenanceReminder[] = records.map(record => {
+          const item = items.find(item => item.id === record.item_id);
+          return {
+            id: record.id,
+            itemId: record.item_id,
+            itemName: item?.name || 'Unknown Item',
+            itemRoom: item?.room || 'Unknown Room',
+            itemImageUrl: item?.imageUrl,
+            type: 'maintenance' as const,
+            title: record.title,
+            description: record.description || 'Maintenance completed',
+            dueDate: record.completed_date,
+            priority: 'medium' as const,
+            isCompleted: true,
+            completedDate: record.completed_date,
+            notes: record.notes,
+          };
+        });
+
+        if (isMounted) {
+          setCompletedReminders(completedReminders);
+        }
+      } catch (error) {
+        console.error('Error fetching completed reminders:', error);
+      }
+    };
+
+    generateReminders();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.id, items.length]); // Only re-run when user ID or number of items changes
+
+  const completeReminder = async (reminderId: string, notes?: string) => {
+    try {
+      console.log('🔧 Completing reminder:', reminderId);
+
+      // If it's a maintenance schedule, complete it in the database
+      if (!reminderId.startsWith('replacement-')) {
+        console.log('🔧 Calling completeMaintenanceTask...');
+        const success = await completeMaintenanceTask(reminderId, notes);
+        console.log('🔧 completeMaintenanceTask result:', success);
+
+        if (!success) {
+          console.error('Failed to complete maintenance task in database');
+          return;
+        }
+      }
+
+      // Find the reminder that was completed
+      const completedReminder = reminders.find(r => r.id === reminderId);
+      if (completedReminder) {
+        // Add it to completed reminders immediately
+        const completedReminderWithDate = {
+          ...completedReminder,
+          isCompleted: true,
+          completedDate: new Date().toISOString(),
+          notes
+        };
+        setCompletedReminders(prev => [completedReminderWithDate, ...prev]);
+      }
+
+      // Remove from active reminders immediately
+      setReminders(prev => prev.filter(reminder => reminder.id !== reminderId));
+
+    } catch (error) {
+      console.error('Error completing reminder:', error);
+    }
   };
 
   const dismissReminder = (reminderId: string) => {
     setReminders(prev => prev.filter(reminder => reminder.id !== reminderId));
   };
 
-  const getMaintenanceScheduleForCategory = (category: string): MaintenanceSchedule[] => {
-    return defaultMaintenanceSchedules[category] || [];
-  };
-
-  const addMaintenanceSchedule = (itemId: string, schedule: MaintenanceSchedule) => {
-    // This would typically update the item in your inventory system
-    console.log('Adding maintenance schedule for item:', itemId, schedule);
-  };
-
   const getUpcomingReminders = (days: number = 7) => {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() + days);
-    
-    return reminders.filter(reminder => 
-      !reminder.isCompleted && 
+
+    return reminders.filter(reminder =>
+      !reminder.isCompleted &&
       new Date(reminder.dueDate) <= cutoffDate
     );
   };
 
   const getOverdueReminders = () => {
     const now = new Date();
-    return reminders.filter(reminder => 
-      !reminder.isCompleted && 
+    return reminders.filter(reminder =>
+      !reminder.isCompleted &&
       new Date(reminder.dueDate) < now
     );
   };
 
   const getRemindersByPriority = (priority: MaintenanceReminder['priority']) => {
-    return reminders.filter(reminder => 
-      !reminder.isCompleted && 
+    return reminders.filter(reminder =>
+      !reminder.isCompleted &&
       reminder.priority === priority
     );
   };
 
+  const refreshReminders = () => {
+    // Trigger a re-fetch by updating a dependency
+    setLoading(true);
+  };
+
   return {
     reminders: reminders.filter(r => !r.isCompleted),
-    completedReminders: reminders.filter(r => r.isCompleted),
+    completedReminders,
     loading,
     completeReminder,
     dismissReminder,
-    getMaintenanceScheduleForCategory,
-    addMaintenanceSchedule,
     getUpcomingReminders,
     getOverdueReminders,
     getRemindersByPriority,
-    refreshReminders: generateReminders,
+    refreshReminders,
   };
 };

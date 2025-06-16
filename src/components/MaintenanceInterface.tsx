@@ -22,13 +22,15 @@ interface MaintenanceInterfaceProps {
   isOpen: boolean;
   onClose: () => void;
   embedded?: boolean;
+  user?: { id: string; email: string } | null;
 }
 
 export const MaintenanceInterface: React.FC<MaintenanceInterfaceProps> = ({
   items,
   isOpen,
   onClose,
-  embedded = false
+  embedded = false,
+  user
 }) => {
   const {
     reminders,
@@ -40,7 +42,7 @@ export const MaintenanceInterface: React.FC<MaintenanceInterfaceProps> = ({
     getOverdueReminders,
     getRemindersByPriority,
     refreshReminders,
-  } = useMaintenance(items);
+  } = useMaintenance(items, user);
 
   const [activeFilter, setActiveFilter] = useState<'all' | 'urgent' | 'high' | 'medium' | 'low'>('all');
   const [showCompleted, setShowCompleted] = useState(false);
@@ -207,8 +209,9 @@ export const MaintenanceInterface: React.FC<MaintenanceInterfaceProps> = ({
                   className={`border rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-lg ${priorityBgColors[reminder.priority]}`}
                 >
                   <div className="p-4">
-                    <div className="flex items-center gap-3">
-                      {/* Item Image */}
+                    {/* Header Row - Always visible and stable */}
+                    <div className="flex items-start gap-3">
+                      {/* Item Image - Fixed position */}
                       {reminder.itemImageUrl && (
                         <div className="w-12 h-12 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0 shadow-sm">
                           <img
@@ -223,8 +226,10 @@ export const MaintenanceInterface: React.FC<MaintenanceInterfaceProps> = ({
                         </div>
                       )}
 
+                      {/* Content Area - Fixed position */}
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-2">
+                        {/* Title and Controls Row - Fixed height */}
+                        <div className="flex items-center justify-between">
                           <div className="flex-1 min-w-0">
                             <h4 className="font-bold text-gray-900 text-base leading-tight">
                               {reminder.itemName}
@@ -249,20 +254,18 @@ export const MaintenanceInterface: React.FC<MaintenanceInterfaceProps> = ({
                           </div>
                         </div>
 
-                        {!isExpanded && (
+                        {/* Description - Always visible in same position */}
+                        <div className="mt-2">
                           <p className="text-sm text-gray-700 leading-relaxed">
                             {reminder.description}
                           </p>
-                        )}
+                        </div>
                       </div>
                     </div>
 
-                    {/* Expanded Content */}
+                    {/* Expanded Content - Action buttons only */}
                     {isExpanded && (
                       <div className="mt-4 pt-4 border-t border-gray-200">
-                        <p className="text-sm text-gray-700 mb-4 leading-relaxed">
-                          {reminder.description}
-                        </p>
                         <div className="flex gap-3">
                           <button
                             onClick={() => handleCompleteReminder(reminder.id)}
@@ -301,25 +304,75 @@ export const MaintenanceInterface: React.FC<MaintenanceInterfaceProps> = ({
 
         {/* Completed Reminders */}
         {showCompleted && completedReminders.length > 0 && (
-          <div className="space-y-2">
-            <h4 className="text-sm font-bold text-gray-700 mb-3">Recently Completed</h4>
-            {completedReminders.slice(0, 3).map((reminder) => (
-              <div key={reminder.id} className="bg-gray-50 border border-gray-200 rounded-xl p-3">
+          <div className="space-y-3">
+            <h4 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+              <CheckCircle size={16} className="text-green-600" />
+              Recently Completed
+            </h4>
+            {completedReminders.slice(0, 5).map((reminder) => (
+              <div key={reminder.id} className="bg-green-50 border border-green-200 rounded-xl p-4 transition-all duration-300">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                    <CheckCircle size={16} className="text-green-600" />
-                  </div>
+                  {/* Item Image */}
+                  {reminder.itemImageUrl && (
+                    <div className="w-12 h-12 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0 shadow-sm">
+                      <img
+                        src={
+                          reminder.itemImageUrl.startsWith('data:') ? reminder.itemImageUrl :
+                            reminder.itemImageUrl.startsWith('http') ? reminder.itemImageUrl :
+                              `${env.API_URL}${reminder.itemImageUrl}`
+                        }
+                        alt={reminder.itemName}
+                        className="w-full h-full object-cover opacity-75"
+                      />
+                    </div>
+                  )}
+
+                  {/* Content */}
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-gray-700 line-through">
-                      {reminder.itemName}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      Completed {reminder.completedDate ? new Date(reminder.completedDate).toLocaleDateString() : 'recently'}
-                    </p>
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h5 className="font-bold text-gray-800 text-sm leading-tight">
+                          {reminder.title}
+                        </h5>
+                        <p className="text-sm text-gray-600 mt-1">
+                          {reminder.itemName} • {reminder.itemRoom}
+                        </p>
+                        <p className="text-xs text-green-700 font-medium mt-1">
+                          Completed {reminder.completedDate ? new Date(reminder.completedDate).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: new Date(reminder.completedDate).getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
+                          }) : 'recently'}
+                        </p>
+                      </div>
+
+                      {/* Completion Badge */}
+                      <div className="w-8 h-8 bg-green-500 rounded-xl flex items-center justify-center shadow-lg shadow-green-500/25 flex-shrink-0">
+                        <CheckCircle size={16} className="text-white" />
+                      </div>
+                    </div>
+
+                    {/* Notes if available */}
+                    {reminder.notes && (
+                      <div className="mt-2 pt-2 border-t border-green-200">
+                        <p className="text-xs text-gray-600 italic">
+                          "{reminder.notes}"
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
             ))}
+
+            {/* Show more button if there are more than 5 completed items */}
+            {completedReminders.length > 5 && (
+              <div className="text-center">
+                <p className="text-xs text-gray-500">
+                  Showing 5 of {completedReminders.length} completed items
+                </p>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -357,6 +410,7 @@ export const MaintenanceInterface: React.FC<MaintenanceInterfaceProps> = ({
             isOpen={true}
             onClose={onClose}
             embedded={true}
+            user={user}
           />
         </div>
       </div>

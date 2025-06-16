@@ -1,15 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { X, Camera, Plus, Check, Zap } from 'lucide-react';
+import { X, Camera, Plus, Check, Zap, Wrench, Calendar, Clock } from 'lucide-react';
 import { Room, Category, InventoryItem } from '../types/inventory';
 import { CameraCapture } from './CameraCapture';
 import { env } from '../config/env';
+import { useMaintenanceDB } from '../hooks/useMaintenanceDB';
 
 interface AddItemModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAdd: (item: Omit<InventoryItem, 'id' | 'dateAdded'>) => void;
+  onAdd: (
+    item: Omit<InventoryItem, 'id' | 'dateAdded'>,
+    maintenanceData?: {
+      title: string;
+      description: string;
+      intervalType: 'days' | 'weeks' | 'months' | 'years';
+      intervalValue: number;
+      priority: 'low' | 'medium' | 'high' | 'urgent';
+    }
+  ) => void;
   rooms: Room[];
   categories: Category[];
+  user?: { id: string; email: string } | null;
 }
 
 interface LandingAiObject {
@@ -39,6 +50,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
   onAdd,
   rooms,
   categories,
+  user,
 }) => {
   const [showCamera, setShowCamera] = useState(false);
   const [aiDetected, setAiDetected] = useState(false);
@@ -47,6 +59,43 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
   const [currentObjectIndex, setCurrentObjectIndex] = useState(0);
   const [isProcessingLandingAi, setIsProcessingLandingAi] = useState(false);
   const [imageData, setImageData] = useState('');
+
+  // Maintenance state
+  const [showMaintenanceSection, setShowMaintenanceSection] = useState(false);
+  const [maintenanceEnabled, setMaintenanceEnabled] = useState(false);
+  const [maintenanceData, setMaintenanceData] = useState({
+    title: '',
+    description: '',
+    intervalType: 'months' as 'days' | 'weeks' | 'months' | 'years',
+    intervalValue: 6,
+    priority: 'medium' as 'low' | 'medium' | 'high' | 'urgent',
+  });
+
+  const { createMaintenanceSchedule } = useMaintenanceDB(user);
+
+  // Predefined maintenance suggestions by category
+  const maintenanceSuggestions: Record<string, { title: string; description: string; intervalType: 'days' | 'weeks' | 'months' | 'years'; intervalValue: number; priority: 'low' | 'medium' | 'high' | 'urgent' }[]> = {
+    'Electronics': [
+      { title: 'Clean and dust', description: 'Clean dust and check connections', intervalType: 'months', intervalValue: 3, priority: 'medium' },
+      { title: 'Software updates', description: 'Update software and security patches', intervalType: 'months', intervalValue: 1, priority: 'medium' },
+    ],
+    'Appliances': [
+      { title: 'Filter replacement', description: 'Replace or clean filters', intervalType: 'months', intervalValue: 3, priority: 'medium' },
+      { title: 'Deep clean', description: 'Deep clean and descale', intervalType: 'months', intervalValue: 6, priority: 'medium' },
+    ],
+    'Furniture': [
+      { title: 'Polish and condition', description: 'Polish wood and condition leather', intervalType: 'months', intervalValue: 6, priority: 'low' },
+      { title: 'Inspect and tighten', description: 'Check for wear and tighten joints', intervalType: 'years', intervalValue: 1, priority: 'low' },
+    ],
+    'Tools': [
+      { title: 'Sharpen blades', description: 'Sharpen cutting edges and blades', intervalType: 'months', intervalValue: 6, priority: 'medium' },
+      { title: 'Oil and lubricate', description: 'Oil moving parts and check for rust', intervalType: 'months', intervalValue: 3, priority: 'medium' },
+    ],
+    'Vehicles': [
+      { title: 'Oil change', description: 'Change engine oil and filter', intervalType: 'months', intervalValue: 6, priority: 'high' },
+      { title: 'Tire inspection', description: 'Check tire pressure and tread depth', intervalType: 'months', intervalValue: 3, priority: 'medium' },
+    ],
+  };
   const [formData, setFormData] = useState({
     name: '',
     category: '',
@@ -76,8 +125,33 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
       setCurrentObjectIndex(0);
       setDetectedRoom('');
       setIsProcessingLandingAi(false);
+      setShowMaintenanceSection(false);
+      setMaintenanceEnabled(false);
+      setMaintenanceData({
+        title: '',
+        description: '',
+        intervalType: 'months',
+        intervalValue: 6,
+        priority: 'medium',
+      });
     }
   }, [isOpen]);
+
+  // Auto-suggest maintenance when category changes
+  useEffect(() => {
+    if (formData.category && maintenanceSuggestions[formData.category]) {
+      const suggestion = maintenanceSuggestions[formData.category][0];
+      if (suggestion && !maintenanceData.title) {
+        setMaintenanceData({
+          title: suggestion.title,
+          description: suggestion.description,
+          intervalType: suggestion.intervalType,
+          intervalValue: suggestion.intervalValue,
+          priority: suggestion.priority,
+        });
+      }
+    }
+  }, [formData.category]);
 
   const processWithLandingAi = async (imageData: string, objectName: string): Promise<any> => {
     try {
@@ -192,7 +266,11 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
       })
     };
 
-    onAdd(newItem);
+    // Pass maintenance data to the onAdd function
+    onAdd(
+      newItem,
+      maintenanceEnabled && maintenanceData.title ? maintenanceData : undefined
+    );
 
     // If there are more objects to add, prepare the form for the next one
     if (currentObjectIndex < Math.min(detectedObjects.length - 1, 2)) { // Only process up to 3 objects
@@ -396,6 +474,168 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
               className="w-full px-6 py-4 border border-gray-300 rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
               placeholder="vintage, gift, favorite (comma separated)"
             />
+          </div>
+
+          {/* Maintenance Section */}
+          <div className="border-t border-gray-200 pt-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-red-500 rounded-2xl flex items-center justify-center">
+                  <Wrench className="text-white" size={20} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">Maintenance Schedule</h3>
+                  <p className="text-sm text-gray-600">Keep this item in perfect condition</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowMaintenanceSection(!showMaintenanceSection)}
+                className="text-indigo-600 hover:text-indigo-700 font-semibold text-sm"
+              >
+                {showMaintenanceSection ? 'Hide' : 'Add Maintenance'}
+              </button>
+            </div>
+
+            {showMaintenanceSection && (
+              <div className="space-y-4">
+                {/* Enable Maintenance Toggle */}
+                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl border border-indigo-200">
+                  <div className="flex items-center gap-3">
+                    <Calendar className="text-indigo-600" size={20} />
+                    <div>
+                      <p className="font-semibold text-indigo-900">Enable Maintenance Reminders</p>
+                      <p className="text-sm text-indigo-600">Get notified when maintenance is due</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setMaintenanceEnabled(!maintenanceEnabled)}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${maintenanceEnabled ? 'bg-indigo-600' : 'bg-gray-300'
+                      }`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${maintenanceEnabled ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                    />
+                  </button>
+                </div>
+
+                {maintenanceEnabled && (
+                  <div className="space-y-4">
+                    {/* Quick Suggestions */}
+                    {formData.category && maintenanceSuggestions[formData.category] && (
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                          Quick Suggestions for {formData.category}
+                        </label>
+                        <div className="grid grid-cols-1 gap-2">
+                          {maintenanceSuggestions[formData.category].map((suggestion, index) => (
+                            <button
+                              key={index}
+                              type="button"
+                              onClick={() => setMaintenanceData(suggestion)}
+                              className="text-left p-3 border border-gray-200 rounded-xl hover:bg-indigo-50 hover:border-indigo-300 transition-colors"
+                            >
+                              <div className="font-semibold text-gray-900">{suggestion.title}</div>
+                              <div className="text-sm text-gray-600">{suggestion.description}</div>
+                              <div className="text-xs text-indigo-600 mt-1">
+                                Every {suggestion.intervalValue} {suggestion.intervalType}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Custom Maintenance */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-3">
+                        Maintenance Task
+                      </label>
+                      <input
+                        type="text"
+                        value={maintenanceData.title}
+                        onChange={(e) => setMaintenanceData(prev => ({ ...prev, title: e.target.value }))}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
+                        placeholder="e.g., Clean and dust, Oil change, Filter replacement"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-3">
+                        Description
+                      </label>
+                      <textarea
+                        value={maintenanceData.description}
+                        onChange={(e) => setMaintenanceData(prev => ({ ...prev, description: e.target.value }))}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors resize-none"
+                        rows={2}
+                        placeholder="What needs to be done?"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-3">
+                          Repeat Every
+                        </label>
+                        <div className="flex gap-2">
+                          <input
+                            type="number"
+                            min="1"
+                            value={maintenanceData.intervalValue}
+                            onChange={(e) => setMaintenanceData(prev => ({ ...prev, intervalValue: parseInt(e.target.value) || 1 }))}
+                            className="w-20 px-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
+                          />
+                          <select
+                            value={maintenanceData.intervalType}
+                            onChange={(e) => setMaintenanceData(prev => ({ ...prev, intervalType: e.target.value as any }))}
+                            className="flex-1 px-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors appearance-none bg-white"
+                          >
+                            <option value="days">Days</option>
+                            <option value="weeks">Weeks</option>
+                            <option value="months">Months</option>
+                            <option value="years">Years</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-3">
+                          Priority
+                        </label>
+                        <select
+                          value={maintenanceData.priority}
+                          onChange={(e) => setMaintenanceData(prev => ({ ...prev, priority: e.target.value as any }))}
+                          className="w-full px-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors appearance-none bg-white"
+                        >
+                          <option value="low">Low</option>
+                          <option value="medium">Medium</option>
+                          <option value="high">High</option>
+                          <option value="urgent">Urgent</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Preview */}
+                    {maintenanceData.title && (
+                      <div className="p-4 bg-green-50 border border-green-200 rounded-xl">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Clock className="text-green-600" size={16} />
+                          <span className="font-semibold text-green-900">Maintenance Preview</span>
+                        </div>
+                        <p className="text-sm text-green-800">
+                          <strong>{maintenanceData.title}</strong> will be scheduled every{' '}
+                          <strong>{maintenanceData.intervalValue} {maintenanceData.intervalType}</strong>{' '}
+                          with <strong>{maintenanceData.priority}</strong> priority.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="flex gap-3">

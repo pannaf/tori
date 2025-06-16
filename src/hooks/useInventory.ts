@@ -136,7 +136,7 @@ export const useInventory = (user: User | null = null, authLoading: boolean = fa
     }
   };
 
-  const addItem = async (item: Omit<InventoryItem, 'id' | 'dateAdded'>) => {
+  const addItem = async (item: Omit<InventoryItem, 'id' | 'dateAdded'>): Promise<string | null> => {
     try {
       // Create the item with a temporary ID for immediate UI update
       const tempItem: InventoryItem = {
@@ -159,6 +159,9 @@ export const useInventory = (user: User | null = null, authLoading: boolean = fa
 
       // Update local state
       setItems(prevItems => [...prevItems, finalItem]);
+
+      // Return the actual database ID for maintenance schedule creation
+      return supabaseItem.id;
     } catch (error) {
       console.error('Failed to save item:', error);
       throw error; // Let the UI handle the error

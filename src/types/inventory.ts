@@ -21,10 +21,30 @@ export interface InventoryItem {
 
 export interface MaintenanceSchedule {
   id: string;
-  type: 'monthly' | 'quarterly' | 'biannual' | 'annual' | 'custom';
-  intervalMonths: number;
-  description: string;
+  itemId: string;
+  userId: string;
+  title: string;
+  description?: string;
+  intervalType: 'days' | 'weeks' | 'months' | 'years';
+  intervalValue: number;
+  nextDueDate: string;
   isActive: boolean;
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MaintenanceRecord {
+  id: string;
+  itemId: string;
+  scheduleId?: string;
+  userId: string;
+  title: string;
+  description?: string;
+  completedDate: string;
+  notes?: string;
+  cost?: number;
+  createdAt: string;
 }
 
 export interface MaintenanceReminder {
