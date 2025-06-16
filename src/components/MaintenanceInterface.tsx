@@ -272,7 +272,7 @@ export const MaintenanceInterface: React.FC<MaintenanceInterfaceProps> = ({
                             className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white py-3 px-4 rounded-xl font-bold hover:shadow-xl hover:shadow-green-500/25 transition-all duration-300 hover:scale-105 flex items-center justify-center gap-2"
                           >
                             <CheckCircle size={16} />
-                            Mark Complete
+                            Done
                           </button>
                           <button
                             onClick={() => dismissReminder(reminder.id)}
