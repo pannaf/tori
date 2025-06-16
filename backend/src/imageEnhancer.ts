@@ -2,11 +2,14 @@ import OpenAI from 'openai';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
+import sharp from 'sharp';
 import { uploadImageToSupabase } from './storageUtils.js';
 
 export async function enhanceImageForPortrait(
     imagePath: string,
-    fileName?: string
+    fileName?: string,
+    maxWidth: number = 256,
+    maxHeight: number = 256
 ): Promise<string> {
     try {
         if (!process.env.OPENAI_API_KEY) {
@@ -44,7 +47,7 @@ export async function enhanceImageForPortrait(
         // Create FormData for the API request
         const formData = new FormData();
         formData.append('image', new Blob([imageBuffer], { type: mimeType }), path.basename(imagePath));
-        formData.append('prompt', 'make the object in this image look like a professional portrait was taken. do NOT change the object fundamentally. just make it look pro. preference for white backgrounds');
+        formData.append('prompt', 'make the object in this image look like a professional portrait was taken. do NOT change the object fundamentally. just make it look pro. preference for transparent backgrounds');
         formData.append('model', 'gpt-image-1');
         formData.append('quality', 'low');
         formData.append('size', 'auto');
@@ -79,14 +82,24 @@ export async function enhanceImageForPortrait(
         const base64Data = result.data[0].b64_json;
         const imageData = Buffer.from(base64Data, 'base64');
 
+        // Resize the enhanced image to be smaller
+        console.log(`Resizing enhanced image to max ${maxWidth}x${maxHeight} pixels...`);
+        const resizedImageBuffer = await sharp(imageData)
+            .resize(maxWidth, maxHeight, {
+                fit: 'inside', // Maintain aspect ratio
+                withoutEnlargement: true // Don't enlarge small images
+            })
+            .jpeg({ quality: 85 }) // Compress with good quality
+            .toBuffer();
+
         // Generate a filename if not provided
-        const enhancedFileName = fileName || `enhanced_${Date.now()}.png`;
+        const enhancedFileName = fileName || `enhanced_${Date.now()}.jpg`;
 
-        // Upload directly to Supabase
-        console.log('Uploading enhanced image to Supabase...');
-        const supabaseUrl = await uploadImageToSupabase(imageData, enhancedFileName);
+        // Upload the resized image to Supabase
+        console.log('Uploading resized enhanced image to Supabase...');
+        const supabaseUrl = await uploadImageToSupabase(resizedImageBuffer, enhancedFileName);
 
-        console.log(`Successfully enhanced and uploaded image to Supabase: ${supabaseUrl}`);
+        console.log(`Successfully enhanced, resized, and uploaded image to Supabase: ${supabaseUrl}`);
         return supabaseUrl;
 
     } catch (error) {

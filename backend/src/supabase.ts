@@ -35,6 +35,7 @@ export interface InventoryItem {
     tags?: string[];
     image_data?: string;
     crop_image_data?: string;
+    original_crop_image_url?: string;
     ai_detected?: boolean;
     detection_confidence?: number;
     user_id?: string;

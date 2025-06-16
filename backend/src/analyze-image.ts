@@ -7,6 +7,7 @@ import OpenAI from 'openai';
 import { createClient } from '@supabase/supabase-js';
 import { detectObject, cropImage } from './objectDetector.js';
 import { enhanceImageForPortrait } from './imageEnhancer.js';
+import { uploadImageFileToSupabase } from './storageUtils.js';
 import { getInventoryItems, getInventoryItemsByCategory, getInventoryItemsByRoom, updateInventoryItem, deleteInventoryItem } from './databaseUtils.js';
 import { supabase } from './supabase.js';
 
@@ -38,7 +39,8 @@ interface ObjectWithCost {
     category: string;
     description: string;
     estimated_cost_usd: number;
-    imageUrl?: string;  // URL to the cropped image
+    imageUrl?: string;  // URL to the enhanced image
+    originalCropImageUrl?: string;  // URL to the original cropped image
     confidence?: number;
 }
 
@@ -117,15 +119,20 @@ router.post('/analyze-image', upload.single('image'), async (req, res) => {
                         // Crop the image to temporary file
                         await cropImage(req.file!.path, detection.boundingBox, tempCropPath);
 
-                        // Enhance the cropped image using OpenAI and upload to Supabase
-                        const imageUrl = await enhanceImageForPortrait(tempCropPath, enhancedFileName);
+                        // Save the original cropped image to Supabase
+                        console.log('Uploading original cropped image to Supabase...');
+                        const originalCropImageUrl = await uploadImageFileToSupabase(tempCropPath, `original_${cropFileName}`);
+
+                        // Enhance the cropped image using OpenAI and upload to Supabase (resized)
+                        const enhancedImageUrl = await enhanceImageForPortrait(tempCropPath, enhancedFileName);
 
                         // Clean up temporary crop file
                         fs.unlinkSync(tempCropPath);
 
                         return {
                             ...obj,
-                            imageUrl: imageUrl, // URL to the enhanced image in Supabase Storage
+                            imageUrl: enhancedImageUrl, // URL to the enhanced image in Supabase Storage
+                            originalCropImageUrl: originalCropImageUrl, // URL to the original cropped image
                             confidence: detection.confidence
                         };
                     }
