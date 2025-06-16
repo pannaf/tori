@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Camera, X, Zap, AlertCircle, RefreshCw, Sparkles, Package, DollarSign, MapPin } from 'lucide-react';
+import { Camera, X, Zap, AlertCircle, RefreshCw, Sparkles, Package, DollarSign, MapPin, Search, Crop, Wand2 } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
 import { env } from '../config/env';
 
@@ -23,15 +23,19 @@ interface DetectedObject {
   estimated_cost_usd: number;
   imageUrl?: string;
   originalCropImageUrl?: string;
+  confidence?: number;
+  status?: 'detecting' | 'cropping' | 'enhancing' | 'complete';
 }
 
 interface ProgressState {
-  step: 'preparing' | 'analyzing' | 'detecting' | 'enhancing' | 'complete';
+  step: 'preparing' | 'analyzing' | 'detecting' | 'processing' | 'enhancing' | 'complete';
   message: string;
   progress: number;
   detectedObjects?: DetectedObject[];
   room?: string;
   totalValue?: number;
+  currentlyProcessing?: string;
+  processingDetails?: string[];
 }
 
 // Function to fix image orientation using createImageBitmap
@@ -71,13 +75,102 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
   const [progress, setProgress] = useState<ProgressState>({
     step: 'preparing',
     message: '',
-    progress: 0
+    progress: 0,
+    processingDetails: []
   });
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const updateProgress = (newProgress: Partial<ProgressState>) => {
     setProgress(prev => ({ ...prev, ...newProgress }));
+  };
+
+  const addProcessingDetail = (detail: string) => {
+    setProgress(prev => ({
+      ...prev,
+      processingDetails: [...(prev.processingDetails || []), detail].slice(-5) // Keep last 5 details
+    }));
+  };
+
+  const simulateBackendProgress = async (data: any) => {
+    // Simulate the backend processing steps we see in the logs
+    const objects = data.objects.slice(0, 3);
+    
+    // Step 1: Show initial detection
+    updateProgress({
+      step: 'detecting',
+      message: `Found ${objects.length} objects in your ${data.room}!`,
+      progress: 40,
+      detectedObjects: objects.map(obj => ({ ...obj, status: 'detecting' })),
+      room: data.room,
+      totalValue: data.total_estimated_value_usd,
+      currentlyProcessing: 'Analyzing objects...'
+    });
+
+    addProcessingDetail(`🏠 Detected room: ${data.room}`);
+    addProcessingDetail(`📦 Found ${objects.length} objects`);
+
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // Step 2: Process each object
+    for (let i = 0; i < objects.length; i++) {
+      const obj = objects[i];
+      
+      updateProgress({
+        step: 'processing',
+        message: `Processing ${obj.name}...`,
+        progress: 50 + (i * 15),
+        currentlyProcessing: `Detecting instances of "${obj.name}"`,
+        detectedObjects: objects.map((o, idx) => ({
+          ...o,
+          status: idx < i ? 'complete' : idx === i ? 'cropping' : 'detecting'
+        }))
+      });
+
+      addProcessingDetail(`🔍 Detecting "${obj.name}"`);
+      await new Promise(resolve => setTimeout(resolve, 800));
+
+      addProcessingDetail(`✂️ Cropping ${obj.name} image`);
+      await new Promise(resolve => setTimeout(resolve, 600));
+
+      updateProgress({
+        currentlyProcessing: `Enhancing ${obj.name} photo`,
+        detectedObjects: objects.map((o, idx) => ({
+          ...o,
+          status: idx < i ? 'complete' : idx === i ? 'enhancing' : 'detecting'
+        }))
+      });
+
+      addProcessingDetail(`✨ Enhancing ${obj.name} with AI`);
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      addProcessingDetail(`📤 Uploading enhanced ${obj.name}`);
+      await new Promise(resolve => setTimeout(resolve, 400));
+    }
+
+    // Step 3: Final enhancement
+    updateProgress({
+      step: 'enhancing',
+      message: 'Finalizing your beautiful photos...',
+      progress: 90,
+      currentlyProcessing: 'Applying final touches',
+      detectedObjects: objects.map(obj => ({ ...obj, status: 'complete' }))
+    });
+
+    addProcessingDetail(`🎨 Applying final enhancements`);
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // Step 4: Complete
+    updateProgress({
+      step: 'complete',
+      message: 'Perfect! Your items are ready.',
+      progress: 100,
+      currentlyProcessing: 'All done!',
+      detectedObjects: objects.map(obj => ({ ...obj, status: 'complete' }))
+    });
+
+    addProcessingDetail(`✅ All items processed successfully`);
+    await new Promise(resolve => setTimeout(resolve, 1500));
   };
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -91,8 +184,11 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
       updateProgress({
         step: 'preparing',
         message: 'Preparing your photo...',
-        progress: 10
+        progress: 10,
+        processingDetails: []
       });
+
+      addProcessingDetail('📸 Processing uploaded image');
 
       // Fix image orientation
       updateProgress({
@@ -100,6 +196,8 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
         message: 'Correcting image orientation...',
         progress: 20
       });
+
+      addProcessingDetail('🔄 Correcting image orientation');
       const imageData = await fixImageOrientation(file);
 
       try {
@@ -127,8 +225,11 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
         updateProgress({
           step: 'analyzing',
           message: 'Tori is analyzing your photo with AI...',
-          progress: 30
+          progress: 30,
+          currentlyProcessing: 'Sending to AI analysis...'
         });
+
+        addProcessingDetail('🤖 Sending to GPT-4o-mini for analysis');
 
         // Create AbortController for timeout handling
         const controller = new AbortController();
@@ -147,39 +248,13 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
           throw new Error('Failed to analyze image');
         }
 
+        addProcessingDetail('📊 Received AI analysis results');
+
         // Parse the response
         const data = await apiResponse.json();
 
-        // Show initial detection results
-        updateProgress({
-          step: 'detecting',
-          message: `Found ${data.objects.length} objects in your ${data.room}!`,
-          progress: 60,
-          detectedObjects: data.objects.slice(0, 3), // Show first 3 objects
-          room: data.room,
-          totalValue: data.total_estimated_value_usd
-        });
-
-        // Simulate processing time for object enhancement
-        await new Promise(resolve => setTimeout(resolve, 2000));
-
-        updateProgress({
-          step: 'enhancing',
-          message: 'Creating beautiful photos of each item...',
-          progress: 80
-        });
-
-        // Simulate more processing time
-        await new Promise(resolve => setTimeout(resolve, 1500));
-
-        updateProgress({
-          step: 'complete',
-          message: 'All done! Your items are ready to add.',
-          progress: 100
-        });
-
-        // Wait a moment before completing
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Start the simulated backend progress
+        await simulateBackendProgress(data);
 
         // Transform the analysis data to match the expected format
         const recognitionData = {
@@ -250,6 +325,26 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
     return `$${value.toFixed(0)}`;
   };
 
+  const getStatusIcon = (status?: string) => {
+    switch (status) {
+      case 'detecting': return <Search size={14} className="text-blue-500" />;
+      case 'cropping': return <Crop size={14} className="text-orange-500" />;
+      case 'enhancing': return <Wand2 size={14} className="text-purple-500" />;
+      case 'complete': return <Sparkles size={14} className="text-green-500" />;
+      default: return <Package size={14} className="text-gray-400" />;
+    }
+  };
+
+  const getStatusColor = (status?: string) => {
+    switch (status) {
+      case 'detecting': return 'border-blue-200 bg-blue-50';
+      case 'cropping': return 'border-orange-200 bg-orange-50';
+      case 'enhancing': return 'border-purple-200 bg-purple-50';
+      case 'complete': return 'border-green-200 bg-green-50';
+      default: return 'border-gray-200 bg-gray-50';
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center">
       <div className="w-full max-w-md mx-4">
@@ -306,7 +401,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
             )}
 
             {isProcessing && (
-              <div className="min-h-[400px] bg-gradient-to-br from-indigo-50 to-purple-50 p-6">
+              <div className="min-h-[500px] bg-gradient-to-br from-indigo-50 to-purple-50 p-6">
                 <div className="text-center mb-6">
                   <div className="relative mb-4">
                     <Zap className="animate-pulse mx-auto text-amber-400" size={48} />
@@ -324,51 +419,74 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
                     />
                   </div>
                   
-                  <p className="text-sm text-gray-600 mb-6">
-                    {progress.step === 'preparing' && "Getting your photo ready..."}
-                    {progress.step === 'analyzing' && "AI is examining every detail..."}
-                    {progress.step === 'detecting' && "Identifying objects and estimating values..."}
-                    {progress.step === 'enhancing' && "Making everything look perfect..."}
-                    {progress.step === 'complete' && "Ready to add to your inventory!"}
-                  </p>
+                  {progress.currentlyProcessing && (
+                    <p className="text-sm text-indigo-600 font-medium mb-4">
+                      {progress.currentlyProcessing}
+                    </p>
+                  )}
                 </div>
 
-                {/* Show detected objects during processing */}
-                {progress.detectedObjects && progress.detectedObjects.length > 0 && (
-                  <div className="space-y-4">
-                    {/* Room and Total Value */}
-                    <div className="bg-white rounded-2xl p-4 shadow-sm border border-indigo-200">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                          <MapPin size={16} className="text-indigo-600" />
-                          <span className="font-semibold text-gray-900">{progress.room}</span>
+                {/* Processing Details Log */}
+                {progress.processingDetails && progress.processingDetails.length > 0 && (
+                  <div className="bg-white rounded-2xl p-4 mb-4 shadow-sm border border-gray-200">
+                    <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                      <Zap size={14} />
+                      Processing Log
+                    </h4>
+                    <div className="space-y-2 max-h-24 overflow-y-auto">
+                      {progress.processingDetails.map((detail, index) => (
+                        <div key={index} className="text-xs text-gray-600 font-mono bg-gray-50 rounded px-2 py-1">
+                          {detail}
                         </div>
-                        {progress.totalValue && (
-                          <div className="flex items-center gap-1 text-emerald-600 font-bold">
-                            <DollarSign size={16} />
-                            <span>{formatValue(progress.totalValue)}</span>
-                          </div>
-                        )}
-                      </div>
-                      <p className="text-sm text-gray-600">
-                        Found {progress.detectedObjects.length} items worth approximately {formatValue(progress.totalValue || 0)}
-                      </p>
+                      ))}
                     </div>
+                  </div>
+                )}
 
-                    {/* Detected Objects */}
-                    <div className="space-y-3">
-                      <h4 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                        <Package size={16} />
-                        Detected Items
-                      </h4>
-                      {progress.detectedObjects.map((obj, index) => (
-                        <div key={index} className="bg-white rounded-xl p-3 shadow-sm border border-gray-200 flex items-center gap-3">
+                {/* Room and Total Value */}
+                {progress.room && progress.totalValue && (
+                  <div className="bg-white rounded-2xl p-4 shadow-sm border border-indigo-200 mb-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <MapPin size={16} className="text-indigo-600" />
+                        <span className="font-semibold text-gray-900">{progress.room}</span>
+                      </div>
+                      <div className="flex items-center gap-1 text-emerald-600 font-bold">
+                        <DollarSign size={16} />
+                        <span>{formatValue(progress.totalValue)}</span>
+                      </div>
+                    </div>
+                    <p className="text-sm text-gray-600">
+                      Found {progress.detectedObjects?.length || 0} items worth approximately {formatValue(progress.totalValue)}
+                    </p>
+                  </div>
+                )}
+
+                {/* Detected Objects with Status */}
+                {progress.detectedObjects && progress.detectedObjects.length > 0 && (
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                      <Package size={16} />
+                      Detected Items
+                    </h4>
+                    {progress.detectedObjects.map((obj, index) => (
+                      <div key={index} className={`bg-white rounded-xl p-3 shadow-sm border transition-all duration-300 ${getStatusColor(obj.status)}`}>
+                        <div className="flex items-center gap-3">
                           <div className="w-10 h-10 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                            <Sparkles size={16} className="text-indigo-600" />
+                            {getStatusIcon(obj.status)}
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="font-semibold text-gray-900 text-sm">{obj.name}</p>
-                            <p className="text-xs text-gray-600">{obj.category}</p>
+                            <div className="flex items-center gap-2">
+                              <p className="text-xs text-gray-600">{obj.category}</p>
+                              {obj.status && obj.status !== 'detecting' && (
+                                <span className="text-xs px-2 py-0.5 rounded-full bg-white bg-opacity-50 font-medium">
+                                  {obj.status === 'cropping' && 'Cropping...'}
+                                  {obj.status === 'enhancing' && 'Enhancing...'}
+                                  {obj.status === 'complete' && 'Complete ✓'}
+                                </span>
+                              )}
+                            </div>
                           </div>
                           <div className="text-right">
                             <p className="font-bold text-emerald-600 text-sm">
@@ -376,23 +494,23 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
                             </p>
                           </div>
                         </div>
-                      ))}
-                    </div>
-
-                    {progress.step === 'complete' && (
-                      <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-2xl p-4 text-center">
-                        <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                          <Sparkles className="text-white" size={24} />
-                        </div>
-                        <p className="font-bold text-emerald-700 mb-1">Perfect!</p>
-                        <p className="text-sm text-emerald-600">Your items are ready to be added to your inventory</p>
                       </div>
-                    )}
+                    ))}
+                  </div>
+                )}
+
+                {progress.step === 'complete' && (
+                  <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-2xl p-4 text-center mt-4">
+                    <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                      <Sparkles className="text-white" size={24} />
+                    </div>
+                    <p className="font-bold text-emerald-700 mb-1">Perfect!</p>
+                    <p className="text-sm text-emerald-600">Your items are ready to be added to your inventory</p>
                   </div>
                 )}
 
                 {/* Loading animation for early stages */}
-                {(!progress.detectedObjects || progress.detectedObjects.length === 0) && (
+                {(!progress.detectedObjects || progress.detectedObjects.length === 0) && progress.step !== 'complete' && (
                   <div className="flex justify-center">
                     <div className="flex space-x-1">
                       <div className="w-2 h-2 bg-amber-400 rounded-full animate-bounce"></div>
