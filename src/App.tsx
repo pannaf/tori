@@ -174,7 +174,24 @@ function App() {
   // Show auth modal if not signed in
   if (!user) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50 flex items-center justify-center relative">
+        {/* Bolt.new badge - positioned absolutely in top right */}
+        <div className="absolute top-6 right-6">
+          <a
+            href="https://bolt.new/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block w-12 h-12 sm:w-16 sm:h-16 hover:scale-110 transition-transform duration-200"
+            title="Built with Bolt.new"
+          >
+            <img
+              src="/black_circle_360x360.png"
+              alt="Built with Bolt.new"
+              className="w-full h-full object-contain"
+            />
+          </a>
+        </div>
+
         <div className="text-center">
           <div className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-full text-white font-bold mb-6 shadow-lg shadow-indigo-500/25">
             <Zap size={20} />
@@ -207,8 +224,8 @@ function App() {
           <div className="space-y-6">
             {/* Header with centered logo and user menu */}
             <div className="relative text-center py-6">
-              {/* User menu button - positioned absolutely in top right */}
-              <div className="absolute top-0 right-0">
+              {/* User menu button - positioned absolutely in top left */}
+              <div className="absolute top-0 left-0">
                 <div className="relative">
                   <button
                     onClick={() => setShowUserMenu(!showUserMenu)}
@@ -219,7 +236,7 @@ function App() {
 
                   {/* Dropdown menu */}
                   {showUserMenu && (
-                    <div className="absolute right-0 top-12 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 min-w-48 z-10">
+                    <div className="absolute left-0 top-12 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 min-w-48 z-10">
                       <div className="px-4 py-3 border-b border-gray-100">
                         <p className="text-sm font-semibold text-gray-900">Signed in as</p>
                         <p className="text-sm text-gray-600 truncate">{user.email}</p>
@@ -236,6 +253,23 @@ function App() {
                 </div>
               </div>
 
+              {/* Bolt.new badge - positioned absolutely in top right */}
+              <div className="absolute top-0 right-0">
+                <a
+                  href="https://bolt.new/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block w-12 h-12 sm:w-16 sm:h-16 hover:scale-110 transition-transform duration-200"
+                  title="Built with Bolt.new"
+                >
+                  <img
+                    src="/black_circle_360x360.png"
+                    alt="Built with Bolt.new"
+                    className="w-full h-full object-contain"
+                  />
+                </a>
+              </div>
+
               {/* Centered logo and content */}
               <div className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-full text-white font-bold mb-6 shadow-lg shadow-indigo-500/25">
                 <Zap size={20} />
@@ -246,7 +280,7 @@ function App() {
                 {inventoryLoading || statsLoading ? (
                   <>Loading your inventory...</>
                 ) : stats.totalCount === 0 ? (
-                  <>Tori. Know what you own.</>
+                  <>Your home, effortlessly organized</>
                 ) : (
                   <>Your home, effortlessly organized</>
                 )}
@@ -286,20 +320,17 @@ function App() {
                 <p className="text-gray-600">Loading your inventory...</p>
               </div>
             ) : items.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="w-24 h-24 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-3xl flex items-center justify-center mx-auto mb-6 border border-emerald-100">
-                  <Plus className="text-emerald-600" size={36} />
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-3">Ready to get organized?</h3>
-                <p className="text-gray-600 mb-8 max-w-sm mx-auto leading-relaxed">
-                  Snap a photo and let Tori's AI catalog everything for you
-                </p>
+              <div className="text-center py-6">
                 <button
                   onClick={() => setShowAddModal(true)}
-                  className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-8 py-4 rounded-full font-bold hover:shadow-xl hover:shadow-emerald-500/25 transition-all duration-300 hover:scale-105"
+                  className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-8 py-4 rounded-full font-bold hover:shadow-xl hover:shadow-emerald-500/25 transition-all duration-300 hover:scale-105 mb-6"
                 >
                   Add Your First Item
                 </button>
+                <h3 className="text-xl font-bold text-gray-900 mb-3">Ready to get organized?</h3>
+                <p className="text-gray-600 max-w-sm mx-auto leading-relaxed">
+                  Snap a photo and let Tori's AI catalog everything for you
+                </p>
               </div>
             ) : (
               <div>
@@ -333,10 +364,27 @@ function App() {
 
       case 'search':
         return (
-          <div className="space-y-6">
+          <div className="space-y-6 relative">
+            {/* Bolt.new badge - positioned absolutely in top right */}
+            <div className="absolute top-0 right-0">
+              <a
+                href="https://bolt.new/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block w-12 h-12 sm:w-16 sm:h-16 hover:scale-110 transition-transform duration-200"
+                title="Built with Bolt.new"
+              >
+                <img
+                  src="/black_circle_360x360.png"
+                  alt="Built with Bolt.new"
+                  className="w-full h-full object-contain"
+                />
+              </a>
+            </div>
+
             <div className="text-center py-6">
               <h1 className="text-2xl font-bold text-gray-900 mb-2">Find Your Stuff</h1>
-              <p className="text-gray-600">Search through your organized home inventory</p>
+              <p className="text-gray-600">Search your home inventory</p>
             </div>
 
             <SearchAndFilters
@@ -389,7 +437,24 @@ function App() {
 
       case 'stats':
         return (
-          <div className="space-y-6">
+          <div className="space-y-6 relative">
+            {/* Bolt.new badge - positioned absolutely in top right */}
+            <div className="absolute top-0 right-0">
+              <a
+                href="https://bolt.new/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block w-12 h-12 sm:w-16 sm:h-16 hover:scale-110 transition-transform duration-200"
+                title="Built with Bolt.new"
+              >
+                <img
+                  src="/black_circle_360x360.png"
+                  alt="Built with Bolt.new"
+                  className="w-full h-full object-contain"
+                />
+              </a>
+            </div>
+
             <div className="text-center py-6">
               <h1 className="text-2xl font-bold text-gray-900 mb-2">Your Home Stats</h1>
               <p className="text-gray-600">See how organized you are!</p>
@@ -450,10 +515,27 @@ function App() {
 
       case 'care':
         return (
-          <div className="space-y-6">
+          <div className="space-y-6 relative">
+            {/* Bolt.new badge - positioned absolutely in top right */}
+            <div className="absolute top-0 right-0">
+              <a
+                href="https://bolt.new/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block w-12 h-12 sm:w-16 sm:h-16 hover:scale-110 transition-transform duration-200"
+                title="Built with Bolt.new"
+              >
+                <img
+                  src="/black_circle_360x360.png"
+                  alt="Built with Bolt.new"
+                  className="w-full h-full object-contain"
+                />
+              </a>
+            </div>
+
             <div className="text-center py-6">
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">Home Maintenance</h1>
-              <p className="text-gray-600">Keep your belongings in perfect condition</p>
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">Home Care</h1>
+              <p className="text-gray-600">Keep things in perfect condition</p>
             </div>
 
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
