@@ -34,11 +34,36 @@ const defaultCategories: Category[] = [
   { id: '7', name: 'Other', icon: 'package', color: '#6B7280' },
 ];
 
+interface PaginationState {
+  currentPage: number;
+  itemsPerPage: number;
+  totalCount: number;
+  hasMore: boolean;
+}
+
+interface SearchFilters {
+  query?: string;
+  room?: string;
+  category?: string;
+}
+
 export const useInventory = (user: User | null = null, authLoading: boolean = false) => {
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [rooms] = useState<Room[]>(defaultRooms);
   const [categories] = useState<Category[]>(defaultCategories);
   const [loading, setLoading] = useState(true);
+  const [searchLoading, setSearchLoading] = useState(false);
+
+  // Pagination state
+  const [pagination, setPagination] = useState<PaginationState>({
+    currentPage: 0,
+    itemsPerPage: 20,
+    totalCount: 0,
+    hasMore: true
+  });
+
+  // Current search filters
+  const [currentFilters, setCurrentFilters] = useState<SearchFilters>({});
 
   // Load items from Supabase when user changes
   useEffect(() => {
@@ -47,10 +72,13 @@ export const useInventory = (user: User | null = null, authLoading: boolean = fa
       return;
     }
 
-    loadItems();
+    // Reset pagination and load first page
+    setPagination(prev => ({ ...prev, currentPage: 0 }));
+    setCurrentFilters({});
+    loadItems(0, {});
   }, [user, authLoading]);
 
-  const loadItems = async () => {
+  const loadItems = async (page: number = 0, filters: SearchFilters = {}, append: boolean = false) => {
     try {
       if (!user) {
         setLoading(false);
@@ -58,15 +86,33 @@ export const useInventory = (user: User | null = null, authLoading: boolean = fa
         return;
       }
 
-      const { data, error } = await supabase
+      if (!append) setLoading(true);
+      setSearchLoading(true);
+
+      // Build query
+      let query = supabase
         .from('inventory_items')
-        .select('*')
+        .select('id, name, category, room, description, condition, estimated_value, tags, created_at, crop_image_data', { count: 'exact' })
         .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .range(page * pagination.itemsPerPage, (page + 1) * pagination.itemsPerPage - 1);
+
+      // Apply search filters at database level
+      if (filters.query) {
+        query = query.or(`name.ilike.%${filters.query}%,description.ilike.%${filters.query}%,tags.cs.{${filters.query}}`);
+      }
+      if (filters.room) {
+        query = query.eq('room', filters.room);
+      }
+      if (filters.category) {
+        query = query.eq('category', filters.category);
+      }
+
+      const { data, error, count } = await query;
 
       if (error) {
         console.error('Error loading items:', error);
-        setItems([]); // Clear items on error
+        if (!append) setItems([]);
       } else {
         // Transform Supabase data to match our interface
         const transformedItems = data.map(item => ({
@@ -75,20 +121,255 @@ export const useInventory = (user: User | null = null, authLoading: boolean = fa
           category: item.category,
           room: item.room,
           description: item.description || '',
-          imageUrl: item.crop_image_data || item.image_data,
-          originalCropImageUrl: item.original_crop_image_url, // Add original image URL
+          imageUrl: item.crop_image_data,
           dateAdded: item.created_at,
           tags: item.tags || [],
           condition: item.condition || 'good',
           estimatedValue: item.estimated_value,
         }));
-        setItems(transformedItems);
+
+        if (append) {
+          setItems(prevItems => [...prevItems, ...transformedItems]);
+        } else {
+          setItems(transformedItems);
+        }
+
+        // Update pagination state
+        setPagination(prev => ({
+          ...prev,
+          currentPage: page,
+          totalCount: count || 0,
+          hasMore: (page + 1) * prev.itemsPerPage < (count || 0)
+        }));
       }
     } catch (error) {
       console.error('Error in loadItems:', error);
-      setItems([]); // Clear items on error
+      if (!append) setItems([]);
     } finally {
       setLoading(false);
+      setSearchLoading(false);
+    }
+  };
+
+  // Load more items for infinite scroll
+  const loadMore = async () => {
+    if (!pagination.hasMore || searchLoading) return;
+
+    const nextPage = pagination.currentPage + 1;
+    await loadItems(nextPage, currentFilters, true);
+  };
+
+  // Search with server-side filtering
+  const searchItems = async (query: string, roomFilter?: string, categoryFilter?: string) => {
+    const filters: SearchFilters = {
+      query: query || undefined,
+      room: roomFilter || undefined,
+      category: categoryFilter || undefined
+    };
+
+    setCurrentFilters(filters);
+    setPagination(prev => ({ ...prev, currentPage: 0 }));
+    await loadItems(0, filters, false);
+  };
+
+  // Get item details with full image data (only when needed)
+  const getItemDetails = async (itemId: string): Promise<InventoryItem | null> => {
+    try {
+      const { data, error } = await supabase
+        .from('inventory_items')
+        .select('*')
+        .eq('id', itemId)
+        .eq('user_id', user?.id)
+        .single();
+
+      if (error) {
+        console.error('Error loading item details:', error);
+        return null;
+      }
+
+      return {
+        id: data.id,
+        name: data.name,
+        category: data.category,
+        room: data.room,
+        description: data.description || '',
+        imageUrl: data.crop_image_data || data.image_data,
+        originalCropImageUrl: data.original_crop_image_url,
+        originalFullImageUrl: data.original_full_image_url,
+        dateAdded: data.created_at,
+        tags: data.tags || [],
+        condition: data.condition || 'good',
+        estimatedValue: data.estimated_value,
+      };
+    } catch (error) {
+      console.error('Error in getItemDetails:', error);
+      return null;
+    }
+  };
+
+  // Get summary stats without loading full item details
+  const getItemStats = async () => {
+    try {
+      if (!user) return { totalCount: 0, totalValue: 0, recentCount: 0 };
+
+      // Get total count and sum of estimated values
+      const { data, error } = await supabase
+        .from('inventory_items')
+        .select('estimated_value, created_at')
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Error loading stats:', error);
+        return { totalCount: 0, totalValue: 0, recentCount: 0 };
+      }
+
+      const totalCount = data.length;
+      const totalValue = data.reduce((sum, item) => sum + (item.estimated_value || 0), 0);
+
+      // Count items added in the last 7 days
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      const recentCount = data.filter(item =>
+        new Date(item.created_at) > sevenDaysAgo
+      ).length;
+
+      return { totalCount, totalValue, recentCount };
+    } catch (error) {
+      console.error('Error in getItemStats:', error);
+      return { totalCount: 0, totalValue: 0, recentCount: 0 };
+    }
+  };
+
+  // Get room distribution for stats
+  const getRoomDistribution = async () => {
+    try {
+      if (!user) return [];
+
+      const { data, error } = await supabase
+        .from('inventory_items')
+        .select('room')
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Error loading room distribution:', error);
+        return [];
+      }
+
+      // Count items per room
+      const roomCounts: { [key: string]: number } = {};
+      data.forEach(item => {
+        roomCounts[item.room] = (roomCounts[item.room] || 0) + 1;
+      });
+
+      return Object.entries(roomCounts).map(([room, count]) => ({
+        room,
+        count,
+        percentage: data.length > 0 ? (count / data.length) * 100 : 0
+      }));
+    } catch (error) {
+      console.error('Error in getRoomDistribution:', error);
+      return [];
+    }
+  };
+
+  // Get category distribution for stats
+  const getCategoryDistribution = async () => {
+    try {
+      if (!user) return [];
+
+      const { data, error } = await supabase
+        .from('inventory_items')
+        .select('category')
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Error loading category distribution:', error);
+        return [];
+      }
+
+      // Count items per category
+      const categoryCounts: { [key: string]: number } = {};
+      data.forEach(item => {
+        categoryCounts[item.category] = (categoryCounts[item.category] || 0) + 1;
+      });
+
+      return Object.entries(categoryCounts).map(([category, count]) => ({
+        category,
+        count,
+        percentage: data.length > 0 ? (count / data.length) * 100 : 0
+      }));
+    } catch (error) {
+      console.error('Error in getCategoryDistribution:', error);
+      return [];
+    }
+  };
+
+  // Get recent items for home page (separate from main paginated items)
+  const getRecentItems = async () => {
+    try {
+      if (!user) return [];
+
+      const { data, error } = await supabase
+        .from('inventory_items')
+        .select('id, name, category, room, description, condition, estimated_value, tags, created_at, crop_image_data')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(6);
+
+      if (error) {
+        console.error('Error loading recent items:', error);
+        return [];
+      }
+
+      return data.map(item => ({
+        id: item.id,
+        name: item.name,
+        category: item.category,
+        room: item.room,
+        description: item.description || '',
+        imageUrl: item.crop_image_data,
+        dateAdded: item.created_at,
+        tags: item.tags || [],
+        condition: item.condition || 'good',
+        estimatedValue: item.estimated_value,
+      }));
+    } catch (error) {
+      console.error('Error in getRecentItems:', error);
+      return [];
+    }
+  };
+
+  // Get all items for maintenance (without heavy image data)
+  const getAllItemsForMaintenance = async () => {
+    try {
+      if (!user) return [];
+
+      const { data, error } = await supabase
+        .from('inventory_items')
+        .select('id, name, category, room, description, condition, estimated_value, tags, created_at, crop_image_data')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error loading items for maintenance:', error);
+        return [];
+      }
+
+      return data.map(item => ({
+        id: item.id,
+        name: item.name,
+        category: item.category,
+        room: item.room,
+        description: item.description || '',
+        imageUrl: item.crop_image_data,
+        dateAdded: item.created_at,
+        tags: item.tags || [],
+        condition: item.condition || 'good',
+        estimatedValue: item.estimated_value,
+      }));
+    } catch (error) {
+      console.error('Error in getAllItemsForMaintenance:', error);
+      return [];
     }
   };
 
@@ -232,29 +513,24 @@ export const useInventory = (user: User | null = null, authLoading: boolean = fa
     }
   };
 
-  const searchItems = (query: string, roomFilter?: string, categoryFilter?: string) => {
-    return items.filter(item => {
-      const matchesQuery = !query ||
-        item.name.toLowerCase().includes(query.toLowerCase()) ||
-        item.description?.toLowerCase().includes(query.toLowerCase()) ||
-        item.tags.some(tag => tag.toLowerCase().includes(query.toLowerCase()));
-
-      const matchesRoom = !roomFilter || item.room === roomFilter;
-      const matchesCategory = !categoryFilter || item.category === categoryFilter;
-
-      return matchesQuery && matchesRoom && matchesCategory;
-    });
-  };
-
   return {
     items,
     rooms,
     categories,
     loading,
+    searchLoading,
+    pagination,
     addItem,
     updateItem,
     deleteItem,
     searchItems,
-    refreshItems: loadItems,
+    refreshItems: () => loadItems(0, {}),
+    loadMore,
+    getItemDetails,
+    getItemStats,
+    getRoomDistribution,
+    getCategoryDistribution,
+    getRecentItems,
+    getAllItemsForMaintenance,
   };
 };

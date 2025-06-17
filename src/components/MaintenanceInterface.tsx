@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Clock,
   AlertTriangle,
@@ -32,6 +32,7 @@ export const MaintenanceInterface: React.FC<MaintenanceInterfaceProps> = ({
   embedded = false,
   user
 }) => {
+  // Always call the hook, but pass empty array when not ready
   const {
     reminders,
     completedReminders,
@@ -43,6 +44,9 @@ export const MaintenanceInterface: React.FC<MaintenanceInterfaceProps> = ({
     getRemindersByPriority,
     refreshReminders,
   } = useMaintenance(items, user);
+
+  // Don't show content until we have items
+  const shouldShowMaintenance = user && items.length > 0;
 
   const [activeFilter, setActiveFilter] = useState<'all' | 'urgent' | 'high' | 'medium' | 'low'>('all');
   const [showCompleted, setShowCompleted] = useState(false);
@@ -100,6 +104,19 @@ export const MaintenanceInterface: React.FC<MaintenanceInterfaceProps> = ({
   const handleCompleteReminder = (reminderId: string) => {
     completeReminder(reminderId, 'Completed via maintenance interface');
   };
+
+  // Show loading state while items are being loaded
+  if (!shouldShowMaintenance) {
+    if (embedded) {
+      return (
+        <div className="text-center py-8">
+          <div className="animate-spin w-8 h-8 border-3 border-indigo-600 border-t-transparent rounded-full mx-auto mb-3"></div>
+          <p className="text-gray-600 font-medium">Loading maintenance data...</p>
+        </div>
+      );
+    }
+    return null;
+  }
 
   if (embedded) {
     return (

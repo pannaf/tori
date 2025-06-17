@@ -3,6 +3,7 @@ import { Plus, Wrench, Home, Search, BarChart3, Zap, LogOut, User } from 'lucide
 import { useInventory } from './hooks/useInventory';
 import { useAuth } from './hooks/useAuth';
 import { useMaintenanceDB } from './hooks/useMaintenanceDB';
+import { useInventoryStats } from './hooks/useInventoryStats';
 import { AddItemModal } from './components/AddItemModal';
 import { ItemCard } from './components/ItemCard';
 import { ItemDetailModal } from './components/ItemDetailModal';
@@ -24,13 +25,20 @@ function App() {
     rooms,
     categories,
     loading: inventoryLoading,
+    searchLoading,
+    pagination,
     addItem,
     updateItem,
     deleteItem,
     searchItems,
+    loadMore,
+    getItemDetails,
   } = useInventory(user, authLoading);
 
   const { createMaintenanceSchedule } = useMaintenanceDB(user);
+
+  // Stats hook for accurate totals and distributions
+  const { stats, roomDistribution, categoryDistribution, recentItems: statsRecentItems, allItemsForMaintenance, loading: statsLoading, refreshStats } = useInventoryStats(user);
 
   const [activeTab, setActiveTab] = useState<TabType>('home');
   const [showAddModal, setShowAddModal] = useState(false);
@@ -42,29 +50,40 @@ function App() {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [showUserMenu, setShowUserMenu] = useState(false);
 
-  const filteredItems = searchItems(searchQuery, selectedRoom, selectedCategory);
-  const recentItems = items
-    .sort((a, b) => new Date(b.dateAdded).getTime() - new Date(a.dateAdded).getTime())
-    .slice(0, 6);
+  // Recent items are now loaded separately via stats hook
 
-  const handleItemClick = (item: InventoryItem) => {
-    setSelectedItem(item);
+  // Handle search with debouncing
+  const handleSearch = async (query: string, room?: string, category?: string) => {
+    setSearchQuery(query);
+    setSelectedRoom(room || '');
+    setSelectedCategory(category || '');
+    await searchItems(query, room, category);
+  };
+
+  const handleItemClick = async (item: InventoryItem) => {
+    // Load full item details with images when clicking to view
+    const fullItem = await getItemDetails(item.id);
+    setSelectedItem(fullItem || item);
     setShowItemDetail(true);
   };
 
-  const handleItemEdit = (item: InventoryItem) => {
-    setSelectedItem(item);
+  const handleItemEdit = async (item: InventoryItem) => {
+    // Load full item details with images when editing
+    const fullItem = await getItemDetails(item.id);
+    setSelectedItem(fullItem || item);
     setShowItemDetail(false);
     setShowEditModal(true);
   };
 
-  const handleItemDelete = (id: string) => {
-    deleteItem(id);
+  const handleItemDelete = async (id: string) => {
+    await deleteItem(id);
+    refreshStats();
     setShowItemDetail(false);
   };
 
-  const handleSaveEdit = (id: string, updates: Partial<InventoryItem>) => {
-    updateItem(id, updates);
+  const handleSaveEdit = async (id: string, updates: Partial<InventoryItem>) => {
+    await updateItem(id, updates);
+    refreshStats();
     setShowEditModal(false);
     setSelectedItem(null);
   };
@@ -97,6 +116,9 @@ function App() {
     try {
       // Add the item first and get its ID
       const itemId = await addItem(item);
+
+      // Refresh stats after adding item
+      refreshStats();
 
       // If maintenance is enabled and we have maintenance data, create the schedule
       if (itemId && maintenanceData && maintenanceData.title && user) {
@@ -221,9 +243,9 @@ function App() {
               </div>
 
               <h1 className="text-3xl font-bold text-gray-900 mb-3 leading-tight">
-                {inventoryLoading ? (
+                {inventoryLoading || statsLoading ? (
                   <>Loading your inventory...</>
-                ) : items.length === 0 ? (
+                ) : stats.totalCount === 0 ? (
                   <>Tori. Know what you own.</>
                 ) : (
                   <>Your home, effortlessly organized</>
@@ -231,11 +253,11 @@ function App() {
               </h1>
 
               <p className="text-gray-600 leading-relaxed">
-                {inventoryLoading
+                {inventoryLoading || statsLoading
                   ? "Getting everything ready for you"
-                  : items.length === 0
+                  : stats.totalCount === 0
                     ? "Let's get started by adding your first item with AI-powered photo recognition"
-                    : `Let's go! You've got ${items.length} items inventoried`
+                    : `Let's go! You've got ${stats.totalCount} items inventoried`
                 }
               </p>
             </div>
@@ -248,7 +270,15 @@ function App() {
               />
             )}
 
-            {!inventoryLoading && items.length > 0 && <StatsOverview items={items} variant="compact" />}
+            {!statsLoading && stats.totalCount > 0 && (
+              <StatsOverview
+                totalCount={stats.totalCount}
+                totalValue={stats.totalValue}
+                recentCount={stats.recentCount}
+                totalRooms={stats.totalRooms}
+                variant="compact"
+              />
+            )}
 
             {inventoryLoading ? (
               <div className="text-center py-12">
@@ -275,7 +305,7 @@ function App() {
               <div>
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-xl font-bold text-gray-900">Recent Additions</h2>
-                  {recentItems.length > 0 && (
+                  {statsRecentItems.length > 0 && (
                     <button
                       onClick={() => setActiveTab('search')}
                       className="text-indigo-600 hover:text-indigo-800 transition-colors font-semibold"
@@ -286,7 +316,7 @@ function App() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  {recentItems.map((item) => (
+                  {statsRecentItems.map((item) => (
                     <ItemCard
                       key={item.id}
                       item={item}
@@ -311,17 +341,17 @@ function App() {
 
             <SearchAndFilters
               searchQuery={searchQuery}
-              onSearchChange={setSearchQuery}
+              onSearchChange={(query) => handleSearch(query, selectedRoom, selectedCategory)}
               selectedRoom={selectedRoom}
-              onRoomChange={setSelectedRoom}
+              onRoomChange={(room) => handleSearch(searchQuery, room, selectedCategory)}
               selectedCategory={selectedCategory}
-              onCategoryChange={setSelectedCategory}
+              onCategoryChange={(category) => handleSearch(searchQuery, selectedRoom, category)}
               rooms={rooms}
               categories={categories}
             />
 
             <div className="grid grid-cols-2 gap-4">
-              {filteredItems.map((item) => (
+              {items.map((item) => (
                 <ItemCard
                   key={item.id}
                   item={item}
@@ -332,7 +362,20 @@ function App() {
               ))}
             </div>
 
-            {filteredItems.length === 0 && (
+            {/* Load More Button */}
+            {pagination.hasMore && (
+              <div className="text-center py-4">
+                <button
+                  onClick={loadMore}
+                  disabled={searchLoading}
+                  className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-full font-semibold hover:shadow-lg hover:shadow-indigo-500/25 transition-all duration-300 disabled:opacity-50"
+                >
+                  {searchLoading ? 'Loading...' : 'Load More'}
+                </button>
+              </div>
+            )}
+
+            {items.length === 0 && !inventoryLoading && (
               <div className="text-center py-12">
                 <Search className="mx-auto mb-4 text-gray-400" size={48} />
                 <h3 className="text-lg font-bold text-gray-900 mb-2">Nothing found</h3>
@@ -352,57 +395,52 @@ function App() {
               <p className="text-gray-600">See how organized you are!</p>
             </div>
 
-            <StatsOverview items={items} />
+            <StatsOverview
+              totalCount={stats.totalCount}
+              totalValue={stats.totalValue}
+              recentCount={stats.recentCount}
+              totalRooms={stats.totalRooms}
+            />
 
-            {items.length > 0 && (
+            {stats.totalCount > 0 && (
               <div className="space-y-4">
                 <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Room Distribution</h3>
                   <div className="space-y-3">
-                    {rooms.map(room => {
-                      const roomItems = items.filter(item => item.room === room.name);
-                      const percentage = items.length > 0 ? (roomItems.length / items.length) * 100 : 0;
-
-                      return (
-                        <div key={room.id} className="flex items-center justify-between">
-                          <span className="text-sm font-medium text-gray-700">{room.name}</span>
-                          <div className="flex items-center gap-2">
-                            <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
-                              <div
-                                className="h-full bg-gradient-to-r from-indigo-500 to-purple-600 transition-all duration-300"
-                                style={{ width: `${percentage}%` }}
-                              />
-                            </div>
-                            <span className="text-sm text-gray-600 w-8 text-right">{roomItems.length}</span>
+                    {roomDistribution.map(({ room, count, percentage }) => (
+                      <div key={room} className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-gray-700">{room}</span>
+                        <div className="flex items-center gap-2">
+                          <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-gradient-to-r from-indigo-500 to-purple-600 transition-all duration-300"
+                              style={{ width: `${percentage}%` }}
+                            />
                           </div>
+                          <span className="text-sm text-gray-600 w-8 text-right">{count}</span>
                         </div>
-                      );
-                    })}
+                      </div>
+                    ))}
                   </div>
                 </div>
 
                 <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Category Breakdown</h3>
                   <div className="space-y-3">
-                    {categories.map(category => {
-                      const categoryItems = items.filter(item => item.category === category.name);
-                      const percentage = items.length > 0 ? (categoryItems.length / items.length) * 100 : 0;
-
-                      return (
-                        <div key={category.id} className="flex items-center justify-between">
-                          <span className="text-sm font-medium text-gray-700">{category.name}</span>
-                          <div className="flex items-center gap-2">
-                            <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
-                              <div
-                                className="h-full bg-gradient-to-r from-emerald-500 to-teal-600 transition-all duration-300"
-                                style={{ width: `${percentage}%` }}
-                              />
-                            </div>
-                            <span className="text-sm text-gray-600 w-8 text-right">{categoryItems.length}</span>
+                    {categoryDistribution.map(({ category, count, percentage }) => (
+                      <div key={category} className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-gray-700">{category}</span>
+                        <div className="flex items-center gap-2">
+                          <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-gradient-to-r from-emerald-500 to-teal-600 transition-all duration-300"
+                              style={{ width: `${percentage}%` }}
+                            />
                           </div>
+                          <span className="text-sm text-gray-600 w-8 text-right">{count}</span>
                         </div>
-                      );
-                    })}
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -420,7 +458,7 @@ function App() {
 
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
               <MaintenanceInterface
-                items={items}
+                items={allItemsForMaintenance}
                 isOpen={true}
                 onClose={() => setActiveTab('home')}
                 embedded={true}

@@ -3,19 +3,22 @@ import { TrendingUp, Package, Home, DollarSign } from 'lucide-react';
 import { InventoryItem } from '../types/inventory';
 
 interface StatsOverviewProps {
-  items: InventoryItem[];
+  totalCount: number;
+  totalValue: number;
+  recentCount: number;
+  totalRooms?: number;
   variant?: 'default' | 'compact';
 }
 
-export const StatsOverview: React.FC<StatsOverviewProps> = ({ items, variant = 'default' }) => {
-  const totalItems = items.length;
-  const totalRooms = new Set(items.map(item => item.room)).size;
-  const totalValue = items.reduce((sum, item) => sum + (item.estimatedValue || 0), 0);
-  const recentItems = items.filter(item => {
-    const weekAgo = new Date();
-    weekAgo.setDate(weekAgo.getDate() - 7);
-    return new Date(item.dateAdded) > weekAgo;
-  }).length;
+export const StatsOverview: React.FC<StatsOverviewProps> = ({
+  totalCount,
+  totalValue,
+  recentCount,
+  totalRooms = 0,
+  variant = 'default'
+}) => {
+  const totalItems = totalCount;
+  const recentItems = recentCount;
 
   // Smart number formatting for all variants
   const formatValue = (value: number): string => {

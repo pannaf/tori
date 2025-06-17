@@ -1,6 +1,11 @@
 import { useState, useEffect } from 'react';
 import { InventoryItem, MaintenanceReminder } from '../types/inventory';
 import { useMaintenanceDB } from './useMaintenanceDB';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 interface User {
   id: string;
@@ -16,7 +21,12 @@ export const useMaintenance = (items: InventoryItem[], user: User | null = null)
 
   // Generate reminders from database maintenance schedules
   useEffect(() => {
-    if (!user?.id || items.length === 0) return;
+    if (!user?.id || items.length === 0) {
+      setReminders([]);
+      setCompletedReminders([]);
+      setLoading(false);
+      return;
+    }
 
     let isMounted = true;
 
@@ -27,6 +37,8 @@ export const useMaintenance = (items: InventoryItem[], user: User | null = null)
         const now = new Date();
 
         console.log('🔧 Fetching maintenance schedules for user:', user?.email);
+        console.log('🔧 Items available:', items.length);
+
         // Get all maintenance schedules from database
         const schedules = await getAllMaintenanceSchedules();
         console.log('🔧 Found', schedules.length, 'maintenance schedules:', schedules);
@@ -35,7 +47,7 @@ export const useMaintenance = (items: InventoryItem[], user: User | null = null)
         schedules.forEach(schedule => {
           const item = items.find(item => item.id === schedule.itemId);
           if (!item) {
-            console.log('🔧 Item not found for schedule:', schedule.itemId);
+            console.log('🔧 Item not found for schedule:', schedule.itemId, 'Available items:', items.map(i => i.id));
             return; // Skip if item not found
           }
 
@@ -116,12 +128,6 @@ export const useMaintenance = (items: InventoryItem[], user: User | null = null)
       if (!user) return;
 
       try {
-        const { createClient } = await import('@supabase/supabase-js');
-        const supabase = createClient(
-          import.meta.env.VITE_SUPABASE_URL,
-          import.meta.env.VITE_SUPABASE_ANON_KEY
-        );
-
         // Get maintenance records from the last 30 days
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -141,7 +147,7 @@ export const useMaintenance = (items: InventoryItem[], user: User | null = null)
         console.log('🔧 Found', records.length, 'completed maintenance records');
 
         // Convert records to reminders
-        const completedReminders: MaintenanceReminder[] = records.map(record => {
+        const completedReminders: MaintenanceReminder[] = (records || []).map((record: any) => {
           const item = items.find(item => item.id === record.item_id);
           return {
             id: record.id,
@@ -173,7 +179,7 @@ export const useMaintenance = (items: InventoryItem[], user: User | null = null)
     return () => {
       isMounted = false;
     };
-  }, [user?.id, items.length]); // Only re-run when user ID or number of items changes
+  }, [user?.id]); // Only re-run when user changes
 
   const completeReminder = async (reminderId: string, notes?: string) => {
     try {
