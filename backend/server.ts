@@ -9,6 +9,7 @@ import { dirname } from 'path';
 import { analyzeImage } from './utils/imageAnalyzer.js';
 import { detectObject, cropImage } from '../src/utils/objectDetector.js';
 import { enhanceImageForPortrait } from './src/imageEnhancer.js';
+import analyzeImageRouter from './src/analyze-image.js';
 import dotenv from 'dotenv';
 
 // Load environment variables
@@ -32,6 +33,9 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 app.use(express.json());
+
+// Use the new analyze-image router
+app.use('/api', analyzeImageRouter);
 
 // Ensure uploads directory exists
 const uploadsDir = path.join(__dirname, 'uploads');
