@@ -52,12 +52,33 @@ interface AnalysisResult {
     originalFullImageUrl?: string;
 }
 
+// In-memory storage for processing sessions (in production, use Redis or database)
+const processingSessions = new Map<string, {
+    status: 'processing' | 'complete' | 'error';
+    objects: any[];
+    completedCount: number;
+    totalCount: number;
+    error?: string;
+}>();
+
 // No auth middleware needed - using service role for storage
 router.post('/analyze-image', upload.single('image'), async (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ error: 'No image file provided' });
+    }
+
     try {
-        if (!req.file) {
-            return res.status(400).json({ error: 'No image file provided' });
+        const userId = req.body.userId;
+        const authToken = req.body.authToken;
+
+        if (!userId || !authToken) {
+            return res.status(401).json({ error: 'Authentication required' });
         }
+
+        // Create authenticated Supabase client
+        const userSupabase = createAuthenticatedSupabaseClient(authToken);
+
+        console.log('Analyzing image with GPT-4...');
 
         if (!process.env.OPENAI_API_KEY) {
             throw new Error('OpenAI API key is not set in environment variables');
@@ -67,30 +88,26 @@ router.post('/analyze-image', upload.single('image'), async (req, res) => {
             apiKey: process.env.OPENAI_API_KEY,
         });
 
-        // Read and convert the image to base64
-        const imageBuffer = fs.readFileSync(req.file.path);
-        const base64Image = imageBuffer.toString('base64');
-
+        // Step 1: Analyze with GPT-4V first
         const response = await openai.chat.completions.create({
-            model: "gpt-4o-mini", // Updated to use structured outputs compatible model
+            model: "gpt-4o-mini",
             messages: [
                 {
                     role: "user",
                     content: [
                         {
                             type: "text",
-                            text: "List all the objects in this image and estimate their costs. ALL of them. Be comprehensive and thorough. Don't say what it's on or touching or under or above. Also do not attempt to indicate what size it is. Do not do compound objects, i.e., nothing that uses 'with' to combine multiple objects. Instead of 'large plant in black pot', for example, it should be an object for 'plant' and an object for 'black pot'. Just list each individual object with its estimated cost in USD. Be realistic with cost estimates based on average market prices. Also give your best guess for which room in a home it is- the room can be one of the following: Living Room, Kitchen, Bedroom, Bathroom, Office, Garage, Dining Room. You should also include the object category, which can be one of the following: Electronics, Furniture, Appliances, Decorative, Sports, Tools, Other."
+                            text: "Analyze this image and identify all objects you can see. For each object, provide a name, category, description, and estimated cost in USD. Be comprehensive but focus on distinct, separate objects (don't combine objects like 'plant in pot' - list 'plant' and 'pot' separately). Also identify which room this appears to be."
                         },
                         {
                             type: "image_url",
                             image_url: {
-                                url: `data:image/jpeg;base64,${base64Image}`
+                                url: `data:image/jpeg;base64,${fs.readFileSync(req.file.path, 'base64')}`
                             },
                         },
                     ],
                 },
             ],
-            max_tokens: 1000,
             response_format: {
                 type: "json_schema",
                 json_schema: {
@@ -106,20 +123,20 @@ router.post('/analyze-image', upload.single('image'), async (req, res) => {
                                     properties: {
                                         name: {
                                             type: "string",
-                                            description: "The name of the object"
+                                            description: "Name of the object"
                                         },
                                         category: {
                                             type: "string",
-                                            description: "The category of the object",
-                                            enum: ["Electronics", "Furniture", "Appliances", "Decorative", "Sports", "Tools", "Other"]
+                                            description: "Category of the object",
+                                            enum: ["Electronics", "Furniture", "Appliances", "Decorative", "Kitchen", "Clothing", "Books", "Sports", "Tools", "Other"]
                                         },
                                         description: {
                                             type: "string",
-                                            description: "A brief description of the object"
+                                            description: "Brief description of the object"
                                         },
                                         estimated_cost_usd: {
                                             type: "number",
-                                            description: "The estimated cost in USD",
+                                            description: "Estimated cost in USD",
                                             minimum: 0
                                         }
                                     },
@@ -160,112 +177,204 @@ router.post('/analyze-image', upload.single('image'), async (req, res) => {
             throw new Error('No response content from GPT-4o-mini');
         }
 
-        // With structured outputs, the response should already be valid JSON
+        // Parse GPT-4 results
         let result: AnalysisResult;
         try {
             result = JSON.parse(content) as AnalysisResult;
 
-            // Save the original full image to Supabase first
+            // Upload original full image to Supabase
             console.log('Uploading original full image to Supabase...');
             const originalFullImageUrl = await uploadImageFileToSupabase(req.file!.path, `original_full_${Date.now()}.jpg`);
 
             // Process only the first 3 objects
             const objectsToProcess = result.objects.slice(0, 3);
 
-            // Phase 1: Run all Landing AI detection calls in parallel first
-            console.log('Starting parallel Landing AI detection calls...');
-            const detectionPromises = objectsToProcess.map(async (obj) => {
-                try {
-                    const detections = await detectObject(req.file!.path, obj.name);
-                    return {
-                        object: obj,
-                        detections: detections
-                    };
-                } catch (error) {
-                    console.error(`Error detecting object ${obj.name}:`, error);
-                    return {
-                        object: obj,
-                        detections: []
-                    };
-                }
-            });
-
-            // Wait for all detection calls to complete
-            const detectionResults = await Promise.all(detectionPromises);
-            console.log('All Landing AI detection calls completed');
-
-            // Phase 2: Process the detection results (cropping and enhancing) in parallel
-            console.log('Starting parallel image processing...');
-            const objectsWithImages = await Promise.all(detectionResults.map(async ({ object: obj, detections }) => {
-                try {
-                    if (detections.length > 0) {
-                        // Use the first detection (highest confidence)
-                        const detection = detections[0];
-                        const cropFileName = `${obj.name.replace(/\s+/g, '_')}_${Date.now()}.jpg`;
-                        const enhancedFileName = `enhanced_${cropFileName}`;
-
-                        // Create temporary file for cropping
-                        const tempCropPath = path.join(os.tmpdir(), cropFileName);
-
-                        // Crop the image to temporary file
-                        await cropImage(req.file!.path, detection.boundingBox, tempCropPath);
-
-                        // Save the original cropped image to Supabase
-                        console.log(`Uploading original cropped image for ${obj.name} to Supabase...`);
-                        const originalCropImageUrl = await uploadImageFileToSupabase(tempCropPath, `original_${cropFileName}`);
-
-                        // Enhance the cropped image using OpenAI and upload to Supabase (resized)
-                        const enhancedImageUrl = await enhanceImageForPortrait(tempCropPath, enhancedFileName);
-
-                        // Clean up temporary crop file
-                        fs.unlinkSync(tempCropPath);
-
-                        return {
-                            ...obj,
-                            imageUrl: enhancedImageUrl, // URL to the enhanced image in Supabase Storage
-                            originalCropImageUrl: originalCropImageUrl, // URL to the original cropped image
-                            originalFullImageUrl: originalFullImageUrl, // URL to the original full image
-                            confidence: detection.confidence
-                        };
-                    }
-                } catch (error) {
-                    console.error(`Error processing object ${obj.name}:`, error);
-                }
-                return {
+            // Step 2: Return GPT-4 results immediately with processing status
+            const immediateResponse = {
+                step: 'gpt_complete',
+                objects: objectsToProcess.map(obj => ({
                     ...obj,
-                    originalFullImageUrl: originalFullImageUrl // Include original full image URL even if processing fails
-                };
-            }));
-
-            console.log('Image processing complete');
-
-            // DON'T save to database yet - let frontend handle that when user confirms
-            console.log('AI detection complete, returning data to frontend');
-
-            // Update the result with the processed objects (no database saves)
-            const finalResult = {
-                ...result,
-                objects: objectsWithImages,
-                originalFullImageUrl: originalFullImageUrl, // Include original full image URL in the result
-                message: 'AI detection complete - items ready for user confirmation'
+                    originalFullImageUrl,
+                    status: 'pending_detection'
+                })),
+                room: result.room,
+                total_estimated_value_usd: result.total_estimated_value_usd,
+                processing_id: Date.now().toString() // Unique ID for this processing session
             };
 
-            // Clean up the uploaded file
-            fs.unlinkSync(req.file.path);
+            // Send immediate response
+            res.json(immediateResponse);
 
-            res.json(finalResult);
-        } catch (error) {
-            console.error('Error parsing structured output response:', content);
-            throw new Error('Failed to parse structured output response as JSON');
+            // Step 3: Copy file to a safe location and process Landing AI in background
+            const tempImagePath = path.join(os.tmpdir(), `processing_${Date.now()}_${path.basename(req.file.path)}`);
+            fs.copyFileSync(req.file.path, tempImagePath);
+            console.log(`Copied image to temp location: ${tempImagePath}`);
+
+            processObjectsInBackground(tempImagePath, objectsToProcess, originalFullImageUrl, immediateResponse.processing_id)
+                .catch(error => {
+                    console.error('Background processing error:', error);
+                    // Clean up temp file on error
+                    if (fs.existsSync(tempImagePath)) {
+                        fs.unlinkSync(tempImagePath);
+                    }
+                });
+
+        } catch (parseError) {
+            console.error('Error parsing GPT-4 response:', parseError);
+            throw new Error('Failed to parse GPT-4 response');
         }
+
     } catch (error) {
-        console.error('Error analyzing image:', error);
-        // Clean up the temporary file in case of error
-        if (req.file?.path && fs.existsSync(req.file.path)) {
+        console.error('Error in analyze-image:', error);
+        res.status(500).json({ error: error instanceof Error ? error.message : 'Analysis failed' });
+    } finally {
+        // Clean up original uploaded file (we've copied it for background processing)
+        if (req.file && fs.existsSync(req.file.path)) {
             fs.unlinkSync(req.file.path);
         }
-        res.status(500).json({ error: 'Failed to analyze image' });
     }
+});
+
+// Background processing function with parallel Landing AI calls
+async function processObjectsInBackground(
+    imagePath: string,
+    objects: any[],
+    originalFullImageUrl: string,
+    processingId: string
+) {
+    console.log(`Starting background processing for session ${processingId} (PARALLEL mode)`);
+    console.log(`Image file exists: ${fs.existsSync(imagePath)}, path: ${imagePath}`);
+
+    // Initialize session tracking
+    processingSessions.set(processingId, {
+        status: 'processing',
+        objects: objects.map(obj => ({ ...obj, status: 'pending' })),
+        completedCount: 0,
+        totalCount: objects.length
+    });
+
+    // Check if file exists before starting
+    if (!fs.existsSync(imagePath)) {
+        console.error(`File no longer exists: ${imagePath}`);
+        throw new Error(`Source image file was deleted: ${imagePath}`);
+    }
+
+    // Start ALL Landing AI requests in parallel for speed
+    console.log(`Starting ${objects.length} Landing AI requests in parallel...`);
+    const processingPromises = objects.map(async (obj, index) => {
+        try {
+            // Update status to processing
+            const sessionData = processingSessions.get(processingId);
+            if (sessionData) {
+                sessionData.objects[index].status = 'processing';
+                processingSessions.set(processingId, sessionData);
+            }
+
+            console.log(`[${index + 1}/${objects.length}] Starting Landing AI for: ${obj.name}`);
+
+            // Run Landing AI detection (this happens in parallel with others)
+            const detections = await detectObject(imagePath, obj.name);
+
+            if (detections.length > 0) {
+                const detection = detections[0];
+                const cropFileName = `${obj.name.replace(/\s+/g, '_')}_${Date.now()}_${index}.jpg`;
+                const enhancedFileName = `enhanced_${cropFileName}`;
+                const tempCropPath = path.join(os.tmpdir(), cropFileName);
+
+                console.log(`[${index + 1}/${objects.length}] Landing AI completed for ${obj.name}, starting crop & enhance...`);
+
+                // Crop the image
+                await cropImage(imagePath, detection.boundingBox, tempCropPath);
+
+                // Upload original cropped image
+                const originalCropImageUrl = await uploadImageFileToSupabase(tempCropPath, `original_${cropFileName}`);
+
+                // Enhance and upload enhanced image
+                const enhancedImageUrl = await enhanceImageForPortrait(tempCropPath, enhancedFileName);
+
+                // Clean up temp file
+                fs.unlinkSync(tempCropPath);
+
+                // Update session with completed object (this happens as soon as each item completes)
+                const updatedSessionData = processingSessions.get(processingId);
+                if (updatedSessionData) {
+                    updatedSessionData.objects[index] = {
+                        ...obj,
+                        imageUrl: enhancedImageUrl,
+                        originalCropImageUrl,
+                        originalFullImageUrl,
+                        confidence: detection.confidence,
+                        status: 'complete'
+                    };
+                    updatedSessionData.completedCount++;
+                    processingSessions.set(processingId, updatedSessionData);
+                }
+
+                console.log(`✅ [${index + 1}/${objects.length}] Completed processing for ${obj.name}`);
+                return { index, success: true, result: 'complete' };
+
+            } else {
+                console.log(`⚠️ [${index + 1}/${objects.length}] No detections found for ${obj.name}`);
+                // Mark as complete even if no detection
+                const sessionData = processingSessions.get(processingId);
+                if (sessionData) {
+                    sessionData.objects[index].status = 'no_detection';
+                    sessionData.completedCount++;
+                    processingSessions.set(processingId, sessionData);
+                }
+                return { index, success: true, result: 'no_detection' };
+            }
+        } catch (error) {
+            console.error(`❌ [${index + 1}/${objects.length}] Error processing object ${obj.name}:`, error);
+            // Mark as error
+            const sessionData = processingSessions.get(processingId);
+            if (sessionData) {
+                sessionData.objects[index].status = 'error';
+                sessionData.objects[index].error = error instanceof Error ? error.message : 'Unknown error';
+                sessionData.completedCount++;
+                processingSessions.set(processingId, sessionData);
+            }
+            return { index, success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+        }
+    });
+
+    // Don't wait for all - let them complete individually and stream results
+    console.log(`Started ${objects.length} parallel processes - results will stream as they complete...`);
+
+    // Handle completion tracking in the background
+    Promise.allSettled(processingPromises).then((results) => {
+        // Log final results
+        const successful = results.filter(r => r.status === 'fulfilled').length;
+        const failed = results.filter(r => r.status === 'rejected').length;
+        console.log(`Parallel processing summary: ${successful} successful, ${failed} failed`);
+
+        // Mark session as complete
+        const finalSessionData = processingSessions.get(processingId);
+        if (finalSessionData) {
+            finalSessionData.status = 'complete';
+            processingSessions.set(processingId, finalSessionData);
+        }
+
+        console.log(`🎉 Background processing completed for session ${processingId}`);
+
+        // Clean up temporary image file AFTER all processing is done
+        if (fs.existsSync(imagePath)) {
+            fs.unlinkSync(imagePath);
+            console.log(`Cleaned up temporary file: ${imagePath}`);
+        }
+    });
+}
+
+// Endpoint to check processing status
+router.get('/processing-status/:processingId', (req, res) => {
+    const { processingId } = req.params;
+    const sessionData = processingSessions.get(processingId);
+
+    if (!sessionData) {
+        return res.status(404).json({ error: 'Processing session not found' });
+    }
+
+    res.json(sessionData);
 });
 
 // Get all inventory items

@@ -87,29 +87,10 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
     setProgress(prev => ({ ...prev, ...newProgress }));
   };
 
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
+  const handleFileChange = async (file: File, imageData: string) => {
     try {
-      setError(null);
+      setError('');
       setIsProcessing(true);
-
-      updateProgress({
-        step: 'preparing',
-        message: 'Tori is working  magic...',
-        progress: 5
-      });
-
-      const imageData = await fixImageOrientation(file);
-
-      // Set the original image URL immediately so it shows during processing
-      updateProgress({
-        step: 'preparing',
-        message: 'Tori is working  magic...',
-        progress: 20,
-        originalFullImageUrl: imageData // Set the base64 image data to show during processing
-      });
 
       try {
         // Create form data for the API
@@ -135,7 +116,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
 
         updateProgress({
           step: 'analyzing',
-          message: 'Tori is working some magic...',
+          message: 'Tori is analyzing your photo with AI...',
           progress: 25
         });
 
@@ -156,40 +137,30 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
           throw new Error('Failed to analyze image');
         }
 
-        // Parse the response
-        const data = await apiResponse.json();
+        // Parse the immediate GPT-4 response
+        const initialData = await apiResponse.json();
 
-        // Update progress but preserve the original full image URL that was set earlier
-        updateProgress({
-          step: 'complete',
-          message: 'Perfect! Your items are ready to add.',
-          progress: 100,
-          detectedObjects: data.objects.map((obj: any) => ({ ...obj, status: 'complete' })),
-          room: data.room,
-          totalValue: data.total_estimated_value_usd
-        });
+        if (initialData.step === 'gpt_complete') {
+          // Show immediate feedback about what was found
+          updateProgress({
+            step: 'detecting',
+            message: `Found ${initialData.objects.length} items! Processing with AI...`,
+            progress: 50,
+            detectedObjects: initialData.objects.map((obj: any) => ({
+              ...obj,
+              status: 'waiting'
+            })),
+            room: initialData.room,
+            totalValue: initialData.total_estimated_value_usd
+          });
 
-        // Transform the analysis data to match the expected format
-        const recognitionData = {
-          objects: data.objects.map((obj: any) => ({
-            name: obj.name,
-            confidence: obj.confidence || 0.9,
-            category: obj.category || inferCategory(obj.name),
-            description: obj.description || '',
-            estimated_cost_usd: obj.estimated_cost_usd,
-            imageUrl: obj.imageUrl,
-            originalCropImageUrl: obj.originalCropImageUrl,
-            originalFullImageUrl: obj.originalFullImageUrl
-          })),
-          room: data.room,
-          suggestedName: data.objects[0]?.name || '',
-          suggestedCategory: data.objects[0]?.category || inferCategory(data.objects[0]?.name || ''),
-          estimatedValue: data.total_estimated_value_usd
-        };
+          // Start polling for background processing updates
+          await pollForProcessingUpdates(initialData.processing_id, imageData);
+        } else {
+          // Fallback for old format
+          handleLegacyResponse(initialData, imageData);
+        }
 
-        // Go directly to the next screen
-        onCapture(imageData, recognitionData);
-        setIsProcessing(false);
       } catch (error) {
         console.error('Recognition failed:', error);
         if (error instanceof Error) {
@@ -208,6 +179,161 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
       setError('Failed to process image. Please try again.');
       setIsProcessing(false);
     }
+  };
+
+  // Poll for background processing updates
+  const pollForProcessingUpdates = async (processingId: string, imageData: string) => {
+    const maxAttempts = 60; // 5 minutes with 5-second intervals
+    let attempts = 0;
+    let completedItems: any[] = [];
+    let hasStartedStreaming = false;
+
+    const poll = async () => {
+      try {
+        const response = await fetch(`${env.API_URL}/api/processing-status/${processingId}`);
+        if (!response.ok) {
+          throw new Error('Failed to get processing status');
+        }
+
+        const statusData = await response.json();
+
+        // Update progress with current status
+        const progressPercentage = Math.min(90, 50 + (statusData.completedCount / statusData.totalCount) * 40);
+
+        updateProgress({
+          step: statusData.status === 'complete' ? 'complete' : 'processing',
+          message: statusData.status === 'complete'
+            ? 'Perfect! Your items are ready to add.'
+            : `Processing ${statusData.completedCount}/${statusData.totalCount} items...`,
+          progress: progressPercentage,
+          detectedObjects: statusData.objects.map((obj: any) => ({
+            ...obj,
+            status: obj.status === 'complete' ? 'complete' :
+              obj.status === 'processing' ? 'processing' :
+                obj.status === 'error' ? 'error' :
+                  obj.status === 'no_detection' ? 'no_detection' : 'waiting'
+          })),
+          room: progress.room,
+          totalValue: progress.totalValue
+        });
+
+        // Check if any new items are ready for review
+        const newlyCompleted = statusData.objects.filter((obj: any, index: number) =>
+          (obj.status === 'complete' || obj.status === 'no_detection') &&
+          !completedItems.includes(index)
+        );
+
+        // Add newly completed items to our list
+        newlyCompleted.forEach((obj: any, index: number) => {
+          const objIndex = statusData.objects.indexOf(obj);
+          if (!completedItems.includes(objIndex)) {
+            completedItems.push(objIndex);
+          }
+        });
+
+        // If this is the first item ready and we haven't started streaming yet, start now!
+        if (completedItems.length >= 1 && !hasStartedStreaming) {
+          hasStartedStreaming = true;
+          const recognitionData = {
+            objects: statusData.objects.map((obj: any) => ({
+              name: obj.name,
+              confidence: obj.confidence || 0.9,
+              category: obj.category || inferCategory(obj.name),
+              description: obj.description || '',
+              estimated_cost_usd: obj.estimated_cost_usd,
+              imageUrl: obj.imageUrl,
+              originalCropImageUrl: obj.originalCropImageUrl,
+              originalFullImageUrl: obj.originalFullImageUrl,
+              status: obj.status,
+              ready: obj.status === 'complete' || obj.status === 'no_detection'
+            })),
+            room: progress.room,
+            suggestedName: statusData.objects[0]?.name || '',
+            suggestedCategory: statusData.objects[0]?.category || inferCategory(statusData.objects[0]?.name || ''),
+            estimatedValue: progress.totalValue,
+            isStreaming: true, // Flag to indicate this is streaming mode
+            processingId: processingId // Pass the processing ID for continued polling
+          };
+
+          // Start the modal with streaming data
+          onCapture(imageData, recognitionData);
+          // Don't return here - continue polling for updates
+        }
+
+        if (statusData.status === 'complete') {
+          // All processing is done
+          const recognitionData = {
+            objects: statusData.objects.map((obj: any) => ({
+              name: obj.name,
+              confidence: obj.confidence || 0.9,
+              category: obj.category || inferCategory(obj.name),
+              description: obj.description || '',
+              estimated_cost_usd: obj.estimated_cost_usd,
+              imageUrl: obj.imageUrl,
+              originalCropImageUrl: obj.originalCropImageUrl,
+              originalFullImageUrl: obj.originalFullImageUrl,
+              status: obj.status
+            })).filter((obj: any) => obj.status === 'complete'), // Only pass successfully processed items
+            room: progress.room,
+            suggestedName: statusData.objects[0]?.name || '',
+            suggestedCategory: statusData.objects[0]?.category || inferCategory(statusData.objects[0]?.name || ''),
+            estimatedValue: progress.totalValue
+          };
+
+          // Go to the next screen
+          onCapture(imageData, recognitionData);
+          setIsProcessing(false);
+          return;
+        }
+
+        attempts++;
+        if (attempts < maxAttempts) {
+          setTimeout(poll, 1000); // Poll every 1 second for faster first item
+        } else {
+          throw new Error('Processing timeout');
+        }
+
+      } catch (error) {
+        console.error('Error polling for updates:', error);
+        setError('Processing timed out. Please try again.');
+        setIsProcessing(false);
+      }
+    };
+
+    // Start polling
+    setTimeout(poll, 2000); // Wait 2 seconds before first poll
+  };
+
+  // Handle legacy response format (fallback)
+  const handleLegacyResponse = (data: any, imageData: string) => {
+    updateProgress({
+      step: 'complete',
+      message: 'Perfect! Your items are ready to add.',
+      progress: 100,
+      detectedObjects: data.objects.map((obj: any) => ({ ...obj, status: 'complete' })),
+      room: data.room,
+      totalValue: data.total_estimated_value_usd
+    });
+
+    const recognitionData = {
+      objects: data.objects.map((obj: any) => ({
+        name: obj.name,
+        confidence: obj.confidence || 0.9,
+        category: obj.category || inferCategory(obj.name),
+        description: obj.description || '',
+        estimated_cost_usd: obj.estimated_cost_usd,
+        imageUrl: obj.imageUrl,
+        originalCropImageUrl: obj.originalCropImageUrl,
+        originalFullImageUrl: obj.originalFullImageUrl
+      })),
+      room: data.room,
+      suggestedName: data.objects[0]?.name || '',
+      suggestedCategory: data.objects[0]?.category || inferCategory(data.objects[0]?.name || ''),
+      estimatedValue: data.total_estimated_value_usd
+    };
+
+    onCapture(imageData, recognitionData);
+    setIsProcessing(false);
   };
 
   // Helper function to infer category from item name
@@ -263,8 +389,6 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
       default: return 'border-gray-200 bg-gray-50';
     }
   };
-
-
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center">
@@ -329,8 +453,6 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
                     {progress.message}
                   </p>
                 </div>
-
-
 
                 {/* Room and Total Value */}
                 {progress.room && progress.totalValue && (
@@ -412,8 +534,6 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
                   </div>
                 )}
 
-
-
                 {/* Original Image Display - Moved to bottom */}
                 {progress.originalFullImageUrl && (
                   <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-200">
@@ -439,7 +559,12 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
             type="file"
             accept="image/*"
             capture="environment"
-            onChange={handleFileChange}
+            onChange={(e) => {
+              if (e.target.files && e.target.files.length > 0) {
+                const file = e.target.files[0];
+                fixImageOrientation(file).then((imageData) => handleFileChange(file, imageData));
+              }
+            }}
             className="hidden"
           />
         </div>
