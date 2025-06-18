@@ -180,7 +180,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
 
     const pollForUpdates = async () => {
       try {
-        const response = await fetch(`http://localhost:3001/api/processing-status/${processingId}`);
+        const response = await fetch(`${env.API_URL}/api/processing-status/${processingId}`);
         if (!response.ok) return;
 
         const data = await response.json();
