@@ -1,5 +1,7 @@
 # Streaming Inventory Processing - User Experience Improvement
 
+Update.
+
 ## Before (Blocking Experience)
 ```
 User takes photo
