@@ -198,7 +198,7 @@ function App() {
             Tori
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-3">Welcome to Tori</h1>
-          <p className="text-gray-600 mb-8">Your AI-powered home inventory assistant</p>
+          <p className="text-gray-600 mb-8">Your AI-powered home inventory</p>
           <button
             onClick={() => setShowAuthModal(true)}
             className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-8 py-4 rounded-full font-bold hover:shadow-xl hover:shadow-indigo-500/25 transition-all duration-300 hover:scale-105"
