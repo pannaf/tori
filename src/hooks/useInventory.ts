@@ -61,7 +61,7 @@ export const useInventory = (user: User | null = null, authLoading: boolean = fa
   // Pagination state
   const [pagination, setPagination] = useState<PaginationState>({
     currentPage: 0,
-    itemsPerPage: 20,
+    itemsPerPage: 8, // Reduced from 20 to 8 for better performance with images
     totalCount: 0,
     hasMore: true
   });
@@ -150,10 +150,9 @@ export const useInventory = (user: User | null = null, authLoading: boolean = fa
         return;
       }
 
-      // Build query - skip image loading in development to save on Supabase egress
-      const selectFields = env.IS_DEVELOPMENT
-        ? 'id, name, category, room, description, condition, estimated_value, tags, created_at'
-        : 'id, name, category, room, description, condition, estimated_value, tags, created_at, crop_image_data';
+      // Build query - fetch images for smaller result sets (8 items per page)
+      // This should be safe with the reduced page size
+      const selectFields = 'id, name, category, room, description, condition, estimated_value, tags, created_at, crop_image_data';
 
       let query = supabase
         .from('inventory_items')
@@ -180,13 +179,14 @@ export const useInventory = (user: User | null = null, authLoading: boolean = fa
         if (!append) setItems([]);
       } else {
         // Transform Supabase data to match our interface
+        // With reduced page size (8 items), we can safely show real images
         const transformedItems = data.map((item: any) => ({
           id: item.id,
           name: item.name,
           category: item.category,
           room: item.room,
           description: item.description || '',
-          imageUrl: env.IS_DEVELOPMENT ? PLACEHOLDER_IMAGE : item.crop_image_data,
+          imageUrl: item.crop_image_data || PLACEHOLDER_IMAGE,
           dateAdded: item.created_at,
           tags: item.tags || [],
           condition: item.condition || 'good',
@@ -240,10 +240,8 @@ export const useInventory = (user: User | null = null, authLoading: boolean = fa
   // Get item details with full image data (only when needed)
   const getItemDetails = async (itemId: string): Promise<InventoryItem | null> => {
     try {
-      // Skip image loading in development to save on Supabase egress
-      const selectFields = env.IS_DEVELOPMENT
-        ? 'id, name, category, room, description, condition, estimated_value, tags, created_at'
-        : '*';
+      // For single item details, we can safely fetch image data since it's only one item
+      const selectFields = '*';
 
       const { data, error } = await supabase
         .from('inventory_items')
@@ -263,9 +261,9 @@ export const useInventory = (user: User | null = null, authLoading: boolean = fa
         category: (data as any).category,
         room: (data as any).room,
         description: (data as any).description || '',
-        imageUrl: env.IS_DEVELOPMENT ? PLACEHOLDER_IMAGE : ((data as any).crop_image_data || (data as any).image_data),
-        originalCropImageUrl: env.IS_DEVELOPMENT ? undefined : (data as any).original_crop_image_url,
-        originalFullImageUrl: env.IS_DEVELOPMENT ? undefined : (data as any).original_full_image_url,
+        imageUrl: (data as any).crop_image_data || (data as any).image_data || PLACEHOLDER_IMAGE,
+        originalCropImageUrl: (data as any).original_crop_image_url,
+        originalFullImageUrl: (data as any).original_full_image_url,
         dateAdded: (data as any).created_at,
         tags: (data as any).tags || [],
         condition: (data as any).condition || 'good',
@@ -454,17 +452,15 @@ export const useInventory = (user: User | null = null, authLoading: boolean = fa
         ];
       }
 
-      // Skip image loading in development to save on Supabase egress
-      const selectFields = env.IS_DEVELOPMENT
-        ? 'id, name, category, room, description, condition, estimated_value, tags, created_at'
-        : 'id, name, category, room, description, condition, estimated_value, tags, created_at, crop_image_data';
+      // Fetch recent items with images - limited to 4 items for performance
+      const selectFields = 'id, name, category, room, description, condition, estimated_value, tags, created_at, crop_image_data';
 
       const { data, error } = await supabase
         .from('inventory_items')
         .select(selectFields)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
-        .limit(6);
+        .limit(4); // Reduced from 6 to 4 for better performance
 
       if (error) {
         console.error('Error loading recent items:', error);
@@ -477,7 +473,7 @@ export const useInventory = (user: User | null = null, authLoading: boolean = fa
         category: item.category,
         room: item.room,
         description: item.description || '',
-        imageUrl: env.IS_DEVELOPMENT ? PLACEHOLDER_IMAGE : item.crop_image_data,
+        imageUrl: item.crop_image_data || PLACEHOLDER_IMAGE, // Show real images for recent items
         dateAdded: item.created_at,
         tags: item.tags || [],
         condition: item.condition || 'good',
@@ -525,10 +521,8 @@ export const useInventory = (user: User | null = null, authLoading: boolean = fa
         ];
       }
 
-      // Skip image loading in development to save on Supabase egress
-      const selectFields = env.IS_DEVELOPMENT
-        ? 'id, name, category, room, description, condition, estimated_value, tags, created_at'
-        : 'id, name, category, room, description, condition, estimated_value, tags, created_at, crop_image_data';
+      // Exclude large image data from maintenance query to prevent timeouts
+      const selectFields = 'id, name, category, room, description, condition, estimated_value, tags, created_at';
 
       const { data, error } = await supabase
         .from('inventory_items')
@@ -547,7 +541,7 @@ export const useInventory = (user: User | null = null, authLoading: boolean = fa
         category: item.category,
         room: item.room,
         description: item.description || '',
-        imageUrl: env.IS_DEVELOPMENT ? PLACEHOLDER_IMAGE : item.crop_image_data,
+        imageUrl: PLACEHOLDER_IMAGE, // Always use placeholder in list views
         dateAdded: item.created_at,
         tags: item.tags || [],
         condition: item.condition || 'good',
