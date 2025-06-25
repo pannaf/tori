@@ -669,8 +669,8 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
             : `Found ${statusData.totalCount} items! Processing with AI...`,
           progress: progressPercentage,
           detectedObjects: currentObjects,
-          room: aiProgress.room,
-          totalValue: aiProgress.totalValue
+          room: statusData.room || aiProgress.room,
+          totalValue: statusData.totalValue || aiProgress.totalValue
         });
 
         // Check for newly completed items

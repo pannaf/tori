@@ -59,6 +59,8 @@ const processingSessions = new Map<string, {
     objects: any[];
     completedCount: number;
     totalCount: number;
+    room?: string;
+    totalValue?: number;
     error?: string;
 }>();
 
@@ -216,7 +218,7 @@ router.post('/analyze-image', upload.single('image'), async (req, res) => {
             fs.copyFileSync(req.file.path, tempImagePath);
             console.log(`Copied image to temp location: ${tempImagePath}`);
 
-            processObjectsInBackground(tempImagePath, objectsToProcess, originalFullImageUrl, immediateResponse.processing_id)
+            processObjectsInBackground(tempImagePath, objectsToProcess, originalFullImageUrl, immediateResponse.processing_id, result.room, result.total_estimated_value_usd)
                 .catch(error => {
                     console.error('Background processing error:', error);
                     // Clean up temp file on error
@@ -246,7 +248,9 @@ async function processObjectsInBackground(
     imagePath: string,
     objects: any[],
     originalFullImageUrl: string,
-    processingId: string
+    processingId: string,
+    room?: string,
+    totalValue?: number
 ) {
     console.log(`Starting background processing for session ${processingId} (PARALLEL mode)`);
     console.log(`Image file exists: ${fs.existsSync(imagePath)}, path: ${imagePath}`);
@@ -256,7 +260,9 @@ async function processObjectsInBackground(
         status: 'processing',
         objects: objects.map(obj => ({ ...obj, status: 'pending' })),
         completedCount: 0,
-        totalCount: objects.length
+        totalCount: objects.length,
+        room: room,
+        totalValue: totalValue
     });
 
     // Check if file exists before starting
