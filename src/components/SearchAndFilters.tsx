@@ -12,6 +12,7 @@ interface SearchAndFiltersProps {
   rooms: Room[];
   categories: Category[];
   onSearchSubmit?: (query: string) => void;
+  onClearFilters?: () => void;
 }
 
 export const SearchAndFilters: React.FC<SearchAndFiltersProps> = ({
@@ -24,11 +25,17 @@ export const SearchAndFilters: React.FC<SearchAndFiltersProps> = ({
   rooms,
   categories,
   onSearchSubmit,
+  onClearFilters,
 }) => {
   const clearFilters = () => {
-    onSearchChange('');
-    onRoomChange('');
-    onCategoryChange('');
+    if (onClearFilters) {
+      onClearFilters();
+    } else {
+      // Fallback to individual calls if onClearFilters not provided
+      onSearchChange('');
+      onRoomChange('');
+      onCategoryChange('');
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {

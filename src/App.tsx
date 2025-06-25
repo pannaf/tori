@@ -144,6 +144,22 @@ function App() {
     setSearchLoading(false);
   }, [filterItems, selectedRoom, selectedCategory]);
 
+  // Clear all filters
+  const handleClearFilters = useCallback(() => {
+    setSearchQuery('');
+    setSelectedRoom('');
+    setSelectedCategory('');
+
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    setSearchLoading(true);
+    const filtered = filterItems('', '', '');
+    setFilteredItems(filtered);
+    setSearchLoading(false);
+  }, [filterItems]);
+
   // Initialize filtered items when allItems changes
   React.useEffect(() => {
     if (allItems.length > 0) {
@@ -608,8 +624,9 @@ function App() {
               selectedCategory={selectedCategory}
               onCategoryChange={(category) => handleSearch(searchQuery, selectedRoom, category)}
               onSearchSubmit={handleSearchSubmit}
-              rooms={defaultRooms}
-              categories={defaultCategories}
+              onClearFilters={handleClearFilters}
+              rooms={rooms}
+              categories={categories}
             />
 
             {/* Results area with localized loading */}
