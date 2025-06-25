@@ -115,7 +115,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
     room: '',
     description: '',
     estimatedValue: '',
-    condition: 'good' as 'excellent' | 'good' | 'fair' | 'poor',
+    condition: '' as '' | 'excellent' | 'good' | 'fair' | 'poor',
     tags: [] as string[],
     imageUrl: ''
   });
@@ -153,6 +153,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
   });
   const aiFileInputRef = useRef<HTMLInputElement>(null);
   const pollingCleanupRef = useRef<(() => void) | null>(null);
+  const maintenanceRef = useRef<HTMLDivElement>(null);
 
   const { createMaintenanceSchedule } = useMaintenanceDB(user);
 
@@ -306,7 +307,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
       room: '',
       description: '',
       estimatedValue: '',
-      condition: 'good',
+      condition: '',
       tags: [],
       imageUrl: ''
     });
@@ -1063,6 +1064,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
       originalCropImageUrl: currentObject?.originalCropImageUrl,
       originalFullImageUrl: currentObject?.originalFullImageUrl,
       estimatedValue: formData.estimatedValue ? parseFloat(formData.estimatedValue) : undefined,
+      condition: formData.condition || 'good' as 'excellent' | 'good' | 'fair' | 'poor',
       tags: Array.isArray(formData.tags) ? formData.tags : []
     };
 
@@ -1104,7 +1106,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
     <>
       <style>{animations}</style>
       <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-50">
-        <div className="bg-white w-full sm:max-w-lg sm:w-full sm:rounded-3xl rounded-t-3xl max-h-[90vh] flex flex-col shadow-2xl safe-area-inset overflow-hidden">
+        <div className="bg-white w-full sm:max-w-lg sm:w-full sm:rounded-3xl rounded-t-3xl max-h-[85vh] flex flex-col shadow-2xl safe-area-inset overflow-hidden">
           {/* Compact Header */}
           <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-white rounded-t-3xl">
             <div className="flex items-center gap-3">
@@ -1339,91 +1341,67 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
                 </div>
 
                 {/* Essential Fields Only */}
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {/* Name */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Item Name *
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className={`w-full px-4 py-3 border rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors text-base ${aiDetected ? 'border-indigo-300 bg-indigo-50' : 'border-gray-300'}`}
-                      placeholder="e.g., MacBook Pro, Coffee Mug"
-                      required
-                    />
-                  </div>
+                  <input
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className={`w-full px-4 py-3 border rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors text-base ${aiDetected ? 'border-indigo-300 bg-indigo-50' : 'border-gray-300'}`}
+                    placeholder="Item Name"
+                    required
+                  />
 
                   {/* Category & Room in a row */}
                   <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Category *
-                      </label>
-                      <select
-                        value={formData.category}
-                        onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                        className={`w-full px-3 py-3 border rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors appearance-none bg-white text-base ${aiDetected ? 'border-indigo-300 bg-indigo-50' : 'border-gray-300'}`}
-                        required
-                      >
-                        <option value="">Select category</option>
-                        {categories.map((category) => (
-                          <option key={category.id} value={category.name}>{category.name}</option>
-                        ))}
-                      </select>
-                    </div>
+                    <select
+                      value={formData.category}
+                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                      className={`w-full px-3 py-3 border rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors appearance-none bg-white text-base ${aiDetected ? 'border-indigo-300 bg-indigo-50' : 'border-gray-300'} ${!formData.category ? 'text-gray-400' : 'text-gray-900'}`}
+                      required
+                    >
+                      <option value="" disabled className="text-gray-400">Category</option>
+                      {categories.map((category) => (
+                        <option key={category.id} value={category.name} className="text-gray-900">{category.name}</option>
+                      ))}
+                    </select>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Location *
-                      </label>
-                      <select
-                        value={formData.room}
-                        onChange={(e) => setFormData({ ...formData, room: e.target.value })}
-                        className={`w-full px-3 py-3 border rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors appearance-none bg-white text-base ${aiDetected ? 'border-indigo-300 bg-indigo-50' : 'border-gray-300'}`}
-                        required
-                      >
-                        <option value="">Select room</option>
-                        {rooms.map((room) => (
-                          <option key={room.id} value={room.name}>{room.name}</option>
-                        ))}
-                      </select>
-                    </div>
+                    <select
+                      value={formData.room}
+                      onChange={(e) => setFormData({ ...formData, room: e.target.value })}
+                      className={`w-full px-3 py-3 border rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors appearance-none bg-white text-base ${aiDetected ? 'border-indigo-300 bg-indigo-50' : 'border-gray-300'} ${!formData.room ? 'text-gray-400' : 'text-gray-900'}`}
+                      required
+                    >
+                      <option value="" disabled className="text-gray-400">Location</option>
+                      {rooms.map((room) => (
+                        <option key={room.id} value={room.name} className="text-gray-900">{room.name}</option>
+                      ))}
+                    </select>
                   </div>
 
                   {/* Value & Condition in a row */}
                   <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Estimated Value
-                      </label>
-                      <input
-                        type="number"
-                        value={formData.estimatedValue}
-                        onChange={(e) => setFormData({ ...formData, estimatedValue: e.target.value })}
-                        className={`w-full px-3 py-3 border rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors text-base ${aiDetected ? 'border-indigo-300 bg-indigo-50' : 'border-gray-300'}`}
-                        placeholder="0.00"
-                        step="0.01"
-                        min="0"
-                      />
-                    </div>
+                    <input
+                      type="number"
+                      value={formData.estimatedValue}
+                      onChange={(e) => setFormData({ ...formData, estimatedValue: e.target.value })}
+                      className={`w-full px-3 py-3 border rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors text-base ${aiDetected ? 'border-indigo-300 bg-indigo-50' : 'border-gray-300'}`}
+                      placeholder="Estimated Value"
+                      step="0.01"
+                      min="0"
+                    />
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Condition
-                      </label>
-                      <select
-                        value={formData.condition}
-                        onChange={(e) => setFormData({ ...formData, condition: e.target.value as any })}
-                        className={`w-full px-3 py-3 border rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors appearance-none text-base ${aiDetected ? 'border-indigo-300 bg-indigo-50' : 'border-gray-300 bg-white'}`}
-                      >
-                        <option value="excellent">Excellent</option>
-                        <option value="good">Good</option>
-                        <option value="fair">Fair</option>
-                        <option value="poor">Poor</option>
-                      </select>
-                    </div>
+                    <select
+                      value={formData.condition}
+                      onChange={(e) => setFormData({ ...formData, condition: e.target.value as any })}
+                      className={`w-full px-3 py-3 border rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors appearance-none text-base ${aiDetected ? 'border-indigo-300 bg-indigo-50' : 'border-gray-300 bg-white'} ${!formData.condition ? 'text-gray-400' : 'text-gray-900'}`}
+                    >
+                      <option value="" disabled className="text-gray-400">Condition</option>
+                      <option value="excellent" className="text-gray-900">Excellent</option>
+                      <option value="good" className="text-gray-900">Good</option>
+                      <option value="fair" className="text-gray-900">Fair</option>
+                      <option value="poor" className="text-gray-900">Poor</option>
+                    </select>
                   </div>
 
                   {/* Description - Optional, collapsible */}
@@ -1436,9 +1414,161 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                       className={`w-full mt-2 px-3 py-3 border rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors resize-none text-base ${aiDetected ? 'border-indigo-300 bg-indigo-50' : 'border-gray-300'}`}
                       rows={2}
-                      placeholder="Any details you want to remember..."
+                      placeholder="Description (optional)"
                     />
                   </details>
+
+                  {/* Maintenance Schedule - Smooth Toggle */}
+                  <div ref={maintenanceRef} className="bg-gradient-to-r from-orange-50 to-red-50 rounded-2xl p-4 border border-orange-200">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl flex items-center justify-center">
+                          <Wrench size={16} className="text-white" />
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-gray-900 text-sm">Maintenance Care</h4>
+                          <p className="text-xs text-gray-600">Keep it in perfect condition</p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMaintenanceEnabled(!maintenanceEnabled);
+                          // Scroll to show bottom of maintenance section when enabled
+                          if (!maintenanceEnabled) {
+                            setTimeout(() => {
+                              maintenanceRef.current?.scrollIntoView({
+                                behavior: 'smooth',
+                                block: 'end'
+                              });
+                            }, 600); // Wait for expand animation to complete
+                          }
+                        }}
+                        className={`relative w-12 h-6 rounded-full transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-orange-500/20 ${maintenanceEnabled
+                          ? 'bg-gradient-to-r from-orange-500 to-red-500'
+                          : 'bg-gray-300'
+                          }`}
+                      >
+                        <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all duration-300 ${maintenanceEnabled ? 'left-6' : 'left-0.5'
+                          }`} />
+                      </button>
+                    </div>
+
+                    {/* Maintenance Fields - Smooth Expand */}
+                    <div className={`transition-all duration-500 ease-in-out overflow-hidden ${maintenanceEnabled
+                      ? 'max-h-[500px] opacity-100'
+                      : 'max-h-0 opacity-0'
+                      }`}>
+                      <div className="space-y-3 pt-1">
+                        {/* Quick Suggestions */}
+                        {formData.category && maintenanceSuggestions[formData.category] && (
+                          <div className="space-y-2">
+                            <p className="text-xs font-medium text-gray-700 flex items-center gap-1">
+                              <Sparkles size={12} className="text-orange-500" />
+                              Suggested for {formData.category}
+                            </p>
+                            <div className="flex flex-wrap gap-2 pl-2">
+                              {maintenanceSuggestions[formData.category].map((suggestion, index) => (
+                                <button
+                                  key={index}
+                                  type="button"
+                                  onClick={() => {
+                                    setMaintenanceData(suggestion);
+                                  }}
+                                  className="text-xs px-3 py-1.5 bg-white border border-orange-200 rounded-full hover:bg-orange-50 hover:border-orange-300 transition-all duration-200 hover:scale-105 flex items-center gap-1 max-w-full flex-shrink min-w-0"
+                                >
+                                  <Clock size={10} className="text-orange-500 flex-shrink-0" />
+                                  <span className="truncate">{suggestion.title}</span>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Maintenance Title */}
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                            Task Name
+                          </label>
+                          <input
+                            type="text"
+                            value={maintenanceData.title}
+                            onChange={(e) => setMaintenanceData({ ...maintenanceData, title: e.target.value })}
+                            className="w-full px-3 py-2.5 border border-orange-200 rounded-full focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors text-sm bg-white/70 backdrop-blur-sm"
+                            placeholder="Clean and dust, Oil change, Filter replacement..."
+                          />
+                        </div>
+
+                        {/* Interval */}
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                            Repeat Every
+                          </label>
+                          <div className="grid grid-cols-2 gap-2">
+                            <input
+                              type="number"
+                              value={maintenanceData.intervalValue}
+                              onChange={(e) => setMaintenanceData({ ...maintenanceData, intervalValue: parseInt(e.target.value) || 1 })}
+                              className="px-3 py-2.5 border border-orange-200 rounded-full focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors text-sm bg-white/70 backdrop-blur-sm"
+                              min="1"
+                              placeholder="How many?"
+                            />
+                            <select
+                              value={maintenanceData.intervalType}
+                              onChange={(e) => setMaintenanceData({ ...maintenanceData, intervalType: e.target.value as any })}
+                              className="px-3 py-2.5 border border-orange-200 rounded-full focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors text-sm bg-white/70 backdrop-blur-sm appearance-none"
+                            >
+                              <option value="days">Days</option>
+                              <option value="weeks">Weeks</option>
+                              <option value="months">Months</option>
+                              <option value="years">Years</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        {/* Priority */}
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                            Priority Level
+                          </label>
+                          <div className="flex gap-2">
+                            {(['low', 'medium', 'high', 'urgent'] as const).map((priority) => (
+                              <button
+                                key={priority}
+                                type="button"
+                                onClick={() => setMaintenanceData({ ...maintenanceData, priority })}
+                                className={`flex-1 py-2 px-3 rounded-full text-xs font-medium transition-all duration-200 border ${maintenanceData.priority === priority
+                                  ? priority === 'low' ? 'bg-green-500 text-white border-green-500 shadow-lg shadow-green-500/25' :
+                                    priority === 'medium' ? 'bg-yellow-500 text-white border-yellow-500 shadow-lg shadow-yellow-500/25' :
+                                      priority === 'high' ? 'bg-orange-500 text-white border-orange-500 shadow-lg shadow-orange-500/25' :
+                                        'bg-red-500 text-white border-red-500 shadow-lg shadow-red-500/25'
+                                  : 'bg-white/70 text-gray-600 border-orange-200 hover:border-orange-300 hover:bg-white'
+                                  }`}
+                              >
+                                {priority.charAt(0).toUpperCase() + priority.slice(1)}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Description */}
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                            Instructions (Optional)
+                          </label>
+                          <textarea
+                            value={maintenanceData.description}
+                            onChange={(e) => setMaintenanceData({ ...maintenanceData, description: e.target.value })}
+                            className="w-full px-3 py-2.5 border border-orange-200 rounded-2xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors text-sm bg-white/70 backdrop-blur-sm resize-none"
+                            rows={2}
+                            placeholder="Any specific steps or notes for this maintenance task..."
+                          />
+                        </div>
+
+
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </form>
             )}
