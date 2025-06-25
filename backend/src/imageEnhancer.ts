@@ -5,6 +5,42 @@ import os from 'os';
 import sharp from 'sharp';
 import { uploadImageToSupabase } from './storageUtils.js';
 
+// Fallback function when OpenAI enhancement fails
+async function handleEnhancementFallback(
+    imagePath: string,
+    fileName?: string,
+    maxWidth: number = 512,
+    maxHeight: number = 512
+): Promise<string> {
+    try {
+        console.log('🔄 Using fallback: processing original image without enhancement...');
+
+        // Read and resize the original image
+        const imageBuffer = fs.readFileSync(imagePath);
+
+        const resizedImageBuffer = await sharp(imageBuffer)
+            .resize(maxWidth, maxHeight, {
+                fit: 'inside',
+                withoutEnlargement: true
+            })
+            .jpeg({ quality: 85 })
+            .toBuffer();
+
+        // Generate filename for fallback
+        const fallbackFileName = fileName ? `fallback_${fileName}` : `fallback_${Date.now()}.jpg`;
+
+        // Upload to Supabase
+        const supabaseUrl = await uploadImageToSupabase(resizedImageBuffer, fallbackFileName);
+
+        console.log(`✅ Fallback successful: ${supabaseUrl}`);
+        return supabaseUrl;
+
+    } catch (fallbackError) {
+        console.error('❌ Fallback also failed:', fallbackError);
+        throw new Error('Both enhancement and fallback processing failed');
+    }
+}
+
 export async function enhanceImageForPortrait(
     imagePath: string,
     fileName?: string,
@@ -53,23 +89,68 @@ export async function enhanceImageForPortrait(
         formData.append('size', 'auto');
         formData.append('background', 'auto');
 
-        // Make the API request
-        const response = await fetch('https://api.openai.com/v1/images/edits', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-            },
-            body: formData
-        });
+        // Make the API request with retry logic
+        let response;
+        let lastError;
+        const maxRetries = 3;
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('OpenAI Image Edit API Error:', {
-                status: response.status,
-                statusText: response.statusText,
-                body: errorText
-            });
-            throw new Error(`OpenAI Image Edit API error: ${response.statusText} (${response.status})`);
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                console.log(`Attempting OpenAI Image Edit API (attempt ${attempt}/${maxRetries})...`);
+
+                response = await fetch('https://api.openai.com/v1/images/edits', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+                    },
+                    body: formData
+                });
+
+                if (response.ok) {
+                    console.log(`✅ OpenAI API succeeded on attempt ${attempt}`);
+                    break; // Success!
+                }
+
+                const errorText = await response.text();
+                lastError = {
+                    status: response.status,
+                    statusText: response.statusText,
+                    body: errorText
+                };
+
+                console.warn(`⚠️ OpenAI API failed on attempt ${attempt}:`, lastError);
+
+                // If it's a server error (5xx), retry. If client error (4xx), don't retry
+                if (response.status >= 400 && response.status < 500) {
+                    console.error('Client error - not retrying:', lastError);
+                    break;
+                }
+
+                // Wait before retrying (exponential backoff)
+                if (attempt < maxRetries) {
+                    const waitTime = Math.pow(2, attempt) * 1000; // 2s, 4s, 8s
+                    console.log(`Waiting ${waitTime}ms before retry...`);
+                    await new Promise(resolve => setTimeout(resolve, waitTime));
+                }
+
+            } catch (fetchError) {
+                console.warn(`Network error on attempt ${attempt}:`, fetchError);
+                lastError = fetchError;
+
+                if (attempt < maxRetries) {
+                    const waitTime = Math.pow(2, attempt) * 1000;
+                    console.log(`Waiting ${waitTime}ms before retry...`);
+                    await new Promise(resolve => setTimeout(resolve, waitTime));
+                }
+            }
+        }
+
+        if (!response || !response.ok) {
+            console.error('❌ All OpenAI API attempts failed. Falling back to original image.');
+            console.error('Final error:', lastError);
+
+            // Fallback: Use the original image instead of enhanced
+            return await handleEnhancementFallback(imagePath, fileName, maxWidth, maxHeight);
         }
 
         const result = await response.json();

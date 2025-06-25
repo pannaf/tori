@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Camera, X, Zap, AlertCircle, RefreshCw, Sparkles, Package, DollarSign, MapPin, Search, Crop, Wand2, Upload, Brain, Eye, Scissors, Palette } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
 import { env } from '../config/env';
@@ -10,6 +10,42 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const supabase = supabaseUrl && supabaseAnonKey
   ? createClient(supabaseUrl, supabaseAnonKey)
   : null;
+
+// Memory utilities for iPhone SE
+const isLowMemoryDevice = () => {
+  return navigator.userAgent.includes('iPhone') &&
+    (navigator.userAgent.includes('SE') || window.screen.width <= 375);
+};
+
+const requestMemoryCleanup = () => {
+  if (window.gc) {
+    window.gc();
+  }
+  // Force garbage collection by creating/destroying objects
+  const cleanup = new Array(1000).fill(null);
+  cleanup.length = 0;
+};
+
+// Global error handlers to prevent page reloads
+let errorHandlersAdded = false;
+const addGlobalErrorHandlers = () => {
+  if (errorHandlersAdded) return;
+  errorHandlersAdded = true;
+
+  // Prevent unhandled promise rejections from causing reloads
+  window.addEventListener('unhandledrejection', (event) => {
+    console.error('🚨 Unhandled promise rejection:', event.reason);
+    event.preventDefault(); // Prevent reload
+  });
+
+  // Prevent general errors from causing reloads
+  window.addEventListener('error', (event) => {
+    console.error('🚨 Global error:', event.error);
+    event.preventDefault(); // Prevent reload
+  });
+
+  console.log('🛡️ Global error handlers added to prevent reloads');
+};
 
 interface CameraCaptureProps {
   onCapture: (imageData: string, recognitionData: any) => void;
@@ -41,33 +77,84 @@ interface ProgressState {
   originalFullImageUrl?: string;
 }
 
-// Function to fix image orientation using createImageBitmap
+// Function to fix image orientation and compress for memory efficiency
 const fixImageOrientation = async (file: File): Promise<string> => {
   try {
+    // Detect if we're on a low-memory device (like iPhone SE)
+    const isLowMemoryDevice = navigator.userAgent.includes('iPhone') &&
+      (navigator.userAgent.includes('SE') || window.screen.width <= 375);
+
     // Use createImageBitmap with imageOrientation: 'from-image' to auto-correct orientation
     const imageBitmap = await createImageBitmap(file, {
       imageOrientation: 'from-image'
     });
 
-    // Create canvas and draw the correctly oriented image
+    // Calculate compressed dimensions to prevent memory issues
+    const maxDimension = isLowMemoryDevice ? 800 : 1200; // Smaller for iPhone SE
+    const { width, height } = imageBitmap;
+
+    let newWidth = width;
+    let newHeight = height;
+
+    if (width > maxDimension || height > maxDimension) {
+      const ratio = Math.min(maxDimension / width, maxDimension / height);
+      newWidth = Math.round(width * ratio);
+      newHeight = Math.round(height * ratio);
+    }
+
+    // Create canvas with compressed dimensions
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
 
-    canvas.width = imageBitmap.width;
-    canvas.height = imageBitmap.height;
+    canvas.width = newWidth;
+    canvas.height = newHeight;
 
-    ctx?.drawImage(imageBitmap, 0, 0);
+    // Draw the correctly oriented and sized image
+    ctx?.drawImage(imageBitmap, 0, 0, newWidth, newHeight);
 
-    // Clean up the bitmap
+    // Clean up the bitmap immediately
     imageBitmap.close();
 
-    return canvas.toDataURL('image/jpeg', 0.8);
+    // Use higher compression for low-memory devices
+    const quality = isLowMemoryDevice ? 0.7 : 0.85;
+    return canvas.toDataURL('image/jpeg', quality);
   } catch (error) {
-    console.warn('createImageBitmap not supported or failed, falling back to original image');
-    // Fallback: return original image as base64
+    console.warn('createImageBitmap not supported or failed, falling back to compressed original');
+    // Fallback with compression
     return new Promise((resolve) => {
       const reader = new FileReader();
-      reader.onload = (e) => resolve(e.target?.result as string);
+      reader.onload = async (e) => {
+        try {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            // Apply same compression logic for fallback
+            const isLowMemoryDevice = navigator.userAgent.includes('iPhone') &&
+              (navigator.userAgent.includes('SE') || window.screen.width <= 375);
+            const maxDimension = isLowMemoryDevice ? 800 : 1200;
+
+            let { width, height } = img;
+            if (width > maxDimension || height > maxDimension) {
+              const ratio = Math.min(maxDimension / width, maxDimension / height);
+              width = Math.round(width * ratio);
+              height = Math.round(height * ratio);
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            ctx?.drawImage(img, 0, 0, width, height);
+
+            const quality = isLowMemoryDevice ? 0.7 : 0.85;
+            resolve(canvas.toDataURL('image/jpeg', quality));
+          };
+          img.src = e.target?.result as string;
+        } catch (fallbackError) {
+          // Last resort: return original
+          resolve(e.target?.result as string);
+        }
+      };
       reader.readAsDataURL(file);
     });
   }
@@ -82,6 +169,91 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
   });
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const pollingCleanupRef = useRef<(() => void) | null>(null);
+
+  // Add global error handlers on mount
+  useEffect(() => {
+    addGlobalErrorHandlers();
+
+    if (isLowMemoryDevice()) {
+      console.log('📱 Low memory device detected - enabling memory optimizations');
+    }
+
+    let cameraTriggered = false;
+    let photoTaken = false;
+
+    // Auto-trigger camera on mount - open camera immediately
+    const timer = setTimeout(() => {
+      cameraTriggered = true;
+      fileInputRef.current?.click();
+    }, 100);
+
+    // When modal comes back into focus, close it immediately if no photo was taken
+    const handleVisibilityChange = () => {
+      if (!document.hidden && cameraTriggered && !photoTaken && !isProcessing) {
+        // Give mobile browsers more time to process
+        setTimeout(() => {
+          if (!photoTaken && !isProcessing) {
+            console.log('Camera cancelled - returning to AddItemModal');
+            onClose();
+          }
+        }, 500);
+      }
+    };
+
+    const handleWindowFocus = () => {
+      if (cameraTriggered && !photoTaken && !isProcessing) {
+        setTimeout(() => {
+          if (!photoTaken && !isProcessing) {
+            console.log('Camera cancelled via focus - returning to AddItemModal');
+            onClose();
+          }
+        }, 500);
+      }
+    };
+
+    // Mobile-specific: detect when page becomes active again
+    const handlePageShow = () => {
+      if (cameraTriggered && !photoTaken && !isProcessing) {
+        setTimeout(() => {
+          if (!photoTaken && !isProcessing) {
+            console.log('Camera cancelled via pageshow - returning to AddItemModal');
+            onClose();
+          }
+        }, 700); // Even longer timeout for mobile
+      }
+    };
+
+
+
+    // Track when photo is actually taken
+    const handlePhotoTaken = () => {
+      photoTaken = true;
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleWindowFocus);
+    window.addEventListener('pageshow', handlePageShow); // Mobile browsers
+
+    if (fileInputRef.current) {
+      fileInputRef.current.addEventListener('change', handlePhotoTaken);
+    }
+
+    // Cleanup polling on unmount
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleWindowFocus);
+      window.removeEventListener('pageshow', handlePageShow);
+      if (fileInputRef.current) {
+        fileInputRef.current.removeEventListener('change', handlePhotoTaken);
+      }
+      if (pollingCleanupRef.current) {
+        pollingCleanupRef.current();
+        pollingCleanupRef.current = null;
+      }
+    };
+  }, [isProcessing, onClose]);
 
   const updateProgress = (newProgress: Partial<ProgressState>) => {
     setProgress(prev => ({ ...prev, ...newProgress }));
@@ -93,14 +265,23 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
       setIsProcessing(true);
 
       try {
-        // Create form data for the API
+        // Create form data for the API with memory optimization
         const formData = new FormData();
 
         // Convert corrected image back to blob for upload
         const response = await fetch(imageData);
         const blob = await response.blob();
-        const correctedFile = new File([blob], file.name, { type: 'image/jpeg' });
 
+        // Clean up the response immediately to free memory
+        if (response.body) {
+          try {
+            await response.body.cancel();
+          } catch (e) {
+            // ReadableStream might already be consumed, ignore error
+          }
+        }
+
+        const correctedFile = new File([blob], file.name, { type: 'image/jpeg' });
         formData.append('image', correctedFile);
 
         // Add the authenticated user's ID and token
@@ -155,7 +336,8 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
           });
 
           // Start polling for background processing updates
-          await pollForProcessingUpdates(initialData.processing_id, imageData);
+          const cleanup = pollForProcessingUpdates(initialData.processing_id, imageData);
+          pollingCleanupRef.current = cleanup;
         } else {
           // Fallback for old format
           handleLegacyResponse(initialData, imageData);
@@ -181,21 +363,59 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
     }
   };
 
-  // Poll for background processing updates
-  const pollForProcessingUpdates = async (processingId: string, imageData: string) => {
-    const maxAttempts = 60; // 5 minutes with 5-second intervals
+  // Poll for background processing updates with memory optimization
+  const pollForProcessingUpdates = (processingId: string, imageData: string) => {
+    const maxAttempts = isLowMemoryDevice() ? 30 : 60; // Shorter timeout for low memory devices
     let attempts = 0;
-    let completedItems: any[] = [];
+    let completedItems: Set<number> = new Set(); // Use Set for better performance
     let hasStartedStreaming = false;
+    let lastObjectsRef: any[] = []; // Reuse object references to prevent memory accumulation
+    let abortController = new AbortController();
 
     const poll = async () => {
       try {
-        const response = await fetch(`${env.API_URL}/api/processing-status/${processingId}`);
+        // Memory cleanup on low memory devices
+        if (isLowMemoryDevice() && attempts % 5 === 0) {
+          requestMemoryCleanup();
+        }
+
+        const response = await fetch(`${env.API_URL}/api/processing-status/${processingId}`, {
+          signal: abortController.signal
+        });
+
         if (!response.ok) {
           throw new Error('Failed to get processing status');
         }
 
         const statusData = await response.json();
+
+        // Reuse existing object references when possible to prevent memory accumulation
+        const currentObjects = statusData.objects.map((newObj: any, index: number) => {
+          const existingObj = lastObjectsRef[index];
+
+          // Only create new object if status actually changed
+          if (existingObj &&
+            existingObj.status === newObj.status &&
+            existingObj.name === newObj.name) {
+            return existingObj; // Reuse existing object reference
+          }
+
+          // Create new object only when needed, with memory-conscious image handling
+          return {
+            ...newObj,
+            status: newObj.status === 'complete' ? 'complete' :
+              newObj.status === 'processing' ? 'processing' :
+                newObj.status === 'error' ? 'error' :
+                  newObj.status === 'no_detection' ? 'no_detection' : 'waiting',
+            // On low memory devices, don't store multiple image URLs
+            imageUrl: isLowMemoryDevice() ? undefined : newObj.imageUrl,
+            originalCropImageUrl: isLowMemoryDevice() ? undefined : newObj.originalCropImageUrl,
+            originalFullImageUrl: isLowMemoryDevice() ? imageData : newObj.originalFullImageUrl // Use compressed original
+          };
+        });
+
+        // Update reference for next iteration
+        lastObjectsRef = currentObjects;
 
         // Update progress with current status
         const progressPercentage = Math.min(90, 50 + (statusData.completedCount / statusData.totalCount) * 40);
@@ -206,36 +426,26 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
             ? 'Perfect! Your items are ready to add.'
             : `Processing ${statusData.completedCount}/${statusData.totalCount} items...`,
           progress: progressPercentage,
-          detectedObjects: statusData.objects.map((obj: any) => ({
-            ...obj,
-            status: obj.status === 'complete' ? 'complete' :
-              obj.status === 'processing' ? 'processing' :
-                obj.status === 'error' ? 'error' :
-                  obj.status === 'no_detection' ? 'no_detection' : 'waiting'
-          })),
+          detectedObjects: currentObjects,
           room: progress.room,
           totalValue: progress.totalValue
         });
 
-        // Check if any new items are ready for review
-        const newlyCompleted = statusData.objects.filter((obj: any, index: number) =>
-          (obj.status === 'complete' || obj.status === 'no_detection') &&
-          !completedItems.includes(index)
-        );
+        // Check for newly completed items (including errors as "completed" so we can move on)
+        const newlyCompletedIndices = statusData.objects
+          .map((obj: any, index: number) =>
+            ((obj.status === 'complete' || obj.status === 'no_detection' || obj.status === 'error') && !completedItems.has(index)) ? index : -1
+          )
+          .filter((index: number) => index !== -1);
 
-        // Add newly completed items to our list
-        newlyCompleted.forEach((obj: any, index: number) => {
-          const objIndex = statusData.objects.indexOf(obj);
-          if (!completedItems.includes(objIndex)) {
-            completedItems.push(objIndex);
-          }
-        });
+        // Add to completed set
+        newlyCompletedIndices.forEach((index: number) => completedItems.add(index));
 
-        // If this is the first item ready and we haven't started streaming yet, start now!
-        if (completedItems.length >= 1 && !hasStartedStreaming) {
+        // Start streaming when first item is ready
+        if (completedItems.size >= 1 && !hasStartedStreaming) {
           hasStartedStreaming = true;
           const recognitionData = {
-            objects: statusData.objects.map((obj: any) => ({
+            objects: currentObjects.map((obj: any) => ({
               name: obj.name,
               confidence: obj.confidence || 0.9,
               category: obj.category || inferCategory(obj.name),
@@ -243,65 +453,83 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
               estimated_cost_usd: obj.estimated_cost_usd,
               imageUrl: obj.imageUrl,
               originalCropImageUrl: obj.originalCropImageUrl,
-              originalFullImageUrl: obj.originalFullImageUrl,
+              originalFullImageUrl: obj.originalFullImageUrl || imageData,
               status: obj.status,
-              ready: obj.status === 'complete' || obj.status === 'no_detection'
+              ready: obj.status === 'complete' || obj.status === 'no_detection' || obj.status === 'error'
             })),
             room: progress.room,
             suggestedName: statusData.objects[0]?.name || '',
             suggestedCategory: statusData.objects[0]?.category || inferCategory(statusData.objects[0]?.name || ''),
             estimatedValue: progress.totalValue,
-            isStreaming: true, // Flag to indicate this is streaming mode
-            processingId: processingId // Pass the processing ID for continued polling
+            isStreaming: true,
+            processingId: processingId
           };
 
-          // Start the modal with streaming data
           onCapture(imageData, recognitionData);
-          // Don't return here - continue polling for updates
         }
 
+        // Check if complete
         if (statusData.status === 'complete') {
-          // All processing is done
-          const recognitionData = {
-            objects: statusData.objects.map((obj: any) => ({
-              name: obj.name,
-              confidence: obj.confidence || 0.9,
-              category: obj.category || inferCategory(obj.name),
-              description: obj.description || '',
-              estimated_cost_usd: obj.estimated_cost_usd,
-              imageUrl: obj.imageUrl,
-              originalCropImageUrl: obj.originalCropImageUrl,
-              originalFullImageUrl: obj.originalFullImageUrl,
-              status: obj.status
-            })).filter((obj: any) => obj.status === 'complete'), // Only pass successfully processed items
+          abortController.abort(); // Clean up
+
+          const finalRecognitionData = {
+            objects: currentObjects
+              .filter((obj: any) => obj.status === 'complete')
+              .map((obj: any) => ({
+                name: obj.name,
+                confidence: obj.confidence || 0.9,
+                category: obj.category || inferCategory(obj.name),
+                description: obj.description || '',
+                estimated_cost_usd: obj.estimated_cost_usd,
+                imageUrl: obj.imageUrl,
+                originalCropImageUrl: obj.originalCropImageUrl,
+                originalFullImageUrl: obj.originalFullImageUrl || imageData,
+                status: obj.status
+              })),
             room: progress.room,
             suggestedName: statusData.objects[0]?.name || '',
             suggestedCategory: statusData.objects[0]?.category || inferCategory(statusData.objects[0]?.name || ''),
             estimatedValue: progress.totalValue
           };
 
-          // Go to the next screen
-          onCapture(imageData, recognitionData);
+          onCapture(imageData, finalRecognitionData);
           setIsProcessing(false);
           return;
         }
 
         attempts++;
         if (attempts < maxAttempts) {
-          setTimeout(poll, 1000); // Poll every 1 second for faster first item
+          // Adaptive polling interval based on device capability
+          const pollInterval = isLowMemoryDevice() ? 3000 : 1000;
+          setTimeout(poll, pollInterval);
         } else {
+          abortController.abort();
           throw new Error('Processing timeout');
         }
 
       } catch (error) {
+        if (error instanceof Error && error.name === 'AbortError') {
+          console.log('Polling aborted');
+          return;
+        }
+
         console.error('Error polling for updates:', error);
         setError('Processing timed out. Please try again.');
         setIsProcessing(false);
       }
     };
 
-    // Start polling
-    setTimeout(poll, 2000); // Wait 2 seconds before first poll
+    // Return cleanup function immediately, start polling after delay
+    const cleanup = () => {
+      abortController.abort();
+      lastObjectsRef = [];
+      completedItems.clear();
+    };
+
+    // Start polling with initial delay
+    setTimeout(poll, 2000);
+
+    return cleanup;
   };
 
   // Handle legacy response format (fallback)
@@ -431,16 +659,31 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({ onCapture, onClose
             )}
 
             {!error && !isProcessing && (
-              <div className="aspect-square bg-gradient-to-br from-indigo-50 to-purple-50 flex items-center justify-center p-8">
+              <div className="aspect-square bg-gradient-to-br from-indigo-50 to-purple-50 flex items-center justify-center p-6 modal-content-area">
                 <div className="text-center">
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    className="w-24 h-24 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-3xl flex items-center justify-center mb-6 mx-auto hover:shadow-2xl hover:shadow-indigo-500/25 transition-all duration-300 hover:scale-105"
-                  >
-                    <Camera size={36} className="text-white" />
-                  </button>
-                  <h4 className="text-indigo-700 font-bold text-lg mb-2">Take a Photo</h4>
-                  <p className="text-indigo-600 text-sm leading-relaxed">Point at any item and Tori will<br />detect it with AI magic ✨</p>
+                  <div className="w-20 h-20 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-3xl flex items-center justify-center mb-4 mx-auto">
+                    <Camera size={32} className="text-white" />
+                  </div>
+                  <h4 className="text-indigo-700 font-bold text-lg mb-2">Ready to snap?</h4>
+                  <p className="text-indigo-600 text-sm leading-relaxed mb-6">
+                    You sure you don't want to grab<br />an item real quick? ✨
+                  </p>
+
+                  <div className="space-y-3">
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-full font-bold hover:shadow-xl hover:shadow-indigo-500/25 transition-all duration-300 hover:scale-[1.02]"
+                    >
+                      Let's do it! 📸
+                    </button>
+
+                    <button
+                      onClick={onClose}
+                      className="w-full bg-gray-100 text-gray-600 py-3 rounded-full font-medium hover:bg-gray-200 transition-colors"
+                    >
+                      Not right now
+                    </button>
+                  </div>
                 </div>
               </div>
             )}

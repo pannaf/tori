@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Camera, Plus, Check, Zap, Wrench, Calendar, Clock, Package } from 'lucide-react';
+import { X, Camera, Plus, Check, Zap, Wrench, Calendar, Clock, Package, AlertCircle } from 'lucide-react';
 import { Room, Category, InventoryItem } from '../types/inventory';
 import { CameraCapture } from './CameraCapture';
 import { env } from '../config/env';
@@ -178,6 +178,11 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
   useEffect(() => {
     if (!processingId || !isStreaming) return;
 
+    // Skip real API calls for mock processing ID
+    if (processingId === 'mock-processing-id') {
+      return;
+    }
+
     const pollForUpdates = async () => {
       try {
         const response = await fetch(`${env.API_URL}/api/processing-status/${processingId}`);
@@ -196,10 +201,29 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
             originalCropImageUrl: obj.originalCropImageUrl,
             originalFullImageUrl: obj.originalFullImageUrl,
             status: obj.status,
-            ready: obj.status === 'complete' || obj.status === 'no_detection'
+            ready: obj.status === 'complete' || obj.status === 'no_detection' || obj.status === 'error'
           }));
 
           setItemQueue(updatedObjects);
+
+          // Check if we're in waiting state and a new item became ready
+          const currentItem = itemQueue[currentQueueIndex];
+          const updatedCurrentItem = updatedObjects[currentQueueIndex];
+
+          // If we're showing empty form (waiting) and current item is now ready, load it
+          if (!formData.name && updatedCurrentItem && updatedCurrentItem.ready &&
+            !completedItems.includes(updatedCurrentItem.name)) {
+            setFormData(prev => ({
+              ...prev,
+              imageUrl: updatedCurrentItem.imageUrl || imageData,
+              room: findMatchingRoom(detectedRoom) || prev.room,
+              name: updatedCurrentItem.name || '',
+              category: updatedCurrentItem.category || '',
+              description: updatedCurrentItem.description || '',
+              estimatedValue: updatedCurrentItem.estimatedValue?.toString() || '',
+              tags: ['detected', updatedCurrentItem.category?.toLowerCase() || ''].filter(Boolean)
+            }));
+          }
 
           // If all processing is done, stop streaming
           if (data.status === 'complete') {
@@ -232,7 +256,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
         originalCropImageUrl: obj.originalCropImageUrl,
         originalFullImageUrl: obj.originalFullImageUrl,
         status: obj.status,
-        ready: obj.status === 'complete' || obj.status === 'no_detection'
+        ready: obj.status === 'complete' || obj.status === 'no_detection' || obj.status === 'error'
       }));
 
       setItemQueue(processedObjects);
@@ -272,25 +296,159 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
     setShowCamera(false);
   };
 
+  // Debug/Simulation function
+  const simulateStreamingFlow = () => {
+    const mockImageData = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k=";
+
+    // Create mock objects - only first one has details, others are unknown until processed
+    const mockObjects = [
+      {
+        name: "MacBook Pro",
+        category: "Electronics",
+        description: "13-inch laptop computer",
+        estimatedValue: 1200,
+        imageUrl: mockImageData,
+        originalCropImageUrl: mockImageData,
+        originalFullImageUrl: mockImageData,
+        status: "complete",
+        ready: true
+      },
+      {
+        name: "", // Unknown until processed
+        category: "",
+        description: "",
+        estimatedValue: 0,
+        imageUrl: mockImageData,
+        originalCropImageUrl: mockImageData,
+        originalFullImageUrl: mockImageData,
+        status: "processing",
+        ready: false
+      },
+      {
+        name: "", // Unknown until processed
+        category: "",
+        description: "",
+        estimatedValue: 0,
+        imageUrl: mockImageData,
+        originalCropImageUrl: mockImageData,
+        originalFullImageUrl: mockImageData,
+        status: "processing",
+        ready: false
+      },
+      {
+        name: "", // Unknown until processed
+        category: "",
+        description: "",
+        estimatedValue: 0,
+        imageUrl: mockImageData,
+        originalCropImageUrl: mockImageData,
+        originalFullImageUrl: mockImageData,
+        status: "processing",
+        ready: false
+      }
+    ];
+
+    // Items that will be revealed when processing completes
+    const itemsToReveal = [
+      { name: "Coffee Mug", category: "Kitchen", description: "Blue ceramic coffee mug", estimatedValue: 15 },
+      { name: "Wireless Mouse", category: "Electronics", description: "Black wireless computer mouse", estimatedValue: 25 },
+      { name: "Plant Pot", category: "Home & Garden", description: "Small terracotta plant pot", estimatedValue: 8 }
+    ];
+
+    setImageData(mockImageData);
+    setItemQueue(mockObjects);
+    setDetectedObjects(mockObjects);
+    setDetectedRoom('Living Room');
+    setCurrentQueueIndex(0);
+
+    // Set up form with first item
+    const firstItem = mockObjects[0];
+    setFormData(prev => ({
+      ...prev,
+      imageUrl: firstItem.imageUrl,
+      room: findMatchingRoom('Living Room'),
+      name: firstItem.name,
+      category: firstItem.category,
+      description: firstItem.description,
+      estimatedValue: firstItem.estimatedValue?.toString() || '',
+      tags: ['detected', firstItem.category?.toLowerCase() || ''].filter(Boolean)
+    }));
+
+    setAiDetected(true);
+    setIsStreaming(true);
+    setProcessingId('mock-processing-id');
+
+    // Start mock polling that gradually makes items ready
+    let currentIndex = 1; // Start from second item (first is already ready)
+    const mockInterval = setInterval(() => {
+      if (currentIndex >= mockObjects.length) {
+        clearInterval(mockInterval);
+        setIsStreaming(false);
+        setProcessingId(null);
+        return;
+      }
+
+      setItemQueue(prevQueue => {
+        const updatedQueue = [...prevQueue];
+        if (updatedQueue[currentIndex]) {
+          const itemToReveal = itemsToReveal[currentIndex - 1]; // -1 because first item is already complete
+          const isSuccess = Math.random() > 0.2; // 80% success rate
+
+          updatedQueue[currentIndex] = {
+            ...updatedQueue[currentIndex],
+            // Only reveal details if processing succeeds
+            name: isSuccess ? itemToReveal?.name || "Unknown Item" : "Processing Failed",
+            category: isSuccess ? itemToReveal?.category || "Unknown" : "Unknown",
+            description: isSuccess ? itemToReveal?.description || "" : "Image processing failed",
+            estimatedValue: isSuccess ? itemToReveal?.estimatedValue || 0 : 0,
+            status: isSuccess ? 'complete' : 'error',
+            ready: true
+          };
+        }
+        return updatedQueue;
+      });
+
+      currentIndex++;
+    }, 2000); // Make one item ready every 2 seconds
+
+    console.log('🎭 Simulation started! Items will become ready every 2 seconds');
+  };
+
   const moveToNextItem = () => {
-    // Mark current item as completed
+    // Mark current item as completed - create updated list for immediate use
     const currentItem = itemQueue[currentQueueIndex];
+    const updatedCompletedItems = currentItem ? [...completedItems, currentItem.name] : completedItems;
+
     if (currentItem) {
-      setCompletedItems(prev => [...prev, currentItem.name]);
+      setCompletedItems(updatedCompletedItems);
     }
 
-    // Find next available item
-    let nextIndex = currentQueueIndex + 1;
-    while (nextIndex < itemQueue.length &&
-      (completedItems.includes(itemQueue[nextIndex]?.name) ||
-        (!itemQueue[nextIndex]?.ready && isStreaming))) {
-      nextIndex++;
+    // Find next ready item using the updated completed items list
+    // Search through ALL items (not just after current index) to handle out-of-order readiness
+    let nextReadyIndex = -1;
+
+    // First, look for ready items after current index
+    for (let i = currentQueueIndex + 1; i < itemQueue.length; i++) {
+      if (itemQueue[i]?.ready && !updatedCompletedItems.includes(itemQueue[i].name)) {
+        nextReadyIndex = i;
+        break;
+      }
     }
 
-    if (nextIndex < itemQueue.length) {
-      // Move to next item
-      setCurrentQueueIndex(nextIndex);
-      const nextItem = itemQueue[nextIndex];
+    // If no ready items after current index, look for ready items before current index
+    if (nextReadyIndex === -1) {
+      for (let i = 0; i < currentQueueIndex; i++) {
+        if (itemQueue[i]?.ready && !updatedCompletedItems.includes(itemQueue[i].name)) {
+          nextReadyIndex = i;
+          break;
+        }
+      }
+    }
+
+    if (nextReadyIndex !== -1) {
+      // Move to next ready item
+      setCurrentQueueIndex(nextReadyIndex);
+      const nextItem = itemQueue[nextReadyIndex];
 
       setFormData(prev => ({
         ...prev,
@@ -303,13 +461,30 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
         tags: ['detected', nextItem.category?.toLowerCase() || ''].filter(Boolean)
       }));
     } else {
-      // No more items to process
+      // No more ready items - close modal and let background processing continue
       onClose();
     }
   };
 
   const handleSkipItem = () => {
     moveToNextItem();
+  };
+
+  // Helper function to check if there are more ready items after current one
+  const hasMoreReadyItems = () => {
+    if (itemQueue.length === 0) return false;
+
+    // Create a list that includes the current item as completed for accurate checking
+    const currentItem = itemQueue[currentQueueIndex];
+    const futureCompletedItems = currentItem ? [...completedItems, currentItem.name] : completedItems;
+
+    // Check if there are any ready items in the entire queue (not just after current index)
+    for (let i = 0; i < itemQueue.length; i++) {
+      if (i !== currentQueueIndex && itemQueue[i]?.ready && !futureCompletedItems.includes(itemQueue[i].name)) {
+        return true;
+      }
+    }
+    return false;
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -355,65 +530,6 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
     }
   };
 
-  // New component to show queue status
-  const QueueStatus = () => {
-    if (!itemQueue.length || !aiDetected) return null;
-
-    const readyCount = itemQueue.filter(item => item.ready).length;
-    const totalCount = itemQueue.length;
-    const completedCount = completedItems.length;
-
-    return (
-      <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-2xl p-4 mb-4">
-        <div className="flex items-center gap-3 text-indigo-700 mb-2">
-          <Package size={18} />
-          <span className="font-bold">Item Processing Queue</span>
-        </div>
-        <div className="flex items-center gap-4 text-sm">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-            <span>Completed: {completedCount}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-            <span>Ready: {readyCount - completedCount}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-            <span>Processing: {totalCount - readyCount}</span>
-          </div>
-        </div>
-
-        {/* Queue visualization */}
-        <div className="flex gap-2 mt-3">
-          {itemQueue.map((item, index) => (
-            <div
-              key={index}
-              className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold ${completedItems.includes(item.name)
-                ? 'bg-green-500 text-white'
-                : index === currentQueueIndex
-                  ? 'bg-indigo-500 text-white ring-2 ring-indigo-300'
-                  : item.ready
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-yellow-500 text-white'
-                }`}
-              title={item.name}
-            >
-              {index + 1}
-            </div>
-          ))}
-        </div>
-
-        <p className="text-indigo-600 text-sm mt-2">
-          {isStreaming
-            ? `Reviewing item ${currentQueueIndex + 1} of ${totalCount}. Items will appear as they're processed.`
-            : `Reviewing item ${currentQueueIndex + 1} of ${totalCount}`
-          }
-        </p>
-      </div>
-    );
-  };
-
   if (!isOpen) return null;
 
   if (showCamera) {
@@ -426,326 +542,241 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[95vh] overflow-y-auto">
-        <div className="p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">Add Inventory Item</h2>
-            <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
-              <X size={24} />
-            </button>
-          </div>
-
-          <QueueStatus />
-
-          {!formData.imageUrl && (
-            <button
-              type="button"
-              onClick={() => setShowCamera(true)}
-              className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-4 rounded-full font-bold hover:shadow-2xl hover:shadow-indigo-500/25 transition-all duration-300 hover:scale-105 flex items-center justify-center gap-3"
-            >
-              <Camera size={22} />
-              Take Photo & Auto-Detect
-              <Zap size={18} className="text-amber-300" />
-            </button>
-          )}
-
-          {aiDetected && (
-            <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-2xl p-4 mb-4">
-              <div className="flex items-center gap-3 text-indigo-700 mb-2">
-                <Zap size={18} />
-                <span className="font-bold">AI Detection Results:</span>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-50">
+      <div className="bg-white w-full sm:max-w-lg sm:w-full sm:rounded-3xl rounded-t-3xl max-h-[90vh] flex flex-col shadow-2xl safe-area-inset">
+        {/* Compact Header */}
+        <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-white rounded-t-3xl">
+          <div className="flex items-center gap-3">
+            {aiDetected && itemQueue.length > 0 && (
+              <div className="flex items-center gap-2">
+                <div className={`w-2 h-2 rounded-full ${isStreaming ? 'bg-amber-400 animate-pulse' : 'bg-green-500'}`}></div>
+                <span className="text-sm font-medium text-gray-600">
+                  {currentQueueIndex + 1}/{itemQueue.length}
+                </span>
               </div>
-              <p className="text-indigo-600 text-sm">
-                {isStreaming
-                  ? `Processing items in the background. You can review available items now!`
-                  : `Item ${currentQueueIndex + 1} of ${itemQueue.length || detectedObjects.length} in this ${detectedRoom.toLowerCase()}`
-                }
-              </p>
-            </div>
-          )}
+            )}
+            <h2 className="text-xl font-bold text-gray-900">Add to Inventory</h2>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+            <X size={20} />
+          </button>
+        </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Image Display */}
-            {formData.imageUrl && (
-              <div className="flex justify-center mb-6">
+        {/* Compact Queue Progress (only when multiple items) */}
+        {aiDetected && itemQueue.length > 1 && (
+          <div className="px-4 py-2 bg-gray-50 border-b border-gray-100">
+            <div className="flex gap-1 justify-center">
+              {itemQueue.map((item, index) => (
+                <div
+                  key={index}
+                  className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold transition-all ${completedItems.includes(item.name)
+                    ? item.status === 'error'
+                      ? 'bg-red-500 text-white'
+                      : 'bg-green-500 text-white'
+                    : index === currentQueueIndex
+                      ? 'bg-indigo-500 text-white ring-2 ring-indigo-200'
+                      : item.ready
+                        ? item.status === 'error'
+                          ? 'bg-red-500 text-white'
+                          : 'bg-blue-500 text-white'
+                        : 'bg-gray-300 text-gray-600'
+                    }`}
+                >
+                  {index + 1}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Main Content - Scrollable */}
+        <div className="flex-1 overflow-y-auto">
+          {!formData.imageUrl ? (
+            // Camera Section
+            <div className="p-6 text-center">
+              <div className="w-20 h-20 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-3xl flex items-center justify-center mx-auto mb-4">
+                <Camera size={32} className="text-indigo-600" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Snap it & Tag it</h3>
+              <p className="text-gray-600 text-sm mb-6">Tori will identify your items automatically</p>
+
+              <div className="space-y-3">
+                <button
+                  type="button"
+                  onClick={() => setShowCamera(true)}
+                  className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-4 rounded-full font-bold hover:shadow-xl hover:shadow-indigo-500/25 transition-all duration-300 hover:scale-[1.02] flex items-center justify-center gap-3"
+                >
+                  <Camera size={20} />
+                  Snap it
+                  <Zap size={16} className="text-amber-300" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={simulateStreamingFlow}
+                  className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 rounded-full font-bold hover:shadow-lg hover:shadow-purple-500/25 transition-all duration-300 hover:scale-[1.02] flex items-center justify-center gap-2 text-sm"
+                >
+                  🎭 Demo Mode
+                </button>
+              </div>
+            </div>
+          ) : (
+            // Form Section
+            <form onSubmit={handleSubmit} className="p-4 space-y-4">
+              {/* Image Preview */}
+              <div className="relative">
                 <img
                   src={formData.imageUrl}
                   alt="Item"
-                  className="max-w-full max-h-64 object-contain rounded-lg shadow-md"
+                  className="w-full h-48 object-cover rounded-2xl bg-gray-100"
                 />
-              </div>
-            )}
-
-
-
-            {/* Name field */}
-            <div>
-              <label htmlFor="name" className="block text-sm font-semibold text-gray-700 mb-3">
-                What is it? *
-              </label>
-              <input
-                type="text"
-                id="name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className={`w-full px-6 py-4 border rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors ${aiDetected ? 'border-indigo-300 bg-indigo-50' : 'border-gray-300'}`}
-                placeholder="e.g., MacBook Pro, Coffee Mug, etc."
-                required
-              />
-            </div>
-
-            {/* Category field */}
-            <div>
-              <label htmlFor="category" className="block text-sm font-semibold text-gray-700 mb-3">
-                Category *
-              </label>
-              <select
-                id="category"
-                value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                className={`w-full px-6 py-4 border rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors appearance-none bg-white ${aiDetected ? 'border-indigo-300 bg-indigo-50' : 'border-gray-300'}`}
-                required
-              >
-                <option value="">Select a category</option>
-                {categories.map((category) => (
-                  <option key={category.id} value={category.name}>{category.name}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Room field */}
-            <div>
-              <label htmlFor="room" className="block text-sm font-semibold text-gray-700 mb-3">
-                Where is it? *
-              </label>
-              <select
-                id="room"
-                value={formData.room}
-                onChange={(e) => setFormData({ ...formData, room: e.target.value })}
-                className={`w-full px-6 py-4 border rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors appearance-none bg-white ${aiDetected ? 'border-indigo-300 bg-indigo-50' : 'border-gray-300'}`}
-                required
-              >
-                <option value="">Select a room</option>
-                {rooms.map((room) => (
-                  <option key={room.id} value={room.name}>{room.name}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Description field */}
-            <div>
-              <label htmlFor="description" className="block text-sm font-semibold text-gray-700 mb-3">
-                Tell me more about it
-              </label>
-              <textarea
-                id="description"
-                value={formData.description || ''}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                className={`w-full px-6 py-4 border rounded-3xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors resize-none ${aiDetected ? 'border-indigo-300 bg-indigo-50' : 'border-gray-300'}`}
-                rows={3}
-                placeholder="Any details you want to remember..."
-              />
-            </div>
-
-            {/* Condition and Estimated Value */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="condition" className="block text-sm font-semibold text-gray-700 mb-3">
-                  Condition
-                </label>
-                <select
-                  id="condition"
-                  value={formData.condition}
-                  onChange={(e) => setFormData({ ...formData, condition: e.target.value as any })}
-                  className="w-full px-4 py-4 border border-gray-300 rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors appearance-none bg-white"
-                >
-                  <option value="excellent">Great</option>
-                  <option value="good">Good</option>
-                  <option value="fair">Fair</option>
-                  <option value="poor">Poor</option>
-                </select>
-              </div>
-
-              <div>
-                <label htmlFor="estimatedValue" className="block text-sm font-semibold text-gray-700 mb-3">
-                  Worth about ($)
-                </label>
-                <input
-                  type="number"
-                  id="estimatedValue"
-                  value={formData.estimatedValue}
-                  onChange={(e) => setFormData({ ...formData, estimatedValue: e.target.value })}
-                  className={`w-full px-4 py-4 border rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors ${aiDetected ? 'border-indigo-300 bg-indigo-50' : 'border-gray-300'}`}
-                  placeholder="0.00"
-                  step="0.01"
-                  min="0"
-                />
-              </div>
-            </div>
-
-            {/* Tags field */}
-            <div>
-              <label htmlFor="tags" className="block text-sm font-semibold text-gray-700 mb-3">
-                Tags
-              </label>
-              <input
-                type="text"
-                id="tags"
-                value={Array.isArray(formData.tags) ? formData.tags.join(', ') : ''}
-                onChange={(e) => setFormData({ ...formData, tags: e.target.value.split(',').map(tag => tag.trim()).filter(Boolean) })}
-                className="w-full px-6 py-4 border border-gray-300 rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
-                placeholder="vintage, gift, favorite (comma separated)"
-              />
-            </div>
-
-            {/* Maintenance Section */}
-            <div className="border-t border-gray-200 pt-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-red-500 rounded-2xl flex items-center justify-center">
-                    <Wrench className="text-white" size={20} />
+                {itemQueue[currentQueueIndex]?.status === 'error' && (
+                  <div className="absolute top-3 right-3 bg-red-500 text-white px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1">
+                    <AlertCircle size={12} />
+                    Enhancement failed
                   </div>
+                )}
+              </div>
+
+              {/* Essential Fields Only */}
+              <div className="space-y-4">
+                {/* Name */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Item Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className={`w-full px-4 py-3 border rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors text-base ${aiDetected ? 'border-indigo-300 bg-indigo-50' : 'border-gray-300'}`}
+                    placeholder="e.g., MacBook Pro, Coffee Mug"
+                    required
+                  />
+                </div>
+
+                {/* Category & Room in a row */}
+                <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <h3 className="text-lg font-bold text-gray-900">Maintenance Schedule</h3>
-                    <p className="text-sm text-gray-600">Keep this item in perfect condition</p>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Category *
+                    </label>
+                    <select
+                      value={formData.category}
+                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                      className={`w-full px-3 py-3 border rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors appearance-none bg-white text-base ${aiDetected ? 'border-indigo-300 bg-indigo-50' : 'border-gray-300'}`}
+                      required
+                    >
+                      <option value="">Select category</option>
+                      {categories.map((category) => (
+                        <option key={category.id} value={category.name}>{category.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Location *
+                    </label>
+                    <select
+                      value={formData.room}
+                      onChange={(e) => setFormData({ ...formData, room: e.target.value })}
+                      className={`w-full px-3 py-3 border rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors appearance-none bg-white text-base ${aiDetected ? 'border-indigo-300 bg-indigo-50' : 'border-gray-300'}`}
+                      required
+                    >
+                      <option value="">Select room</option>
+                      {rooms.map((room) => (
+                        <option key={room.id} value={room.name}>{room.name}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
-                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl border border-indigo-200">
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <Calendar className="text-indigo-600 flex-shrink-0" size={20} />
-                    <div className="min-w-0">
-                      <p className="font-semibold text-indigo-900 text-sm">Enable Maintenance Reminders</p>
-                      <p className="text-xs text-indigo-600">Get notified when maintenance is due</p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setMaintenanceEnabled(!maintenanceEnabled)}
-                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors flex-shrink-0 ml-3 ${maintenanceEnabled ? 'bg-indigo-600' : 'bg-gray-300'}`}
-                  >
-                    <span
-                      className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${maintenanceEnabled ? 'translate-x-5' : 'translate-x-1'}`}
-                    />
-                  </button>
-                </div>
-              </div>
 
-              {maintenanceEnabled && (
-                <div className="space-y-4">
+                {/* Value & Condition in a row */}
+                <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label htmlFor="maintenanceTitle" className="block text-sm font-semibold text-gray-700 mb-3">
-                      Maintenance Task
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Estimated Value
                     </label>
                     <input
-                      type="text"
-                      id="maintenanceTitle"
-                      value={maintenanceData.title}
-                      onChange={(e) => setMaintenanceData(prev => ({ ...prev, title: e.target.value }))}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
-                      placeholder="e.g., Clean and dust, Oil change, Filter replacement"
+                      type="number"
+                      value={formData.estimatedValue}
+                      onChange={(e) => setFormData({ ...formData, estimatedValue: e.target.value })}
+                      className={`w-full px-3 py-3 border rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors text-base ${aiDetected ? 'border-indigo-300 bg-indigo-50' : 'border-gray-300'}`}
+                      placeholder="0.00"
+                      step="0.01"
+                      min="0"
                     />
                   </div>
 
                   <div>
-                    <label htmlFor="maintenanceDescription" className="block text-sm font-semibold text-gray-700 mb-3">
-                      Description
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Condition
                     </label>
-                    <textarea
-                      id="maintenanceDescription"
-                      value={maintenanceData.description}
-                      onChange={(e) => setMaintenanceData(prev => ({ ...prev, description: e.target.value }))}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors resize-none"
-                      rows={2}
-                      placeholder="What needs to be done?"
-                    />
+                    <select
+                      value={formData.condition}
+                      onChange={(e) => setFormData({ ...formData, condition: e.target.value as any })}
+                      className={`w-full px-3 py-3 border rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors appearance-none text-base ${aiDetected ? 'border-indigo-300 bg-indigo-50' : 'border-gray-300 bg-white'}`}
+                    >
+                      <option value="excellent">Excellent</option>
+                      <option value="good">Good</option>
+                      <option value="fair">Fair</option>
+                      <option value="poor">Poor</option>
+                    </select>
                   </div>
-
-                  {/* Mobile-friendly stacked layout */}
-                  <div className="space-y-4">
-                    <div>
-                      <label htmlFor="maintenanceInterval" className="block text-sm font-semibold text-gray-700 mb-3">
-                        Repeat Every
-                      </label>
-                      <div className="flex gap-3">
-                        <input
-                          type="number"
-                          min="1"
-                          value={maintenanceData.intervalValue}
-                          onChange={(e) => setMaintenanceData(prev => ({ ...prev, intervalValue: parseInt(e.target.value) || 1 }))}
-                          className="w-20 px-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors text-center"
-                        />
-                        <select
-                          value={maintenanceData.intervalType}
-                          onChange={(e) => setMaintenanceData(prev => ({ ...prev, intervalType: e.target.value as any }))}
-                          className="flex-1 px-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors appearance-none bg-white"
-                        >
-                          <option value="days">Days</option>
-                          <option value="weeks">Weeks</option>
-                          <option value="months">Months</option>
-                          <option value="years">Years</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label htmlFor="maintenancePriority" className="block text-sm font-semibold text-gray-700 mb-3">
-                        Priority
-                      </label>
-                      <select
-                        value={maintenanceData.priority}
-                        onChange={(e) => setMaintenanceData(prev => ({ ...prev, priority: e.target.value as any }))}
-                        className="w-full px-3 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors appearance-none bg-white"
-                      >
-                        <option value="low">Low</option>
-                        <option value="medium">Medium</option>
-                        <option value="high">High</option>
-                        <option value="urgent">Urgent</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* Preview */}
-                  {maintenanceData.title && (
-                    <div className="p-4 bg-green-50 border border-green-200 rounded-xl">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Clock className="text-green-600" size={16} />
-                        <span className="font-semibold text-green-900">Maintenance Preview</span>
-                      </div>
-                      <p className="text-sm text-green-800">
-                        <strong>{maintenanceData.title}</strong> will be scheduled every{' '}
-                        <strong>{maintenanceData.intervalValue} {maintenanceData.intervalType}</strong>{' '}
-                        with <strong>{maintenanceData.priority}</strong> priority.
-                      </p>
-                    </div>
-                  )}
                 </div>
-              )}
-            </div>
 
+                {/* Description - Optional, collapsible */}
+                <details className="group">
+                  <summary className="text-sm text-gray-600 cursor-pointer hover:text-gray-800 transition-colors">
+                    Add description (optional)
+                  </summary>
+                  <textarea
+                    value={formData.description || ''}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    className={`w-full mt-2 px-3 py-3 border rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors resize-none text-base ${aiDetected ? 'border-indigo-300 bg-indigo-50' : 'border-gray-300'}`}
+                    rows={2}
+                    placeholder="Any details you want to remember..."
+                  />
+                </details>
+              </div>
+            </form>
+          )}
+        </div>
+
+        {/* Fixed Bottom Actions */}
+        {formData.imageUrl && (
+          <div className="p-4 border-t border-gray-100 bg-white rounded-b-3xl">
             <div className="flex gap-3">
-              {/* Skip button - only show when there are more objects to process */}
-              {aiDetected && ((itemQueue.length > 0 && currentQueueIndex < itemQueue.length - 1) || (currentObjectIndex < Math.min(detectedObjects.length - 1, 2))) && (
+              {/* Skip button - only show when there are more ready items OR not streaming */}
+              {aiDetected && (hasMoreReadyItems() || !isStreaming) && ((itemQueue.length > 0 && currentQueueIndex < itemQueue.length - 1) || (currentObjectIndex < Math.min(detectedObjects.length - 1, 2))) && (
                 <button
                   type="button"
                   onClick={handleSkipItem}
-                  className="flex-1 bg-gray-100 text-gray-700 py-4 rounded-full font-bold hover:bg-gray-200 transition-colors"
+                  className="flex-1 py-3 rounded-full font-medium transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200"
                 >
-                  Skip Item
+                  Skip
                 </button>
               )}
 
               <button
                 type="submit"
-                className={`${aiDetected && ((itemQueue.length > 0 && currentQueueIndex < itemQueue.length - 1) || (currentObjectIndex < Math.min(detectedObjects.length - 1, 2))) ? 'flex-1' : 'w-full'} bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-4 rounded-full font-bold text-lg hover:shadow-2xl hover:shadow-indigo-500/25 transition-all duration-300 hover:scale-105`}
+                onClick={handleSubmit}
+                disabled={isStreaming && !hasMoreReadyItems()}
+                className={`${aiDetected && (hasMoreReadyItems() || !isStreaming) && ((itemQueue.length > 0 && currentQueueIndex < itemQueue.length - 1) || (currentObjectIndex < Math.min(detectedObjects.length - 1, 2))) ? 'flex-1' : 'w-full'} py-3 rounded-full font-bold transition-all duration-300 ${isStreaming && !hasMoreReadyItems()
+                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  : 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:shadow-lg hover:shadow-indigo-500/25 hover:scale-[1.02]'
+                  }`}
               >
-                {((itemQueue.length > 0 && currentQueueIndex < itemQueue.length - 1) || (currentObjectIndex < Math.min(detectedObjects.length - 1, 2)))
-                  ? `Add Item (${itemQueue.length > 0 ? `${completedItems.length + 1}/${itemQueue.length}` : `${currentObjectIndex + 1}/${Math.min(detectedObjects.length, 3)}`})`
-                  : 'Add Item'}
+                {isStreaming && !hasMoreReadyItems()
+                  ? <div className="flex items-center justify-center">
+                    <div className="animate-spin w-5 h-5 border-2 border-gray-400 border-t-transparent rounded-full"></div>
+                  </div>
+                  : 'Add'}
               </button>
             </div>
-          </form>
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
