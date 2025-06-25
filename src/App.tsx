@@ -553,21 +553,21 @@ function App() {
       case 'home':
         return (
           <div className="space-y-6">
-            {/* Header with centered logo and user menu */}
+            {/* Header with clean layout */}
             <div className="relative text-center py-6">
-              {/* User menu button - positioned absolutely in top left */}
+              {/* User menu button - top left */}
               <div className="absolute top-0 left-0">
                 <div className="relative">
                   <button
                     onClick={() => setShowUserMenu(!showUserMenu)}
-                    className="w-10 h-10 bg-gradient-to-r from-indigo-100 to-purple-100 border-2 border-indigo-200 rounded-full flex items-center justify-center text-indigo-600 hover:bg-gradient-to-r hover:from-indigo-200 hover:to-purple-200 transition-all duration-200"
+                    className="w-8 h-8 bg-gradient-to-r from-indigo-100 to-purple-100 border border-indigo-200 rounded-full flex items-center justify-center text-indigo-600 hover:bg-gradient-to-r hover:from-indigo-200 hover:to-purple-200 transition-all duration-200"
                   >
-                    <User size={18} />
+                    <User size={14} />
                   </button>
 
                   {/* Dropdown menu */}
                   {showUserMenu && (
-                    <div className="absolute left-0 top-12 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 min-w-48 z-10">
+                    <div className="absolute left-0 top-10 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 min-w-48 z-10">
                       <div className="px-4 py-3 border-b border-gray-100">
                         <p className="text-sm font-semibold text-gray-900">Signed in as</p>
                         <p className="text-sm text-gray-600 truncate">{user.email}</p>
@@ -584,13 +584,13 @@ function App() {
                 </div>
               </div>
 
-              {/* Bolt.new badge - positioned absolutely in top right */}
+              {/* Bolt.new badge - top right */}
               <div className="absolute top-0 right-0">
                 <a
                   href="https://bolt.new/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block w-12 h-12 sm:w-16 sm:h-16 hover:scale-110 transition-transform duration-200"
+                  className="block w-20 h-20 sm:w-24 sm:h-24 hover:scale-110 transition-transform duration-200"
                   title="Built with Bolt.new"
                 >
                   <img
@@ -601,8 +601,8 @@ function App() {
                 </a>
               </div>
 
-              {/* Centered logo and content */}
-              <div className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-full text-white font-bold mb-6 shadow-lg shadow-indigo-500/25">
+              {/* Centered Tori branding */}
+              <div className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-full text-white font-bold mb-4 shadow-lg shadow-indigo-500/25">
                 <Zap size={20} />
                 Tori
               </div>
