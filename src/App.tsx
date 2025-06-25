@@ -1,6 +1,5 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { Plus, Wrench, Home, Search, BarChart3, Zap, LogOut, User } from 'lucide-react';
-import { useInventory } from './hooks/useInventory';
 import { useAuth } from './hooks/useAuth';
 import { useMaintenanceDB } from './hooks/useMaintenanceDB';
 import { useInventoryStats } from './hooks/useInventoryStats';
@@ -13,6 +12,33 @@ import { MaintenanceInterface } from './components/MaintenanceInterface';
 import { StatsOverview } from './components/StatsOverview';
 import { AuthModal } from './components/AuthModal';
 import { InventoryItem } from './types/inventory';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+// Default rooms and categories
+const defaultRooms = [
+  { id: '1', name: 'Living Room', icon: 'sofa', color: '#6366F1' },
+  { id: '2', name: 'Kitchen', icon: 'chef-hat', color: '#EC4899' },
+  { id: '3', name: 'Bedroom', icon: 'bed', color: '#8B5CF6' },
+  { id: '4', name: 'Bathroom', icon: 'bath', color: '#14B8A6' },
+  { id: '5', name: 'Office', icon: 'briefcase', color: '#EF4444' },
+  { id: '6', name: 'Garage', icon: 'car', color: '#F59E0B' },
+  { id: '7', name: 'Dining Room', icon: 'utensils', color: '#10B981' },
+  { id: '8', name: 'Other', icon: 'package', color: '#6B7280' },
+];
+
+const defaultCategories = [
+  { id: '1', name: 'Electronics', icon: 'smartphone', color: '#6366F1' },
+  { id: '2', name: 'Furniture', icon: 'armchair', color: '#EC4899' },
+  { id: '3', name: 'Appliances', icon: 'refrigerator', color: '#8B5CF6' },
+  { id: '4', name: 'Decorative', icon: 'picture-in-picture', color: '#14B8A6' },
+  { id: '5', name: 'Sports', icon: 'dumbbell', color: '#F97316' },
+  { id: '6', name: 'Tools', icon: 'hammer', color: '#F59E0B' },
+  { id: '7', name: 'Other', icon: 'package', color: '#6B7280' },
+];
 
 type TabType = 'home' | 'search' | 'stats' | 'care';
 
@@ -20,25 +46,19 @@ function App() {
   const { user, loading: authLoading, signIn, signUp, signOut } = useAuth();
   const [showAuthModal, setShowAuthModal] = useState(false);
 
+  // Single source of truth for all inventory data
   const {
-    items,
-    rooms,
-    categories,
-    loading: inventoryLoading,
-    searchLoading,
-    pagination,
-    addItem,
-    updateItem,
-    deleteItem,
-    searchItems,
-    loadMore,
-    getItemDetails,
-  } = useInventory(user, authLoading);
+    stats,
+    roomDistribution,
+    categoryDistribution,
+    recentItems,
+    allItemsForMaintenance,
+    loading: statsLoading,
+    refreshStats,
+    allItems // Raw data for search/filtering
+  } = useInventoryStats(user);
 
   const { createMaintenanceSchedule } = useMaintenanceDB(user);
-
-  // Stats hook for accurate totals and distributions
-  const { stats, roomDistribution, categoryDistribution, recentItems: statsRecentItems, allItemsForMaintenance, loading: statsLoading, refreshStats } = useInventoryStats(user);
 
   const [activeTab, setActiveTab] = useState<TabType>('home');
   const [showAddModal, setShowAddModal] = useState(false);
@@ -50,14 +70,50 @@ function App() {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [showUserMenu, setShowUserMenu] = useState(false);
 
+  // Get rooms and categories that exist in the data, with default fallback for new ones
+  const rooms = roomDistribution.map(dist => {
+    const existing = defaultRooms.find(r => r.name === dist.room);
+    return existing || { id: dist.room.toLowerCase().replace(/\s+/g, '-'), name: dist.room, icon: 'package', color: '#6B7280' };
+  });
+
+  const categories = categoryDistribution.map(dist => {
+    const existing = defaultCategories.find(c => c.name === dist.category);
+    return existing || { id: dist.category.toLowerCase().replace(/\s+/g, '-'), name: dist.category, icon: 'package', color: '#6B7280' };
+  });
+
+  // Search state
+  const [filteredItems, setFilteredItems] = useState<InventoryItem[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+
   // Debounce timer for search
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Recent items are now loaded separately via stats hook
+  // Filter items based on search criteria
+  const filterItems = useCallback((query: string, room: string, category: string) => {
+    let filtered = [...allItems];
 
-  // Handle search with debouncing - only search after user stops typing for 500ms
+    if (query) {
+      const searchLower = query.toLowerCase();
+      filtered = filtered.filter(item =>
+        item.name.toLowerCase().includes(searchLower) ||
+        (item.description || '').toLowerCase().includes(searchLower) ||
+        item.tags.some(tag => tag.toLowerCase().includes(searchLower))
+      );
+    }
+
+    if (room) {
+      filtered = filtered.filter(item => item.room === room);
+    }
+
+    if (category) {
+      filtered = filtered.filter(item => item.category === category);
+    }
+
+    return filtered;
+  }, [allItems]);
+
+  // Handle search with debouncing
   const handleSearch = useCallback((query: string, room?: string, category?: string) => {
-    // Update local state immediately for UI responsiveness
     setSearchQuery(query);
     setSelectedRoom(room || '');
     setSelectedCategory(category || '');
@@ -67,27 +123,34 @@ function App() {
       clearTimeout(searchTimeoutRef.current);
     }
 
-    // Only trigger search if there's a query or filters, otherwise show all items
-    if (!query && !room && !category) {
-      searchItems('', '', '');
-      return;
-    }
+    setSearchLoading(true);
 
     // Set new timeout for debounced search
     searchTimeoutRef.current = setTimeout(() => {
-      searchItems(query, room, category);
-    }, 500); // 500ms delay - comfortable for slower typists
-  }, [searchItems]);
+      const filtered = filterItems(query, room || '', category || '');
+      setFilteredItems(filtered);
+      setSearchLoading(false);
+    }, 500);
+  }, [filterItems]);
 
   // Immediate search for Enter key press
   const handleSearchSubmit = useCallback((query: string) => {
-    // Clear any pending debounced search
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
     }
-    // Execute search immediately
-    searchItems(query, selectedRoom, selectedCategory);
-  }, [searchItems, selectedRoom, selectedCategory]);
+    setSearchLoading(true);
+    const filtered = filterItems(query, selectedRoom, selectedCategory);
+    setFilteredItems(filtered);
+    setSearchLoading(false);
+  }, [filterItems, selectedRoom, selectedCategory]);
+
+  // Initialize filtered items when allItems changes
+  React.useEffect(() => {
+    if (allItems.length > 0) {
+      const filtered = filterItems(searchQuery, selectedRoom, selectedCategory);
+      setFilteredItems(filtered);
+    }
+  }, [allItems, filterItems, searchQuery, selectedRoom, selectedCategory]);
 
   // Cleanup timeout on unmount
   React.useEffect(() => {
@@ -98,15 +161,124 @@ function App() {
     };
   }, []);
 
+  // Get item details (for viewing/editing individual items)
+  const getItemDetails = async (itemId: string): Promise<InventoryItem | null> => {
+    try {
+      const { data, error } = await supabase
+        .from('inventory_items')
+        .select('*')
+        .eq('id', itemId)
+        .eq('user_id', user?.id)
+        .single();
+
+      if (error) {
+        console.error('Error loading item details:', error);
+        return null;
+      }
+
+      return {
+        id: data.id,
+        name: data.name,
+        category: data.category,
+        room: data.room,
+        description: data.description || '',
+        imageUrl: data.crop_image_data || data.image_data || '',
+        originalCropImageUrl: data.original_crop_image_url,
+        originalFullImageUrl: data.original_full_image_url,
+        dateAdded: data.created_at,
+        tags: data.tags || [],
+        condition: data.condition || 'good',
+        estimatedValue: data.estimated_value,
+      };
+    } catch (error) {
+      console.error('Error in getItemDetails:', error);
+      return null;
+    }
+  };
+
+  // Add item
+  const addItem = async (item: Omit<InventoryItem, 'id' | 'dateAdded'>): Promise<string | null> => {
+    try {
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (!currentUser) throw new Error('User not authenticated');
+
+      const supabaseItem = {
+        name: item.name,
+        category: item.category,
+        room: item.room,
+        description: item.description,
+        estimated_value: item.estimatedValue,
+        tags: item.tags,
+        condition: item.condition,
+        crop_image_data: item.imageUrl,
+        original_crop_image_url: item.originalCropImageUrl,
+        original_full_image_url: item.originalFullImageUrl,
+        user_id: currentUser.id,
+        ai_detected: false,
+        detection_confidence: null,
+      };
+
+      const { data, error } = await supabase
+        .from('inventory_items')
+        .insert(supabaseItem)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      return data.id;
+    } catch (error) {
+      console.error('Failed to save item:', error);
+      throw error;
+    }
+  };
+
+  // Update item
+  const updateItem = async (id: string, updates: Partial<InventoryItem>) => {
+    try {
+      const { error } = await supabase
+        .from('inventory_items')
+        .update({
+          name: updates.name,
+          category: updates.category,
+          room: updates.room,
+          description: updates.description,
+          estimated_value: updates.estimatedValue,
+          tags: updates.tags,
+          condition: updates.condition,
+        })
+        .eq('id', id);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error updating item:', error);
+      throw error;
+    }
+  };
+
+  // Delete item
+  const deleteItem = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('inventory_items')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user?.id);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error deleting item:', error);
+      throw error;
+    }
+  };
+
   const handleItemClick = async (item: InventoryItem) => {
-    // Load full item details with images when clicking to view
     const fullItem = await getItemDetails(item.id);
     setSelectedItem(fullItem || item);
     setShowItemDetail(true);
   };
 
   const handleItemEdit = async (item: InventoryItem) => {
-    // Load full item details with images when editing
     const fullItem = await getItemDetails(item.id);
     setSelectedItem(fullItem || item);
     setShowItemDetail(false);
@@ -115,13 +287,13 @@ function App() {
 
   const handleItemDelete = async (id: string) => {
     await deleteItem(id);
-    refreshStats();
+    refreshStats(); // Refresh the single source of truth
     setShowItemDetail(false);
   };
 
   const handleSaveEdit = async (id: string, updates: Partial<InventoryItem>) => {
     await updateItem(id, updates);
-    refreshStats();
+    refreshStats(); // Refresh the single source of truth
     setShowEditModal(false);
     setSelectedItem(null);
   };
@@ -195,7 +367,7 @@ function App() {
   };
 
   // Show loading screen
-  if (authLoading || inventoryLoading) {
+  if (authLoading || statsLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50 flex items-center justify-center">
         <div className="text-center">
@@ -315,7 +487,7 @@ function App() {
               </div>
 
               <h1 className="text-3xl font-bold text-gray-900 mb-0 leading-tight">
-                {inventoryLoading || statsLoading ? (
+                {statsLoading ? (
                   <>Loading your inventory...</>
                 ) : stats.totalCount === 0 ? (
                   <>Home Inventory</>
@@ -324,9 +496,9 @@ function App() {
                 )}
               </h1>
 
-              {(inventoryLoading || statsLoading || stats.totalCount === 0) && (
+              {(statsLoading || stats.totalCount === 0) && (
                 <p className="text-gray-600 leading-relaxed">
-                  {inventoryLoading || statsLoading
+                  {statsLoading
                     ? "Getting everything ready for you"
                     : "Let's get started by adding your first item with AI-powered photo recognition"
                   }
@@ -355,12 +527,12 @@ function App() {
               />
             )}
 
-            {inventoryLoading ? (
+            {statsLoading ? (
               <div className="text-center py-12">
                 <div className="w-16 h-16 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-4"></div>
                 <p className="text-gray-600">Loading your inventory...</p>
               </div>
-            ) : items.length === 0 ? (
+            ) : allItems.length === 0 ? (
               <div className="text-center py-6">
                 <button
                   onClick={() => setShowAddModal(true)}
@@ -377,7 +549,7 @@ function App() {
               <div>
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-xl font-bold text-gray-900">Recent Additions</h2>
-                  {statsRecentItems.length > 0 && (
+                  {recentItems.length > 0 && (
                     <button
                       onClick={() => setActiveTab('search')}
                       className="text-indigo-600 hover:text-indigo-800 transition-colors font-semibold"
@@ -388,7 +560,7 @@ function App() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  {statsRecentItems.map((item) => (
+                  {recentItems.map((item) => (
                     <ItemCard
                       key={item.id}
                       item={item}
@@ -436,8 +608,8 @@ function App() {
               selectedCategory={selectedCategory}
               onCategoryChange={(category) => handleSearch(searchQuery, selectedRoom, category)}
               onSearchSubmit={handleSearchSubmit}
-              rooms={rooms}
-              categories={categories}
+              rooms={defaultRooms}
+              categories={defaultCategories}
             />
 
             {/* Results area with localized loading */}
@@ -449,7 +621,7 @@ function App() {
             ) : (
               <>
                 <div className="grid grid-cols-2 gap-4">
-                  {items.map((item) => (
+                  {filteredItems.map((item) => (
                     <ItemCard
                       key={item.id}
                       item={item}
@@ -460,20 +632,9 @@ function App() {
                   ))}
                 </div>
 
-                {/* Load More Button */}
-                {pagination.hasMore && (
-                  <div className="text-center py-4">
-                    <button
-                      onClick={loadMore}
-                      disabled={searchLoading}
-                      className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-full font-semibold hover:shadow-lg hover:shadow-indigo-500/25 transition-all duration-300 disabled:opacity-50"
-                    >
-                      Load More
-                    </button>
-                  </div>
-                )}
+                {/* No pagination needed - we have all data loaded */}
 
-                {items.length === 0 && (
+                {filteredItems.length === 0 && (
                   <div className="text-center py-12">
                     <Search className="mx-auto mb-4 text-gray-400" size={48} />
                     <h3 className="text-lg font-bold text-gray-900 mb-2">Nothing found</h3>
