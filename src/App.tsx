@@ -84,9 +84,40 @@ function App() {
   // Search state
   const [filteredItems, setFilteredItems] = useState<InventoryItem[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
+  const [displayedItems, setDisplayedItems] = useState<InventoryItem[]>([]);
+  const [showLoadMore, setShowLoadMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [initialSearchComplete, setInitialSearchComplete] = useState(false);
 
   // Debounce timer for search
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Load images for specific items (for search display)
+  const loadItemImages = useCallback(async (items: InventoryItem[]): Promise<InventoryItem[]> => {
+    if (!user || items.length === 0) return items;
+
+    try {
+      const itemIds = items.map(item => item.id);
+      const { data, error } = await supabase
+        .from('inventory_items')
+        .select('id, crop_image_data')
+        .in('id', itemIds);
+
+      if (!error && data) {
+        return items.map(item => {
+          const imageData = data.find(d => d.id === item.id);
+          return {
+            ...item,
+            imageUrl: imageData?.crop_image_data || item.imageUrl // Keep placeholder if no image
+          };
+        });
+      }
+    } catch (error) {
+      console.error('Error loading item images:', error);
+    }
+
+    return items; // Return original items if error
+  }, [user]);
 
   // Filter items based on search criteria
   const filterItems = useCallback((query: string, room: string, category: string) => {
@@ -112,6 +143,61 @@ function App() {
     return filtered;
   }, [allItems]);
 
+  // Update displayed items with images progressively
+  const updateDisplayedItems = useCallback(async (filtered: InventoryItem[], loadImages = true, isInitialLoad = false) => {
+    const initialItems = filtered.slice(0, 8);
+
+    if (!loadImages || initialItems.length === 0) {
+      setDisplayedItems(initialItems);
+      setShowLoadMore(filtered.length > 8 && !isInitialLoad);
+      if (isInitialLoad) setInitialSearchComplete(true);
+      return;
+    }
+
+    // For initial load, show items without images first, then update with images
+    if (isInitialLoad) {
+      setDisplayedItems(initialItems);
+    }
+
+    // Load images progressively - update items in place to avoid flickering
+    const itemsInProgress = [...initialItems];
+    setDisplayedItems(itemsInProgress);
+
+    for (let i = 0; i < initialItems.length; i++) {
+      const item = initialItems[i];
+      try {
+        const { data, error } = await supabase
+          .from('inventory_items')
+          .select('id, crop_image_data')
+          .eq('id', item.id)
+          .single();
+
+        const imageUrl = (!error && data?.crop_image_data) ? data.crop_image_data : item.imageUrl;
+
+        // Update only this specific item in place
+        setDisplayedItems(currentItems =>
+          currentItems.map(currentItem =>
+            currentItem.id === item.id
+              ? { ...currentItem, imageUrl }
+              : currentItem
+          )
+        );
+      } catch (error) {
+        console.error('Error loading image for item:', item.id, error);
+      }
+    }
+
+    // Only show load more button after initial load is complete
+    if (isInitialLoad) {
+      setInitialSearchComplete(true);
+      setTimeout(() => {
+        setShowLoadMore(filtered.length > 8);
+      }, 300); // Small delay to avoid jarring appearance
+    } else {
+      setShowLoadMore(filtered.length > 8);
+    }
+  }, [user]);
+
   // Handle search with debouncing
   const handleSearch = useCallback((query: string, room?: string, category?: string) => {
     setSearchQuery(query);
@@ -126,26 +212,30 @@ function App() {
     setSearchLoading(true);
 
     // Set new timeout for debounced search
-    searchTimeoutRef.current = setTimeout(() => {
+    searchTimeoutRef.current = setTimeout(async () => {
       const filtered = filterItems(query, room || '', category || '');
       setFilteredItems(filtered);
+
+      // Update displayed items with images
+      await updateDisplayedItems(filtered, true, false);
       setSearchLoading(false);
     }, 500);
-  }, [filterItems]);
+  }, [filterItems, updateDisplayedItems]);
 
   // Immediate search for Enter key press
-  const handleSearchSubmit = useCallback((query: string) => {
+  const handleSearchSubmit = useCallback(async (query: string) => {
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
     }
     setSearchLoading(true);
     const filtered = filterItems(query, selectedRoom, selectedCategory);
     setFilteredItems(filtered);
+    await updateDisplayedItems(filtered, true, false);
     setSearchLoading(false);
-  }, [filterItems, selectedRoom, selectedCategory]);
+  }, [filterItems, selectedRoom, selectedCategory, updateDisplayedItems]);
 
   // Clear all filters
-  const handleClearFilters = useCallback(() => {
+  const handleClearFilters = useCallback(async () => {
     setSearchQuery('');
     setSelectedRoom('');
     setSelectedCategory('');
@@ -155,18 +245,32 @@ function App() {
     }
 
     setSearchLoading(true);
+    setInitialSearchComplete(false);
     const filtered = filterItems('', '', '');
     setFilteredItems(filtered);
+    await updateDisplayedItems(filtered, true, true);
     setSearchLoading(false);
-  }, [filterItems]);
+  }, [filterItems, updateDisplayedItems]);
+
+  // Load more items
+  const handleLoadMore = useCallback(async () => {
+    setLoadingMore(true);
+    const nextItems = filteredItems.slice(displayedItems.length, displayedItems.length + 8);
+    const itemsWithImages = await loadItemImages(nextItems);
+    setDisplayedItems(prev => [...prev, ...itemsWithImages]);
+    setShowLoadMore(filteredItems.length > displayedItems.length + nextItems.length);
+    setLoadingMore(false);
+  }, [filteredItems, displayedItems.length, loadItemImages]);
 
   // Initialize filtered items when allItems changes
   React.useEffect(() => {
     if (allItems.length > 0) {
+      setInitialSearchComplete(false);
       const filtered = filterItems(searchQuery, selectedRoom, selectedCategory);
       setFilteredItems(filtered);
+      updateDisplayedItems(filtered, true, true);
     }
-  }, [allItems, filterItems, searchQuery, selectedRoom, selectedCategory]);
+  }, [allItems, filterItems, searchQuery, selectedRoom, selectedCategory, updateDisplayedItems]);
 
   // Cleanup timeout on unmount
   React.useEffect(() => {
@@ -638,7 +742,7 @@ function App() {
             ) : (
               <>
                 <div className="grid grid-cols-2 gap-4">
-                  {filteredItems.map((item) => (
+                  {displayedItems.map((item) => (
                     <ItemCard
                       key={item.id}
                       item={item}
@@ -649,7 +753,37 @@ function App() {
                   ))}
                 </div>
 
-                {/* No pagination needed - we have all data loaded */}
+                {/* Load more button - only show after initial search is complete */}
+                {showLoadMore && initialSearchComplete && (
+                  <div className="text-center py-4">
+                    <button
+                      onClick={handleLoadMore}
+                      disabled={loadingMore}
+                      className="px-6 py-3 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 mx-auto"
+                    >
+                      {loadingMore ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          Loading...
+                        </>
+                      ) : (
+                        <>
+                          Load more ({filteredItems.length - displayedItems.length} remaining)
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
+
+                {/* Loading indicator for initial search */}
+                {!initialSearchComplete && displayedItems.length > 0 && (
+                  <div className="text-center py-4">
+                    <div className="flex items-center justify-center gap-2 text-gray-500">
+                      <div className="w-4 h-4 border-2 border-gray-300 border-t-indigo-600 rounded-full animate-spin"></div>
+                      <span className="text-sm">Loading images...</span>
+                    </div>
+                  </div>
+                )}
 
                 {filteredItems.length === 0 && (
                   <div className="text-center py-12">
