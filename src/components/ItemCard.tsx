@@ -47,8 +47,8 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, onEdit, onDelete, onCl
       className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300 hover:scale-[1.02] cursor-pointer"
       onClick={handleClick}
     >
-      {item.imageUrl && (
-        <div className="relative aspect-square bg-gray-100">
+      <div className="relative aspect-square bg-gray-100">
+        {item.imageUrl ? (
           <img
             src={
               item.imageUrl.startsWith('data:') ? item.imageUrl :
@@ -58,8 +58,12 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, onEdit, onDelete, onCl
             alt={item.name}
             className="w-full h-full object-contain"
           />
-        </div>
-      )}
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm">
+            Loading Image
+          </div>
+        )}
+      </div>
 
       <div className="p-4">
         <div className="mb-3">

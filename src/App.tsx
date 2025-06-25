@@ -487,8 +487,8 @@ function App() {
     }
   };
 
-  // Show loading screen
-  if (authLoading || statsLoading) {
+  // Show loading screen only for auth
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50 flex items-center justify-center">
         <div className="text-center">
@@ -608,21 +608,12 @@ function App() {
               </div>
 
               <h1 className="text-3xl font-bold text-gray-900 mb-0 leading-tight">
-                {statsLoading ? (
-                  <>Loading your inventory...</>
-                ) : stats.totalCount === 0 ? (
-                  <>Home Inventory</>
-                ) : (
-                  <>Home Inventory</>
-                )}
+                Home Inventory
               </h1>
 
-              {(statsLoading || stats.totalCount === 0) && (
+              {stats.totalCount === 0 && !statsLoading && (
                 <p className="text-gray-600 leading-relaxed">
-                  {statsLoading
-                    ? "Getting everything ready for you"
-                    : "Let's get started by adding your first item with AI-powered photo recognition"
-                  }
+                  Let's get started by adding your first item with AI-powered photo recognition
                 </p>
               )}
 
@@ -649,9 +640,14 @@ function App() {
             )}
 
             {statsLoading ? (
-              <div className="text-center py-12">
-                <div className="w-16 h-16 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-4"></div>
-                <p className="text-gray-600">Loading your inventory...</p>
+              <div>
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-bold text-gray-900">Recent Additions</h2>
+                </div>
+                <div className="text-center py-8">
+                  <div className="w-8 h-8 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-3"></div>
+                  <p className="text-gray-600 text-sm">Loading your inventory...</p>
+                </div>
               </div>
             ) : allItems.length === 0 ? (
               <div className="text-center py-6">
