@@ -6,6 +6,45 @@ import { env } from '../config/env';
 import { useMaintenanceDB } from '../hooks/useMaintenanceDB';
 import { supabase } from '../config/supabase';
 
+// Custom keyframe animations
+const animations = `
+  @keyframes morph {
+    0%, 100% { 
+      border-radius: 1.8rem 2.2rem 1.6rem 2rem;
+      transform: scale(1) rotate(0deg);
+    }
+    16% { 
+      border-radius: 3rem 1.2rem 2.5rem 1.8rem;
+      transform: scale(0.8) rotate(1.5deg);
+    }
+    32% { 
+      border-radius: 1.4rem 2.8rem 1.8rem 2.2rem;
+      transform: scale(1.12) rotate(-2deg);
+    }
+    48% { 
+      border-radius: 2.6rem 1.6rem 3rem 1.5rem;
+      transform: scale(0.75) rotate(1deg);
+    }
+    64% { 
+      border-radius: 1.7rem 2.5rem 1.3rem 2.8rem;
+      transform: scale(1.1) rotate(-1.5deg);
+    }
+    80% { 
+      border-radius: 2.4rem 1.8rem 2.7rem 1.4rem;
+      transform: scale(0.85) rotate(2deg);
+    }
+  }
+
+  @keyframes float {
+    0%, 100% { 
+      transform: translateY(0px);
+    }
+    50% { 
+      transform: translateY(-4px);
+    }
+  }
+`;
+
 interface AddItemModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -597,14 +636,14 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
 
         lastObjectsRef = currentObjects;
 
-        // Update progress
+        // Update progress - but keep the original "found items" message
         const progressPercentage = Math.min(90, 50 + (statusData.completedCount / statusData.totalCount) * 40);
 
         updateAiProgress({
-          step: statusData.status === 'complete' ? 'complete' : 'processing',
+          step: statusData.status === 'complete' ? 'complete' : 'detecting',
           message: statusData.status === 'complete'
             ? 'Perfect! Your items are ready to add.'
-            : `Processing ${statusData.completedCount}/${statusData.totalCount} items...`,
+            : `Found ${statusData.totalCount} items! Processing with AI...`,
           progress: progressPercentage,
           detectedObjects: currentObjects,
           room: aiProgress.room,
@@ -1062,409 +1101,404 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
   // Camera functionality can be integrated here later
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-50">
-      <div className="bg-white w-full sm:max-w-lg sm:w-full sm:rounded-3xl rounded-t-3xl max-h-[90vh] flex flex-col shadow-2xl safe-area-inset">
-        {/* Compact Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-white rounded-t-3xl">
-          <div className="flex items-center gap-3">
-            {aiDetected && itemQueue.length > 0 && (
-              <div className="flex items-center gap-2">
-                <div className={`w-2 h-2 rounded-full ${isStreaming ? 'bg-amber-400 animate-pulse' : 'bg-green-500'}`}></div>
-                <span className="text-sm font-medium text-gray-600">
-                  {currentQueueIndex + 1}/{itemQueue.length}
-                </span>
-              </div>
-            )}
-            <h2 className="text-xl font-bold text-gray-900">Add to Inventory</h2>
-          </div>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-            <X size={20} />
-          </button>
-        </div>
-
-        {/* Compact Queue Progress (only when multiple items) */}
-        {aiDetected && itemQueue.length > 1 && (
-          <div className="px-4 py-2 bg-gray-50 border-b border-gray-100">
-            <div className="flex gap-1 justify-center">
-              {itemQueue.map((item, index) => (
-                <div
-                  key={index}
-                  className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold transition-all ${completedItems.includes(item.name)
-                    ? item.status === 'error'
-                      ? 'bg-red-500 text-white'
-                      : 'bg-green-500 text-white'
-                    : index === currentQueueIndex
-                      ? 'bg-indigo-500 text-white ring-2 ring-indigo-200'
-                      : item.ready
-                        ? item.status === 'error'
-                          ? 'bg-red-500 text-white'
-                          : 'bg-blue-500 text-white'
-                        : 'bg-gray-300 text-gray-600'
-                    }`}
-                >
-                  {index + 1}
+    <>
+      <style>{animations}</style>
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-50">
+        <div className="bg-white w-full sm:max-w-lg sm:w-full sm:rounded-3xl rounded-t-3xl max-h-[90vh] flex flex-col shadow-2xl safe-area-inset overflow-hidden">
+          {/* Compact Header */}
+          <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-white rounded-t-3xl">
+            <div className="flex items-center gap-3">
+              {aiDetected && itemQueue.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <div className={`w-2 h-2 rounded-full ${isStreaming ? 'bg-amber-400 animate-pulse' : 'bg-green-500'}`}></div>
+                  <span className="text-sm font-medium text-gray-600">
+                    {currentQueueIndex + 1}/{itemQueue.length}
+                  </span>
                 </div>
-              ))}
+              )}
+              <h2 className="text-xl font-bold text-gray-900">Add to Inventory</h2>
             </div>
+            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+              <X size={20} />
+            </button>
           </div>
-        )}
 
-        {/* Main Content - Scrollable */}
-        <div className="flex-1 overflow-y-auto">
-          {aiProcessing ? (
-            // AI Processing state
-            <div className="bg-gradient-to-br from-emerald-50 to-teal-50 p-6 space-y-4 max-h-[28rem] overflow-y-auto overflow-x-hidden">
-              <div className="text-center">
-                <p className="font-bold text-xl mb-6 text-gray-900 flex items-center justify-center gap-2">
-                  <Brain className="animate-pulse text-emerald-500" size={24} />
-                  {aiProgress.message}
-                </p>
-              </div>
-
-              {/* Room and Total Value */}
-              {aiProgress.room && aiProgress.totalValue && (
-                <div className="bg-white rounded-2xl p-4 shadow-sm border border-emerald-200">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <MapPin size={16} className="text-emerald-600" />
-                      <span className="font-semibold text-gray-900">{aiProgress.room}</span>
-                    </div>
-                    <div className="flex items-center gap-1 text-emerald-600 font-bold">
-                      <DollarSign size={16} />
-                      <span>{formatValue(aiProgress.totalValue)}</span>
-                    </div>
+          {/* Compact Queue Progress (only when multiple items) */}
+          {aiDetected && itemQueue.length > 1 && (
+            <div className="px-4 py-2 bg-gray-50 border-b border-gray-100">
+              <div className="flex gap-1 justify-center">
+                {itemQueue.map((item, index) => (
+                  <div
+                    key={index}
+                    className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold transition-all ${completedItems.includes(item.name)
+                      ? item.status === 'error'
+                        ? 'bg-red-500 text-white'
+                        : 'bg-green-500 text-white'
+                      : index === currentQueueIndex
+                        ? 'bg-indigo-500 text-white ring-2 ring-indigo-200'
+                        : item.ready
+                          ? item.status === 'error'
+                            ? 'bg-red-500 text-white'
+                            : 'bg-blue-500 text-white'
+                          : 'bg-gray-300 text-gray-600'
+                      }`}
+                  >
+                    {index + 1}
                   </div>
-                  <p className="text-sm text-gray-600">
-                    Found {aiProgress.detectedObjects?.length || 0} items worth approximately {formatValue(aiProgress.totalValue)}
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Main Content - Scrollable */}
+          <div className="flex-1 overflow-y-auto">
+            {aiProcessing ? (
+              // AI Processing state
+              <div className="bg-gradient-to-br from-emerald-50 to-teal-50 p-6 space-y-4 max-h-[28rem] overflow-y-auto overflow-x-hidden sm:rounded-b-3xl">
+                <div className="text-center">
+                  <p className="font-bold text-xl mb-6 text-gray-900 flex items-center justify-center gap-2">
+                    <Brain className="animate-pulse text-emerald-500" size={24} />
+                    {aiProgress.message}
                   </p>
                 </div>
-              )}
 
-              {/* Detected Objects with Real-time Status */}
-              {aiProgress.detectedObjects && aiProgress.detectedObjects.length > 0 && (
-                <div className="space-y-3">
-                  <h4 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                    <Package size={16} />
-                    Processing Items {aiProgress.currentObjectIndex !== undefined && `(${aiProgress.currentObjectIndex + 1}/${aiProgress.detectedObjects.length})`}
-                  </h4>
-                  {aiProgress.detectedObjects.map((obj, index) => (
-                    <div key={index} className={`bg-white rounded-xl p-3 shadow-sm border transition-all duration-300 ${getStatusColor(obj.status)} ${aiProgress.currentObjectIndex === index ? 'ring-2 ring-emerald-300 ring-opacity-50' : ''
-                      }`}>
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-emerald-100 to-teal-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                          {getStatusIcon(obj.status)}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-gray-900 text-sm">{obj.name}</p>
-                          <div className="flex items-center gap-2">
-                            <p className="text-xs text-gray-600">{obj.category}</p>
-                            {obj.detectionCount && (
-                              <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-medium">
-                                {obj.detectionCount} found
-                              </span>
-                            )}
-                            {obj.status && obj.status !== 'waiting' && (
-                              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${obj.status === 'detecting' ? 'bg-blue-100 text-blue-700' :
-                                obj.status === 'cropping' ? 'bg-orange-100 text-orange-700' :
-                                  obj.status === 'enhancing' ? 'bg-purple-100 text-purple-700' :
-                                    obj.status === 'uploading' ? 'bg-indigo-100 text-indigo-700' :
-                                      obj.status === 'complete' ? 'bg-green-100 text-green-700' :
-                                        obj.status === 'error' ? 'bg-red-100 text-red-700' :
-                                          'bg-gray-100 text-gray-700'
-                                }`}>
-                                {obj.status === 'detecting' && 'Detecting...'}
-                                {obj.status === 'cropping' && 'Cropping...'}
-                                {obj.status === 'enhancing' && 'Enhancing...'}
-                                {obj.status === 'uploading' && 'Uploading...'}
-                                {obj.status === 'complete' && 'Complete ✓'}
-                                {obj.status === 'error' && 'Error ✗'}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-bold text-emerald-600 text-sm">
-                            ${obj.estimated_cost_usd ? obj.estimated_cost_usd.toFixed(0) : '0'}
-                          </p>
-                        </div>
+                {/* Room and Total Value */}
+                {aiProgress.room && aiProgress.totalValue && (
+                  <div className="bg-white rounded-2xl p-4 shadow-sm border border-emerald-200">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <MapPin size={16} className="text-emerald-600" />
+                        <span className="font-semibold text-gray-900">{aiProgress.room}</span>
+                      </div>
+                      <div className="flex items-center gap-1 text-emerald-600 font-bold">
+                        <DollarSign size={16} />
+                        <span>{formatValue(aiProgress.totalValue)}</span>
                       </div>
                     </div>
-                  ))}
-                </div>
-              )}
-
-              {aiProgress.step === 'complete' && (
-                <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-2xl p-4 text-center mt-4">
-                  <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                    <Sparkles className="text-white" size={24} />
+                    <p className="text-sm text-gray-600">
+                      Found {aiProgress.detectedObjects?.length || 0} items worth approximately {formatValue(aiProgress.totalValue)}
+                    </p>
                   </div>
-                  <p className="font-bold text-emerald-700 mb-1">Perfect!</p>
-                  <p className="text-sm text-emerald-600">Your items are ready to be added to your inventory</p>
-                </div>
-              )}
+                )}
 
-              {/* Original Image Display */}
-              {aiProgress.originalFullImageUrl && (
-                <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-200">
-                  <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                    <Camera size={14} />
-                    Your photo being processed
-                  </h4>
-                  <div className="relative aspect-square bg-gray-100 rounded-xl overflow-hidden">
-                    <img
-                      src={aiProgress.originalFullImageUrl}
-                      alt="Original photo being processed"
-                      className="w-full h-full object-contain"
-                    />
+                {/* Detected Objects with Real-time Status */}
+                {aiProgress.detectedObjects && aiProgress.detectedObjects.length > 0 && (
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                      <Package size={16} />
+                      Processing Items {aiProgress.currentObjectIndex !== undefined && `(${aiProgress.currentObjectIndex + 1}/${aiProgress.detectedObjects.length})`}
+                    </h4>
+                    {aiProgress.detectedObjects.map((obj, index) => (
+                      <div key={index} className={`bg-white rounded-xl p-3 shadow-sm border transition-all duration-300 ${getStatusColor(obj.status)} ${aiProgress.currentObjectIndex === index ? 'ring-2 ring-emerald-300 ring-opacity-50' : ''
+                        }`}>
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-gradient-to-br from-emerald-100 to-teal-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                            {getStatusIcon(obj.status)}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-gray-900 text-sm">{obj.name}</p>
+                            <div className="flex items-center gap-2">
+                              <p className="text-xs text-gray-600">{obj.category}</p>
+                              {obj.detectionCount && (
+                                <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-medium">
+                                  {obj.detectionCount} found
+                                </span>
+                              )}
+                              {obj.status && obj.status !== 'waiting' && (
+                                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${obj.status === 'detecting' ? 'bg-blue-100 text-blue-700' :
+                                  obj.status === 'cropping' ? 'bg-orange-100 text-orange-700' :
+                                    obj.status === 'enhancing' ? 'bg-purple-100 text-purple-700' :
+                                      obj.status === 'uploading' ? 'bg-indigo-100 text-indigo-700' :
+                                        obj.status === 'complete' ? 'bg-green-100 text-green-700' :
+                                          obj.status === 'error' ? 'bg-red-100 text-red-700' :
+                                            'bg-gray-100 text-gray-700'
+                                  }`}>
+                                  {obj.status === 'detecting' && 'Detecting...'}
+                                  {obj.status === 'cropping' && 'Cropping...'}
+                                  {obj.status === 'enhancing' && 'Enhancing...'}
+                                  {obj.status === 'uploading' && 'Uploading...'}
+                                  {obj.status === 'complete' && 'Complete ✓'}
+                                  {obj.status === 'error' && 'Error ✗'}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-bold text-emerald-600 text-sm">
+                              ${obj.estimated_cost_usd ? obj.estimated_cost_usd.toFixed(0) : '0'}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                </div>
-              )}
-            </div>
-          ) : isProcessing ? (
-            // Processing state
-            <div className="p-6 text-center">
-              <div className="w-20 h-20 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-3xl flex items-center justify-center mx-auto mb-4">
-                <div className="animate-spin w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full"></div>
-              </div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">Processing...</h3>
-              <p className="text-gray-600 text-sm">Getting your photo ready</p>
-            </div>
-          ) : error ? (
-            // Error state
-            <div className="p-6 text-center">
-              <div className="w-20 h-20 bg-gradient-to-br from-red-100 to-red-200 rounded-3xl flex items-center justify-center mx-auto mb-4">
-                <AlertCircle size={32} className="text-red-600" />
-              </div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">Oops!</h3>
-              <p className="text-gray-600 text-sm mb-4">{error}</p>
-              <button
-                onClick={() => {
-                  setError(null);
-                  fileInputRef.current?.click();
-                }}
-                className="bg-red-500 text-white px-6 py-3 rounded-xl hover:bg-red-600 transition-colors flex items-center gap-2 mx-auto font-semibold"
-              >
-                <RefreshCw size={16} />
-                Try Again
-              </button>
-            </div>
-          ) : !formData.imageUrl ? (
-            // Camera Section
-            <div className="p-6 text-center">
-              <div className="w-20 h-20 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-3xl flex items-center justify-center mx-auto mb-4">
-                <Camera size={32} className="text-indigo-600" />
-              </div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">Snap it & Tag it</h3>
-              <p className="text-gray-600 text-sm mb-6">Tori will identify your items automatically</p>
+                )}
 
-              <div className="space-y-3">
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-4 rounded-full font-bold hover:shadow-xl hover:shadow-indigo-500/25 transition-all duration-300 hover:scale-[1.02] flex items-center justify-center gap-3"
-                >
-                  <Camera size={20} />
-                  Snap it
-                  <Zap size={16} className="text-amber-300" />
-                </button>
+                {aiProgress.step === 'complete' && (
+                  <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-2xl p-4 text-center mt-4">
+                    <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                      <Sparkles className="text-white" size={24} />
+                    </div>
+                    <p className="font-bold text-emerald-700 mb-1">Perfect!</p>
+                    <p className="text-sm text-emerald-600">Your items are ready to be added to your inventory</p>
+                  </div>
+                )}
 
-                <button
-                  type="button"
-                  onClick={() => aiFileInputRef.current?.click()}
-                  className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-3 rounded-full font-bold hover:shadow-lg hover:shadow-emerald-500/25 transition-all duration-300 hover:scale-[1.02] flex items-center justify-center gap-2"
-                >
-                  <Sparkles size={18} />
-                  AI Snap
-                  <Zap size={16} className="text-yellow-300" />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={simulateStreamingFlow}
-                  className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 rounded-full font-bold hover:shadow-lg hover:shadow-purple-500/25 transition-all duration-300 hover:scale-[1.02] flex items-center justify-center gap-2 text-sm"
-                >
-                  🎭 Demo Mode
-                </button>
-              </div>
-            </div>
-          ) : (
-            // Form Section
-            <form onSubmit={handleSubmit} className="p-4 space-y-4">
-              {/* Image Preview */}
-              <div className="relative">
-                <img
-                  src={formData.imageUrl}
-                  alt="Item"
-                  className="w-full h-48 object-cover rounded-2xl bg-gray-100"
-                />
-                {itemQueue[currentQueueIndex]?.status === 'error' && (
-                  <div className="absolute top-3 right-3 bg-red-500 text-white px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1">
-                    <AlertCircle size={12} />
-                    Enhancement failed
+                {/* Original Image Display */}
+                {aiProgress.originalFullImageUrl && (
+                  <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-200">
+                    <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                      <Camera size={14} />
+                      Your photo being processed
+                    </h4>
+                    <div className="relative aspect-square bg-gray-100 rounded-xl overflow-hidden">
+                      <img
+                        src={aiProgress.originalFullImageUrl}
+                        alt="Original photo being processed"
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
                   </div>
                 )}
               </div>
+            ) : isProcessing ? (
+              // Processing state
+              <div className="p-6 text-center">
+                <div className="w-20 h-20 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-3xl flex items-center justify-center mx-auto mb-4">
+                  <div className="animate-spin w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full"></div>
+                </div>
+                <h3 className="text-lg font-bold text-gray-900 mb-2">Processing...</h3>
+                <p className="text-gray-600 text-sm">Getting your photo ready</p>
+              </div>
+            ) : error ? (
+              // Error state
+              <div className="p-6 text-center">
+                <div className="w-20 h-20 bg-gradient-to-br from-red-100 to-red-200 rounded-3xl flex items-center justify-center mx-auto mb-4">
+                  <AlertCircle size={32} className="text-red-600" />
+                </div>
+                <h3 className="text-lg font-bold text-gray-900 mb-2">Oops!</h3>
+                <p className="text-gray-600 text-sm mb-4">{error}</p>
+                <button
+                  onClick={() => {
+                    setError(null);
+                    fileInputRef.current?.click();
+                  }}
+                  className="bg-red-500 text-white px-6 py-3 rounded-xl hover:bg-red-600 transition-colors flex items-center gap-2 mx-auto font-semibold"
+                >
+                  <RefreshCw size={16} />
+                  Try Again
+                </button>
+              </div>
+            ) : !formData.imageUrl ? (
+              // Camera Section
+              <div className="p-6 text-center">
+                <div className="w-20 h-20 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-3xl flex items-center justify-center mx-auto mb-4 animate-[morph_12s_ease-in-out_infinite] relative overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-br from-indigo-200/50 to-purple-200/50 rounded-3xl animate-[pulse_3s_ease-in-out_infinite]"></div>
+                  <Camera size={32} className="text-indigo-600 relative z-10 animate-[float_2s_ease-in-out_infinite]" />
+                </div>
+                <h3 className="text-lg font-bold text-gray-900 mb-2">Snap it & Tag it</h3>
+                <p className="text-gray-600 text-sm mb-6">Tori will identify your items automatically</p>
 
-              {/* Essential Fields Only */}
-              <div className="space-y-4">
-                {/* Name */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Item Name *
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className={`w-full px-4 py-3 border rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors text-base ${aiDetected ? 'border-indigo-300 bg-indigo-50' : 'border-gray-300'}`}
-                    placeholder="e.g., MacBook Pro, Coffee Mug"
-                    required
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="border-2 border-indigo-600 text-indigo-600 py-4 px-4 rounded-full font-bold hover:bg-indigo-50 transition-all duration-300 hover:scale-[1.02] flex items-center justify-center gap-2"
+                  >
+                    <Camera size={18} />
+                    Manual Snap
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => aiFileInputRef.current?.click()}
+                    className="bg-gradient-to-r from-indigo-600 to-purple-600 border-2 border-transparent text-white py-4 px-4 rounded-full font-bold hover:shadow-xl hover:shadow-indigo-500/25 transition-all duration-300 hover:scale-[1.02] flex items-center justify-center gap-2"
+                  >
+                    <Sparkles size={18} />
+                    AI Snap
+                    <Zap size={14} className="text-amber-300" />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              // Form Section
+              <form onSubmit={handleSubmit} className="p-4 space-y-4">
+                {/* Image Preview */}
+                <div className="relative">
+                  <img
+                    src={formData.imageUrl}
+                    alt="Item"
+                    className="w-full h-48 object-cover rounded-2xl bg-gray-100"
                   />
+                  {itemQueue[currentQueueIndex]?.status === 'error' && (
+                    <div className="absolute top-3 right-3 bg-red-500 text-white px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1">
+                      <AlertCircle size={12} />
+                      Enhancement failed
+                    </div>
+                  )}
                 </div>
 
-                {/* Category & Room in a row */}
-                <div className="grid grid-cols-2 gap-3">
+                {/* Essential Fields Only */}
+                <div className="space-y-4">
+                  {/* Name */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Category *
-                    </label>
-                    <select
-                      value={formData.category}
-                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                      className={`w-full px-3 py-3 border rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors appearance-none bg-white text-base ${aiDetected ? 'border-indigo-300 bg-indigo-50' : 'border-gray-300'}`}
-                      required
-                    >
-                      <option value="">Select category</option>
-                      {categories.map((category) => (
-                        <option key={category.id} value={category.name}>{category.name}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Location *
-                    </label>
-                    <select
-                      value={formData.room}
-                      onChange={(e) => setFormData({ ...formData, room: e.target.value })}
-                      className={`w-full px-3 py-3 border rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors appearance-none bg-white text-base ${aiDetected ? 'border-indigo-300 bg-indigo-50' : 'border-gray-300'}`}
-                      required
-                    >
-                      <option value="">Select room</option>
-                      {rooms.map((room) => (
-                        <option key={room.id} value={room.name}>{room.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                {/* Value & Condition in a row */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Estimated Value
+                      Item Name *
                     </label>
                     <input
-                      type="number"
-                      value={formData.estimatedValue}
-                      onChange={(e) => setFormData({ ...formData, estimatedValue: e.target.value })}
-                      className={`w-full px-3 py-3 border rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors text-base ${aiDetected ? 'border-indigo-300 bg-indigo-50' : 'border-gray-300'}`}
-                      placeholder="0.00"
-                      step="0.01"
-                      min="0"
+                      type="text"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      className={`w-full px-4 py-3 border rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors text-base ${aiDetected ? 'border-indigo-300 bg-indigo-50' : 'border-gray-300'}`}
+                      placeholder="e.g., MacBook Pro, Coffee Mug"
+                      required
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Condition
-                    </label>
-                    <select
-                      value={formData.condition}
-                      onChange={(e) => setFormData({ ...formData, condition: e.target.value as any })}
-                      className={`w-full px-3 py-3 border rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors appearance-none text-base ${aiDetected ? 'border-indigo-300 bg-indigo-50' : 'border-gray-300 bg-white'}`}
-                    >
-                      <option value="excellent">Excellent</option>
-                      <option value="good">Good</option>
-                      <option value="fair">Fair</option>
-                      <option value="poor">Poor</option>
-                    </select>
+                  {/* Category & Room in a row */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Category *
+                      </label>
+                      <select
+                        value={formData.category}
+                        onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                        className={`w-full px-3 py-3 border rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors appearance-none bg-white text-base ${aiDetected ? 'border-indigo-300 bg-indigo-50' : 'border-gray-300'}`}
+                        required
+                      >
+                        <option value="">Select category</option>
+                        {categories.map((category) => (
+                          <option key={category.id} value={category.name}>{category.name}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Location *
+                      </label>
+                      <select
+                        value={formData.room}
+                        onChange={(e) => setFormData({ ...formData, room: e.target.value })}
+                        className={`w-full px-3 py-3 border rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors appearance-none bg-white text-base ${aiDetected ? 'border-indigo-300 bg-indigo-50' : 'border-gray-300'}`}
+                        required
+                      >
+                        <option value="">Select room</option>
+                        {rooms.map((room) => (
+                          <option key={room.id} value={room.name}>{room.name}</option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
+
+                  {/* Value & Condition in a row */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Estimated Value
+                      </label>
+                      <input
+                        type="number"
+                        value={formData.estimatedValue}
+                        onChange={(e) => setFormData({ ...formData, estimatedValue: e.target.value })}
+                        className={`w-full px-3 py-3 border rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors text-base ${aiDetected ? 'border-indigo-300 bg-indigo-50' : 'border-gray-300'}`}
+                        placeholder="0.00"
+                        step="0.01"
+                        min="0"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Condition
+                      </label>
+                      <select
+                        value={formData.condition}
+                        onChange={(e) => setFormData({ ...formData, condition: e.target.value as any })}
+                        className={`w-full px-3 py-3 border rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors appearance-none text-base ${aiDetected ? 'border-indigo-300 bg-indigo-50' : 'border-gray-300 bg-white'}`}
+                      >
+                        <option value="excellent">Excellent</option>
+                        <option value="good">Good</option>
+                        <option value="fair">Fair</option>
+                        <option value="poor">Poor</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Description - Optional, collapsible */}
+                  <details className="group">
+                    <summary className="text-sm text-gray-600 cursor-pointer hover:text-gray-800 transition-colors">
+                      Add description (optional)
+                    </summary>
+                    <textarea
+                      value={formData.description || ''}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      className={`w-full mt-2 px-3 py-3 border rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors resize-none text-base ${aiDetected ? 'border-indigo-300 bg-indigo-50' : 'border-gray-300'}`}
+                      rows={2}
+                      placeholder="Any details you want to remember..."
+                    />
+                  </details>
                 </div>
-
-                {/* Description - Optional, collapsible */}
-                <details className="group">
-                  <summary className="text-sm text-gray-600 cursor-pointer hover:text-gray-800 transition-colors">
-                    Add description (optional)
-                  </summary>
-                  <textarea
-                    value={formData.description || ''}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    className={`w-full mt-2 px-3 py-3 border rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors resize-none text-base ${aiDetected ? 'border-indigo-300 bg-indigo-50' : 'border-gray-300'}`}
-                    rows={2}
-                    placeholder="Any details you want to remember..."
-                  />
-                </details>
-              </div>
-            </form>
-          )}
-        </div>
-
-        {/* Fixed Bottom Actions */}
-        {formData.imageUrl && (
-          <div className="p-4 border-t border-gray-100 bg-white rounded-b-3xl">
-            <div className="flex gap-3">
-              {/* Skip button - only show when there are more ready items OR not streaming */}
-              {aiDetected && (hasMoreReadyItems() || !isStreaming) && ((itemQueue.length > 0 && currentQueueIndex < itemQueue.length - 1) || (currentObjectIndex < Math.min(detectedObjects.length - 1, 2))) && (
-                <button
-                  type="button"
-                  onClick={handleSkipItem}
-                  className="flex-1 py-3 rounded-full font-medium transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200"
-                >
-                  Skip
-                </button>
-              )}
-
-              <button
-                type="submit"
-                onClick={handleSubmit}
-                disabled={isStreaming && !hasMoreReadyItems()}
-                className={`${aiDetected && (hasMoreReadyItems() || !isStreaming) && ((itemQueue.length > 0 && currentQueueIndex < itemQueue.length - 1) || (currentObjectIndex < Math.min(detectedObjects.length - 1, 2))) ? 'flex-1' : 'w-full'} py-3 rounded-full font-bold transition-all duration-300 ${isStreaming && !hasMoreReadyItems()
-                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:shadow-lg hover:shadow-indigo-500/25 hover:scale-[1.02]'
-                  }`}
-              >
-                {isStreaming && !hasMoreReadyItems()
-                  ? <div className="flex items-center justify-center">
-                    <div className="animate-spin w-5 h-5 border-2 border-gray-400 border-t-transparent rounded-full"></div>
-                  </div>
-                  : 'Add'}
-              </button>
-            </div>
+              </form>
+            )}
           </div>
-        )}
 
-        {/* Hidden file input for camera */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          capture="environment"
-          onChange={handleFileChange}
-          className="hidden"
-        />
+          {/* Fixed Bottom Actions */}
+          {formData.imageUrl && (
+            <div className="p-4 border-t border-gray-100 bg-white rounded-b-3xl">
+              <div className="flex gap-3">
+                {/* Skip button - only show when there are more ready items OR not streaming */}
+                {aiDetected && (hasMoreReadyItems() || !isStreaming) && ((itemQueue.length > 0 && currentQueueIndex < itemQueue.length - 1) || (currentObjectIndex < Math.min(detectedObjects.length - 1, 2))) && (
+                  <button
+                    type="button"
+                    onClick={handleSkipItem}
+                    className="flex-1 py-3 rounded-full font-medium transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  >
+                    Skip
+                  </button>
+                )}
 
-        {/* Hidden file input for AI processing */}
-        <input
-          ref={aiFileInputRef}
-          type="file"
-          accept="image/*"
-          capture="environment"
-          onChange={handleAiFileChange}
-          className="hidden"
-        />
+                <button
+                  type="submit"
+                  onClick={handleSubmit}
+                  disabled={isStreaming && !hasMoreReadyItems()}
+                  className={`${aiDetected && (hasMoreReadyItems() || !isStreaming) && ((itemQueue.length > 0 && currentQueueIndex < itemQueue.length - 1) || (currentObjectIndex < Math.min(detectedObjects.length - 1, 2))) ? 'flex-1' : 'w-full'} py-3 rounded-full font-bold transition-all duration-300 ${isStreaming && !hasMoreReadyItems()
+                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                    : 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:shadow-lg hover:shadow-indigo-500/25 hover:scale-[1.02]'
+                    }`}
+                >
+                  {isStreaming && !hasMoreReadyItems()
+                    ? <div className="flex items-center justify-center">
+                      <div className="animate-spin w-5 h-5 border-2 border-gray-400 border-t-transparent rounded-full"></div>
+                    </div>
+                    : 'Add'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Hidden file input for camera */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={handleFileChange}
+            className="hidden"
+          />
+
+          {/* Hidden file input for AI processing */}
+          <input
+            ref={aiFileInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={handleAiFileChange}
+            className="hidden"
+          />
+        </div>
       </div>
-    </div>
+    </>
   );
 };
