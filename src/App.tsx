@@ -69,6 +69,7 @@ function App() {
   const [selectedRoom, setSelectedRoom] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [itemsAddedInSession, setItemsAddedInSession] = useState(0);
 
   // Get rooms and categories that exist in the data, with default fallback for new ones
   const rooms = roomDistribution.map(dist => {
@@ -447,9 +448,6 @@ function App() {
       // Add the item first and get its ID
       const itemId = await addItem(item);
 
-      // Refresh stats after adding item
-      refreshStats();
-
       // If maintenance is enabled and we have maintenance data, create the schedule
       if (itemId && maintenanceData && maintenanceData.title && user) {
         // Calculate the next due date
@@ -479,6 +477,9 @@ function App() {
           isActive: true,
         });
       }
+
+      // Track that an item was added in this session
+      setItemsAddedInSession(prev => prev + 1);
     } catch (error) {
       console.error('Error adding item with maintenance:', error);
       // Let the UI handle the error
@@ -994,7 +995,14 @@ function App() {
         {/* Modals */}
         <AddItemModal
           isOpen={showAddModal}
-          onClose={() => setShowAddModal(false)}
+          onClose={() => {
+            // Only refresh stats if items were actually added during this session
+            if (itemsAddedInSession > 0) {
+              refreshStats();
+              setItemsAddedInSession(0);
+            }
+            setShowAddModal(false);
+          }}
           onAdd={handleAddItemWithMaintenance}
           rooms={rooms}
           categories={categories}
