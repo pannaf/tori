@@ -11,6 +11,7 @@ interface SearchAndFiltersProps {
   onCategoryChange: (category: string) => void;
   rooms: Room[];
   categories: Category[];
+  onSearchSubmit?: (query: string) => void;
 }
 
 export const SearchAndFilters: React.FC<SearchAndFiltersProps> = ({
@@ -22,11 +23,18 @@ export const SearchAndFilters: React.FC<SearchAndFiltersProps> = ({
   onCategoryChange,
   rooms,
   categories,
+  onSearchSubmit,
 }) => {
   const clearFilters = () => {
     onSearchChange('');
     onRoomChange('');
     onCategoryChange('');
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && onSearchSubmit) {
+      onSearchSubmit(searchQuery);
+    }
   };
 
   const hasActiveFilters = searchQuery || selectedRoom || selectedCategory;
@@ -37,9 +45,10 @@ export const SearchAndFilters: React.FC<SearchAndFiltersProps> = ({
         <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
         <input
           type="text"
-          placeholder="Search items..."
+          placeholder="Search items... (Press Enter to search immediately)"
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
+          onKeyPress={handleKeyPress}
           className="w-full pl-12 pr-4 py-4 bg-white border border-gray-200 rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors shadow-sm"
         />
       </div>
@@ -49,7 +58,7 @@ export const SearchAndFilters: React.FC<SearchAndFiltersProps> = ({
           <Filter size={18} className="text-gray-500" />
           <span className="text-sm font-medium text-gray-700">Filters</span>
         </div>
-        
+
         {hasActiveFilters && (
           <button
             onClick={clearFilters}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { Plus, Wrench, Home, Search, BarChart3, Zap, LogOut, User } from 'lucide-react';
 import { useInventory } from './hooks/useInventory';
 import { useAuth } from './hooks/useAuth';
@@ -50,15 +50,53 @@ function App() {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [showUserMenu, setShowUserMenu] = useState(false);
 
+  // Debounce timer for search
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   // Recent items are now loaded separately via stats hook
 
-  // Handle search with debouncing
-  const handleSearch = async (query: string, room?: string, category?: string) => {
+  // Handle search with debouncing - only search after user stops typing for 500ms
+  const handleSearch = useCallback((query: string, room?: string, category?: string) => {
+    // Update local state immediately for UI responsiveness
     setSearchQuery(query);
     setSelectedRoom(room || '');
     setSelectedCategory(category || '');
-    await searchItems(query, room, category);
-  };
+
+    // Clear existing timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    // Only trigger search if there's a query or filters, otherwise show all items
+    if (!query && !room && !category) {
+      searchItems('', '', '');
+      return;
+    }
+
+    // Set new timeout for debounced search
+    searchTimeoutRef.current = setTimeout(() => {
+      searchItems(query, room, category);
+    }, 500); // 500ms delay - comfortable for slower typists
+  }, [searchItems]);
+
+  // Immediate search for Enter key press
+  const handleSearchSubmit = useCallback((query: string) => {
+    // Clear any pending debounced search
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    // Execute search immediately
+    searchItems(query, selectedRoom, selectedCategory);
+  }, [searchItems, selectedRoom, selectedCategory]);
+
+  // Cleanup timeout on unmount
+  React.useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleItemClick = async (item: InventoryItem) => {
     // Load full item details with images when clicking to view
@@ -397,43 +435,54 @@ function App() {
               onRoomChange={(room) => handleSearch(searchQuery, room, selectedCategory)}
               selectedCategory={selectedCategory}
               onCategoryChange={(category) => handleSearch(searchQuery, selectedRoom, category)}
+              onSearchSubmit={handleSearchSubmit}
               rooms={rooms}
               categories={categories}
             />
 
-            <div className="grid grid-cols-2 gap-4">
-              {items.map((item) => (
-                <ItemCard
-                  key={item.id}
-                  item={item}
-                  onEdit={handleItemEdit}
-                  onDelete={handleItemDelete}
-                  onClick={handleItemClick}
-                />
-              ))}
-            </div>
-
-            {/* Load More Button */}
-            {pagination.hasMore && (
-              <div className="text-center py-4">
-                <button
-                  onClick={loadMore}
-                  disabled={searchLoading}
-                  className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-full font-semibold hover:shadow-lg hover:shadow-indigo-500/25 transition-all duration-300 disabled:opacity-50"
-                >
-                  {searchLoading ? 'Loading...' : 'Load More'}
-                </button>
+            {/* Results area with localized loading */}
+            {searchLoading ? (
+              <div className="text-center py-8">
+                <div className="w-8 h-8 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-3"></div>
+                <p className="text-gray-600 text-sm">Searching...</p>
               </div>
-            )}
+            ) : (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  {items.map((item) => (
+                    <ItemCard
+                      key={item.id}
+                      item={item}
+                      onEdit={handleItemEdit}
+                      onDelete={handleItemDelete}
+                      onClick={handleItemClick}
+                    />
+                  ))}
+                </div>
 
-            {items.length === 0 && !inventoryLoading && (
-              <div className="text-center py-12">
-                <Search className="mx-auto mb-4 text-gray-400" size={48} />
-                <h3 className="text-lg font-bold text-gray-900 mb-2">Nothing found</h3>
-                <p className="text-gray-600">
-                  Try a different search term or adjust your filters
-                </p>
-              </div>
+                {/* Load More Button */}
+                {pagination.hasMore && (
+                  <div className="text-center py-4">
+                    <button
+                      onClick={loadMore}
+                      disabled={searchLoading}
+                      className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-full font-semibold hover:shadow-lg hover:shadow-indigo-500/25 transition-all duration-300 disabled:opacity-50"
+                    >
+                      Load More
+                    </button>
+                  </div>
+                )}
+
+                {items.length === 0 && (
+                  <div className="text-center py-12">
+                    <Search className="mx-auto mb-4 text-gray-400" size={48} />
+                    <h3 className="text-lg font-bold text-gray-900 mb-2">Nothing found</h3>
+                    <p className="text-gray-600">
+                      Try a different search term or adjust your filters
+                    </p>
+                  </div>
+                )}
+              </>
             )}
           </div>
         );
