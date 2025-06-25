@@ -53,21 +53,38 @@ export const useInventoryStats = (user: User | null) => {
         try {
             setLoading(true);
 
-            // Load all stats data in parallel
-            const [statsData, roomData, categoryData, recentData, maintenanceData] = await Promise.all([
-                getItemStats(),
+            // Stagger requests to avoid rate limiting - load essential data first
+            const statsData = await getItemStats();
+            setStats({
+                ...statsData,
+                totalRooms: 0 // Will update when room data loads
+            });
+
+            // Small delay to avoid rate limiting
+            await new Promise(resolve => setTimeout(resolve, 100));
+
+            // Load room and category data with slight delay
+            const [roomData, categoryData] = await Promise.all([
                 getRoomDistribution(),
-                getCategoryDistribution(),
+                getCategoryDistribution()
+            ]);
+
+            setStats(prev => ({
+                ...prev,
+                totalRooms: roomData.length
+            }));
+            setRoomDistribution(roomData);
+            setCategoryDistribution(categoryData);
+
+            // Another small delay
+            await new Promise(resolve => setTimeout(resolve, 100));
+
+            // Load remaining data
+            const [recentData, maintenanceData] = await Promise.all([
                 getRecentItems(),
                 getAllItemsForMaintenance()
             ]);
 
-            setStats({
-                ...statsData,
-                totalRooms: roomData.length
-            });
-            setRoomDistribution(roomData);
-            setCategoryDistribution(categoryData);
             setRecentItems(recentData);
             setAllItemsForMaintenance(maintenanceData);
         } catch (error) {
