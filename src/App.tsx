@@ -262,15 +262,15 @@ function App() {
     setLoadingMore(false);
   }, [filteredItems, displayedItems.length, loadItemImages]);
 
-  // Initialize filtered items when allItems changes
+  // Initialize filtered items when allItems changes, but only when on search tab
   React.useEffect(() => {
-    if (allItems.length > 0) {
+    if (allItems.length > 0 && activeTab === 'search') {
       setInitialSearchComplete(false);
       const filtered = filterItems(searchQuery, selectedRoom, selectedCategory);
       setFilteredItems(filtered);
       updateDisplayedItems(filtered, true, true);
     }
-  }, [allItems, filterItems, searchQuery, selectedRoom, selectedCategory, updateDisplayedItems]);
+  }, [allItems, filterItems, searchQuery, selectedRoom, selectedCategory, updateDisplayedItems, activeTab]);
 
   // Cleanup timeout on unmount
   React.useEffect(() => {
