@@ -13,6 +13,7 @@ import { StatsOverview } from './components/StatsOverview';
 import { AuthModal } from './components/AuthModal';
 import { InventoryItem } from './types/inventory';
 import { createClient } from '@supabase/supabase-js';
+import { env } from './config/env';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -32,12 +33,17 @@ const defaultRooms = [
 
 const defaultCategories = [
   { id: '1', name: 'Electronics', icon: 'smartphone', color: '#6366F1' },
-  { id: '2', name: 'Furniture', icon: 'armchair', color: '#EC4899' },
-  { id: '3', name: 'Appliances', icon: 'refrigerator', color: '#8B5CF6' },
-  { id: '4', name: 'Decorative', icon: 'picture-in-picture', color: '#14B8A6' },
-  { id: '5', name: 'Sports', icon: 'dumbbell', color: '#F97316' },
-  { id: '6', name: 'Tools', icon: 'hammer', color: '#F59E0B' },
-  { id: '7', name: 'Other', icon: 'package', color: '#6B7280' },
+  { id: '2', name: 'Appliances', icon: 'refrigerator', color: '#8B5CF6' },
+  { id: '3', name: 'Furniture', icon: 'armchair', color: '#EC4899' },
+  { id: '4', name: 'Kitchenware', icon: 'chef-hat', color: '#F59E0B' },
+  { id: '5', name: 'Tools', icon: 'hammer', color: '#EF4444' },
+  { id: '6', name: 'Sports & Recreation', icon: 'dumbbell', color: '#F97316' },
+  { id: '7', name: 'Books & Media', icon: 'book-open', color: '#10B981' },
+  { id: '8', name: 'Clothing & Accessories', icon: 'shirt', color: '#14B8A6' },
+  { id: '9', name: 'Decorations', icon: 'picture-in-picture', color: '#84CC16' },
+  { id: '10', name: 'Personal Care', icon: 'heart', color: '#F43F5E' },
+  { id: '11', name: 'Collectibles & Mementos', icon: 'star', color: '#A855F7' },
+  { id: '12', name: 'Other', icon: 'package', color: '#6B7280' },
 ];
 
 type TabType = 'home' | 'search' | 'stats' | 'care';
@@ -72,15 +78,23 @@ function App() {
   const [itemsAddedInSession, setItemsAddedInSession] = useState(0);
 
   // Get rooms and categories that exist in the data, with default fallback for new ones
-  const rooms = roomDistribution.map(dist => {
-    const existing = defaultRooms.find(r => r.name === dist.room);
-    return existing || { id: dist.room.toLowerCase().replace(/\s+/g, '-'), name: dist.room, icon: 'package', color: '#6B7280' };
-  });
+  // In development mode or when adding new items, always show all rooms
+  const roomsWithData = new Set(roomDistribution.map(dist => dist.room).filter(Boolean));
+  const rooms = env.IS_DEVELOPMENT
+    ? defaultRooms // Always show all rooms in development
+    : roomDistribution.map(dist => {
+      const existing = defaultRooms.find(r => r.name === dist.room);
+      return existing || { id: dist.room.toLowerCase().replace(/\s+/g, '-'), name: dist.room, icon: 'package', color: '#6B7280' };
+    });
 
-  const categories = categoryDistribution.map(dist => {
-    const existing = defaultCategories.find(c => c.name === dist.category);
-    return existing || { id: dist.category.toLowerCase().replace(/\s+/g, '-'), name: dist.category, icon: 'package', color: '#6B7280' };
-  });
+  // For categories, always use the full default list to ensure consistency
+  // In development mode or when adding new items, always show all categories
+  const categoriesWithData = new Set(categoryDistribution.map(dist => dist.category).filter(Boolean));
+  const categories = env.IS_DEVELOPMENT
+    ? defaultCategories // Always show all categories in development
+    : defaultCategories.filter(cat =>
+      categoriesWithData.has(cat.name) || categoriesWithData.size === 0 // Show all if no data yet
+    );
 
   // Search state
   const [filteredItems, setFilteredItems] = useState<InventoryItem[]>([]);

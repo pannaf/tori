@@ -30,12 +30,17 @@ const defaultRooms: Room[] = [
 
 const defaultCategories: Category[] = [
   { id: '1', name: 'Electronics', icon: 'smartphone', color: '#6366F1' },
-  { id: '2', name: 'Furniture', icon: 'armchair', color: '#EC4899' },
-  { id: '3', name: 'Appliances', icon: 'refrigerator', color: '#8B5CF6' },
-  { id: '4', name: 'Decorative', icon: 'picture-in-picture', color: '#14B8A6' },
-  { id: '5', name: 'Sports', icon: 'dumbbell', color: '#F97316' },
-  { id: '6', name: 'Tools', icon: 'hammer', color: '#F59E0B' },
-  { id: '7', name: 'Other', icon: 'package', color: '#6B7280' },
+  { id: '2', name: 'Appliances', icon: 'refrigerator', color: '#8B5CF6' },
+  { id: '3', name: 'Furniture', icon: 'armchair', color: '#EC4899' },
+  { id: '4', name: 'Kitchenware', icon: 'chef-hat', color: '#F59E0B' },
+  { id: '5', name: 'Tools', icon: 'hammer', color: '#EF4444' },
+  { id: '6', name: 'Sports & Recreation', icon: 'dumbbell', color: '#F97316' },
+  { id: '7', name: 'Books & Media', icon: 'book-open', color: '#10B981' },
+  { id: '8', name: 'Clothing & Accessories', icon: 'shirt', color: '#14B8A6' },
+  { id: '9', name: 'Decorations', icon: 'picture-in-picture', color: '#84CC16' },
+  { id: '10', name: 'Personal Care', icon: 'heart', color: '#F43F5E' },
+  { id: '11', name: 'Collectibles & Mementos', icon: 'star', color: '#A855F7' },
+  { id: '12', name: 'Other', icon: 'package', color: '#6B7280' },
 ];
 
 interface PaginationState {
@@ -114,7 +119,7 @@ export const useInventory = (user: User | null = null, authLoading: boolean = fa
           {
             id: '2',
             name: 'Coffee Maker',
-            category: 'Kitchen',
+            category: 'Appliances',
             room: 'Kitchen',
             description: 'Breville espresso machine',
             condition: 'good' as const,
@@ -370,10 +375,12 @@ export const useInventory = (user: User | null = null, authLoading: boolean = fa
       if (env.IS_DEVELOPMENT) {
         console.log('🚀 Development Mode: Skipping category distribution query');
         return [
-          { category: 'Electronics', count: 6, percentage: 43 },
-          { category: 'Furniture', count: 4, percentage: 29 },
-          { category: 'Kitchen', count: 2, percentage: 14 },
-          { category: 'Books', count: 2, percentage: 14 }
+          { category: 'Electronics', count: 8, percentage: 35 },
+          { category: 'Appliances', count: 5, percentage: 22 },
+          { category: 'Furniture', count: 4, percentage: 17 },
+          { category: 'Kitchenware', count: 3, percentage: 13 },
+          { category: 'Tools', count: 2, percentage: 9 },
+          { category: 'Other', count: 1, percentage: 4 }
         ];
       }
 
@@ -428,7 +435,7 @@ export const useInventory = (user: User | null = null, authLoading: boolean = fa
           {
             id: 'recent-2',
             name: 'Coffee Maker',
-            category: 'Kitchen',
+            category: 'Appliances',
             room: 'Kitchen',
             description: 'Automatic drip coffee maker',
             imageUrl: PLACEHOLDER_IMAGE,
@@ -509,7 +516,7 @@ export const useInventory = (user: User | null = null, authLoading: boolean = fa
           {
             id: 'maint-2',
             name: 'Coffee Maker',
-            category: 'Kitchen',
+            category: 'Appliances',
             room: 'Kitchen',
             description: 'Automatic drip coffee maker',
             imageUrl: PLACEHOLDER_IMAGE,

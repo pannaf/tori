@@ -21,7 +21,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showOriginalImage, setShowOriginalImage] = useState(false);
   const [imageTransitioning, setImageTransitioning] = useState(false);
-  
+
   // Touch/swipe handling
   const touchStartX = useRef<number>(0);
   const touchStartY = useRef<number>(0);
@@ -116,7 +116,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
         originalUrl.startsWith('http') ? originalUrl :
           `${env.API_URL}${originalUrl}`;
     }
-    
+
     // Fallback to enhanced/main image
     return item.imageUrl?.startsWith('data:') ? item.imageUrl :
       item.imageUrl?.startsWith('http') ? item.imageUrl :
@@ -124,7 +124,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
   };
 
   // Check if we have both images available
-  const hasOriginalImage = !!(item as any).originalCropImageUrl && 
+  const hasOriginalImage = !!(item as any).originalCropImageUrl &&
     (item as any).originalCropImageUrl !== item.imageUrl &&
     (item as any).originalCropImageUrl.trim() !== '';
 
@@ -170,7 +170,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
         {/* Header */}
         <div className="relative">
           {item.imageUrl && (
-            <div 
+            <div
               ref={imageContainerRef}
               className="aspect-square bg-gray-100 rounded-t-3xl overflow-hidden relative"
               onTouchStart={handleTouchStart}
@@ -179,11 +179,10 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
               <img
                 src={getCurrentImageUrl()}
                 alt={item.name}
-                className={`w-full h-full object-contain transition-all duration-300 ${
-                  imageTransitioning ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
-                }`}
+                className={`w-full h-full object-contain transition-all duration-300 ${imageTransitioning ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
+                  }`}
               />
-              
+
               {/* Condition badge overlay - back on the left */}
               <div className={`absolute top-4 left-4 px-4 py-2 rounded-full text-sm font-semibold border-2 border-white ${conditionColors[item.condition]} backdrop-blur-sm z-10`}>
                 {conditionLabels[item.condition]}
@@ -207,22 +206,20 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
             <div className="flex bg-gray-100 rounded-full p-1">
               <button
                 onClick={() => !showOriginalImage && toggleImageView()}
-                className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-full font-semibold text-sm transition-all duration-300 ${
-                  showOriginalImage
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-800'
-                }`}
+                className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-full font-semibold text-sm transition-all duration-300 ${showOriginalImage
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-800'
+                  }`}
               >
                 <Image size={16} />
                 Original
               </button>
               <button
                 onClick={() => showOriginalImage && toggleImageView()}
-                className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-full font-semibold text-sm transition-all duration-300 ${
-                  !showOriginalImage
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-800'
-                }`}
+                className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-full font-semibold text-sm transition-all duration-300 ${!showOriginalImage
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-800'
+                  }`}
               >
                 <Sparkles size={16} />
                 Enhanced
@@ -293,21 +290,21 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
           </div>
 
           {/* Action Buttons */}
-          <div className="grid grid-cols-2 gap-4 pt-2">
+          <div className="grid grid-cols-2 gap-3 pt-2">
             <button
-              onClick={handleEdit}
-              className="flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white py-4 rounded-2xl font-semibold hover:shadow-xl hover:shadow-indigo-500/25 transition-all duration-300 hover:scale-105"
+              onClick={handleDeleteClick}
+              className="flex items-center justify-center gap-2 bg-gradient-to-r from-red-500 to-pink-600 text-white py-3 rounded-full font-bold hover:shadow-lg hover:shadow-red-500/25 transition-all duration-300 hover:scale-[1.02]"
             >
-              <Edit3 size={18} />
-              Edit
+              <Trash2 size={16} />
+              Delete
             </button>
 
             <button
-              onClick={handleDeleteClick}
-              className="flex items-center justify-center gap-2 bg-gradient-to-r from-red-500 to-pink-600 text-white py-4 rounded-2xl font-semibold hover:shadow-xl hover:shadow-red-500/25 transition-all duration-300 hover:scale-105"
+              onClick={handleEdit}
+              className="flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-full font-bold hover:shadow-lg hover:shadow-indigo-500/25 transition-all duration-300 hover:scale-[1.02]"
             >
-              <Trash2 size={18} />
-              Delete
+              <Edit3 size={16} />
+              Edit
             </button>
           </div>
         </div>

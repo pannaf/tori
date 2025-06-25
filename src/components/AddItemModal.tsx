@@ -79,6 +79,7 @@ interface DetectedObject {
   category: string;
   description: string;
   estimated_cost_usd: number;
+  condition?: 'excellent' | 'good' | 'fair' | 'poor';
   estimatedValue?: number;
   landingAiObjects?: LandingAiObject[];
   imageUrl?: string;
@@ -290,13 +291,29 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
       { title: 'Polish and condition', description: 'Polish wood and condition leather', intervalType: 'months', intervalValue: 6, priority: 'low' },
       { title: 'Inspect and tighten', description: 'Check for wear and tighten joints', intervalType: 'years', intervalValue: 1, priority: 'low' },
     ],
+    'Kitchenware': [
+      { title: 'Deep clean', description: 'Deep clean and sanitize', intervalType: 'weeks', intervalValue: 2, priority: 'medium' },
+      { title: 'Sharpen knives', description: 'Sharpen and maintain cutting tools', intervalType: 'months', intervalValue: 3, priority: 'medium' },
+    ],
     'Tools': [
       { title: 'Sharpen blades', description: 'Sharpen cutting edges and blades', intervalType: 'months', intervalValue: 6, priority: 'medium' },
       { title: 'Oil and lubricate', description: 'Oil moving parts and check for rust', intervalType: 'months', intervalValue: 3, priority: 'medium' },
     ],
-    'Vehicles': [
-      { title: 'Oil change', description: 'Change engine oil and filter', intervalType: 'months', intervalValue: 6, priority: 'high' },
-      { title: 'Tire inspection', description: 'Check tire pressure and tread depth', intervalType: 'months', intervalValue: 3, priority: 'medium' },
+    'Sports & Recreation': [
+      { title: 'Equipment check', description: 'Inspect for wear and safety', intervalType: 'months', intervalValue: 3, priority: 'medium' },
+      { title: 'Clean and sanitize', description: 'Clean and disinfect equipment', intervalType: 'weeks', intervalValue: 1, priority: 'medium' },
+    ],
+    'Clothing & Accessories': [
+      { title: 'Seasonal storage', description: 'Clean and store seasonal items', intervalType: 'months', intervalValue: 6, priority: 'low' },
+      { title: 'Condition check', description: 'Check for repairs needed', intervalType: 'months', intervalValue: 3, priority: 'low' },
+    ],
+    'Personal Care': [
+      { title: 'Expiration check', description: 'Check expiration dates', intervalType: 'months', intervalValue: 3, priority: 'medium' },
+      { title: 'Inventory check', description: 'Check stock levels', intervalType: 'months', intervalValue: 1, priority: 'low' },
+    ],
+    'Collectibles & Mementos': [
+      { title: 'Condition check', description: 'Check for damage or deterioration', intervalType: 'months', intervalValue: 6, priority: 'low' },
+      { title: 'Climate control', description: 'Check storage conditions', intervalType: 'months', intervalValue: 3, priority: 'medium' },
     ],
   };
 
@@ -378,6 +395,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
             category: obj.category,
             description: obj.description,
             estimatedValue: obj.estimated_cost_usd,
+            condition: obj.condition || 'good',
             imageUrl: obj.imageUrl,
             originalCropImageUrl: obj.originalCropImageUrl,
             originalFullImageUrl: obj.originalFullImageUrl,
@@ -402,6 +420,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
               category: updatedCurrentItem.category || '',
               description: updatedCurrentItem.description || '',
               estimatedValue: updatedCurrentItem.estimatedValue?.toString() || '',
+              condition: updatedCurrentItem.condition || 'good',
               tags: ['detected', updatedCurrentItem.category?.toLowerCase() || ''].filter(Boolean)
             }));
           }
@@ -463,14 +482,17 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
   // Helper function to infer category from item name
   const inferCategory = (name: string): string => {
     const categoryMap: Record<string, string[]> = {
-      'Electronics': ['phone', 'laptop', 'computer', 'tv', 'tablet', 'camera', 'speaker'],
-      'Furniture': ['chair', 'table', 'desk', 'sofa', 'bed', 'shelf', 'cabinet'],
-      'Kitchen': ['pan', 'pot', 'knife', 'plate', 'cup', 'mug', 'utensil'],
-      'Clothing': ['shirt', 'pants', 'dress', 'shoe', 'jacket', 'hat'],
-      'Books': ['book', 'magazine', 'journal', 'notebook'],
-      'Decorative': ['plant', 'frame', 'vase', 'candle', 'art'],
-      'Sports': ['ball', 'racket', 'bike', 'weight', 'mat'],
-      'Tools': ['hammer', 'screwdriver', 'drill', 'saw']
+      'Electronics': ['phone', 'laptop', 'computer', 'tv', 'tablet', 'camera', 'speaker', 'headphone', 'charger', 'cable', 'router', 'monitor'],
+      'Appliances': ['washer', 'dryer', 'refrigerator', 'fridge', 'microwave', 'oven', 'dishwasher', 'vacuum', 'blender', 'toaster', 'coffee maker'],
+      'Furniture': ['chair', 'table', 'desk', 'sofa', 'bed', 'shelf', 'cabinet', 'dresser', 'nightstand', 'bookshelf'],
+      'Kitchenware': ['pan', 'pot', 'knife', 'plate', 'cup', 'mug', 'utensil', 'bowl', 'cutting board', 'spatula', 'whisk'],
+      'Tools': ['hammer', 'screwdriver', 'drill', 'saw', 'wrench', 'pliers', 'level', 'tape measure'],
+      'Sports & Recreation': ['ball', 'racket', 'bike', 'weight', 'mat', 'dumbbell', 'treadmill', 'yoga', 'exercise', 'game', 'sport'],
+      'Books & Media': ['book', 'magazine', 'journal', 'notebook', 'dvd', 'cd', 'vinyl', 'record'],
+      'Clothing & Accessories': ['shirt', 'pants', 'dress', 'shoe', 'jacket', 'hat', 'socks', 'underwear', 'sweater', 'watch', 'jewelry', 'belt'],
+      'Decorations': ['plant', 'frame', 'vase', 'candle', 'art', 'painting', 'sculpture', 'mirror', 'decoration'],
+      'Personal Care': ['shampoo', 'soap', 'lotion', 'perfume', 'makeup', 'skincare', 'toothbrush', 'medicine'],
+      'Collectibles & Mementos': ['collectible', 'memento', 'souvenir', 'antique', 'vintage', 'coin', 'stamp', 'card', 'figurine']
     };
 
     const nameLower = name.toLowerCase();
@@ -785,6 +807,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
         category: obj.category,
         description: obj.description,
         estimatedValue: obj.estimated_cost_usd,
+        condition: obj.condition || 'good',
         imageUrl: obj.imageUrl,
         originalCropImageUrl: obj.originalCropImageUrl,
         originalFullImageUrl: obj.originalFullImageUrl,
@@ -813,6 +836,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
           category: firstItem.category || '',
           description: firstItem.description || '',
           estimatedValue: firstItem.estimatedValue?.toString() || '',
+          condition: firstItem.condition || 'good',
           tags: ['detected', firstItem.category?.toLowerCase() || ''].filter(Boolean)
         }));
       }
@@ -991,6 +1015,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
         category: nextItem.category || '',
         description: nextItem.description || '',
         estimatedValue: nextItem.estimatedValue?.toString() || '',
+        condition: nextItem.condition || 'good',
         tags: ['detected', nextItem.category?.toLowerCase() || ''].filter(Boolean)
       }));
     } else {

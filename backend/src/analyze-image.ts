@@ -39,6 +39,7 @@ interface ObjectWithCost {
     category: string;
     description: string;
     estimated_cost_usd: number;
+    condition: 'excellent' | 'good' | 'fair' | 'poor';
     imageUrl?: string;  // URL to the enhanced image
     originalCropImageUrl?: string;  // URL to the original cropped image
     originalFullImageUrl?: string;  // URL to the original full image
@@ -97,7 +98,7 @@ router.post('/analyze-image', upload.single('image'), async (req, res) => {
                     content: [
                         {
                             type: "text",
-                            text: "Analyze this image and identify all objects you can see. For each object, provide a name, category, description, and estimated cost in USD. Be comprehensive but focus on distinct, separate objects (don't combine objects like 'plant in pot' - list 'plant' and 'pot' separately). Also identify which room this appears to be."
+                            text: "Analyze this image and identify all objects you can see. For each object, provide a name, category, description, estimated cost in USD, and condition based on visual appearance. Be comprehensive but focus on distinct, separate objects (don't combine objects like 'plant in pot' - list 'plant' and 'pot' separately). For condition, assess the visual state: 'excellent' for like-new items, 'good' for well-maintained items with minor wear, 'fair' for items with noticeable wear but still functional, 'poor' for items with significant damage or heavy wear. Also identify which room this appears to be."
                         },
                         {
                             type: "image_url",
@@ -128,7 +129,7 @@ router.post('/analyze-image', upload.single('image'), async (req, res) => {
                                         category: {
                                             type: "string",
                                             description: "Category of the object",
-                                            enum: ["Electronics", "Furniture", "Appliances", "Decorative", "Kitchen", "Clothing", "Books", "Sports", "Tools", "Other"]
+                                            enum: ["Electronics", "Appliances", "Furniture", "Kitchenware", "Tools", "Sports & Recreation", "Books & Media", "Clothing & Accessories", "Decorations", "Personal Care", "Collectibles & Mementos", "Other"]
                                         },
                                         description: {
                                             type: "string",
@@ -138,16 +139,21 @@ router.post('/analyze-image', upload.single('image'), async (req, res) => {
                                             type: "number",
                                             description: "Estimated cost in USD",
                                             minimum: 0
+                                        },
+                                        condition: {
+                                            type: "string",
+                                            description: "Condition of the object based on visual appearance",
+                                            enum: ["excellent", "good", "fair", "poor"]
                                         }
                                     },
-                                    required: ["name", "category", "description", "estimated_cost_usd"],
+                                    required: ["name", "category", "description", "estimated_cost_usd", "condition"],
                                     additionalProperties: false
                                 }
                             },
                             room: {
                                 type: "string",
                                 description: "The room where the image was likely taken",
-                                enum: ["Living Room", "Kitchen", "Bedroom", "Bathroom", "Office", "Garage", "Dining Room"]
+                                enum: ["Living Room", "Kitchen", "Bedroom", "Bathroom", "Office", "Garage", "Dining Room", "Other"]
                             },
                             total_estimated_value_usd: {
                                 type: "number",
