@@ -484,6 +484,14 @@ function App() {
 
       // Track that an item was added in this session
       setItemsAddedInSession(prev => prev + 1);
+
+      // Only refresh immediately if this is likely a single manual addition
+      // For AI mode with multiple items, defer refresh until modal closes
+      if (itemsAddedInSession === 0) {
+        // This is the first item in the session - likely manual addition
+        refreshStats();
+      }
+      // For subsequent items (AI mode), let the modal close handler refresh once
     } catch (error) {
       console.error('Error adding item with maintenance:', error);
       // Let the UI handle the error
@@ -996,11 +1004,12 @@ function App() {
         <AddItemModal
           isOpen={showAddModal}
           onClose={() => {
-            // Only refresh stats if items were actually added during this session
-            if (itemsAddedInSession > 0) {
+            // Refresh stats if multiple items were added (AI mode)
+            // Single items are refreshed immediately, multiple items are batched here
+            if (itemsAddedInSession > 1) {
               refreshStats();
-              setItemsAddedInSession(0);
             }
+            setItemsAddedInSession(0);
             setShowAddModal(false);
           }}
           onAdd={handleAddItemWithMaintenance}
