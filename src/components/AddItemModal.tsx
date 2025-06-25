@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { X, Camera, Plus, Check, Zap, Wrench, Calendar, Clock, Package, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { X, Camera, Plus, Check, Zap, Wrench, Calendar, Clock, Package, AlertCircle, RefreshCw, Sparkles, DollarSign, MapPin, Eye, Scissors, Palette, Upload, Brain } from 'lucide-react';
 import { Room, Category, InventoryItem } from '../types/inventory';
-import { CameraCapture } from './CameraCapture';
+
 import { env } from '../config/env';
 import { useMaintenanceDB } from '../hooks/useMaintenanceDB';
+import { supabase } from '../config/supabase';
 
 interface AddItemModalProps {
   isOpen: boolean;
@@ -37,10 +38,27 @@ interface LandingAiObject {
 interface DetectedObject {
   name: string;
   category: string;
+  description: string;
+  estimated_cost_usd: number;
   estimatedValue?: number;
   landingAiObjects?: LandingAiObject[];
   imageUrl?: string;
   originalCropImageUrl?: string;
+  originalFullImageUrl?: string;
+  confidence?: number;
+  status?: 'waiting' | 'detecting' | 'cropping' | 'enhancing' | 'uploading' | 'complete' | 'error' | 'no_detection';
+  detectionCount?: number;
+}
+
+interface ProgressState {
+  step: 'preparing' | 'analyzing' | 'detecting' | 'processing' | 'enhancing' | 'complete';
+  message: string;
+  progress: number;
+  detectedObjects?: DetectedObject[];
+  room?: string;
+  totalValue?: number;
+  currentlyProcessing?: string;
+  currentObjectIndex?: number;
   originalFullImageUrl?: string;
 }
 
@@ -63,13 +81,14 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
     imageUrl: ''
   });
 
-  const [showCamera, setShowCamera] = useState(false);
   const [imageData, setImageData] = useState<string>('');
   const [aiDetected, setAiDetected] = useState(false);
-  const [isProcessingLandingAi, setIsProcessingLandingAi] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [detectedObjects, setDetectedObjects] = useState<any[]>([]);
   const [detectedRoom, setDetectedRoom] = useState('');
   const [currentObjectIndex, setCurrentObjectIndex] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [maintenanceEnabled, setMaintenanceEnabled] = useState(false);
   const [maintenanceData, setMaintenanceData] = useState({
     title: '',
@@ -86,7 +105,115 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
   const [completedItems, setCompletedItems] = useState<string[]>([]);
   const [processingId, setProcessingId] = useState<string | null>(null);
 
+  // AI processing state
+  const [aiProcessing, setAiProcessing] = useState(false);
+  const [aiProgress, setAiProgress] = useState<ProgressState>({
+    step: 'preparing',
+    message: '',
+    progress: 0
+  });
+  const aiFileInputRef = useRef<HTMLInputElement>(null);
+  const pollingCleanupRef = useRef<(() => void) | null>(null);
+
   const { createMaintenanceSchedule } = useMaintenanceDB(user);
+
+  // Memory utilities for iPhone SE
+  const isLowMemoryDevice = () => {
+    return navigator.userAgent.includes('iPhone') &&
+      (navigator.userAgent.includes('SE') || window.screen.width <= 375);
+  };
+
+  const requestMemoryCleanup = () => {
+    if (window.gc) {
+      window.gc();
+    }
+    // Force garbage collection by creating/destroying objects
+    const cleanup = new Array(1000).fill(null);
+    cleanup.length = 0;
+  };
+
+  // Function to fix image orientation and compress for memory efficiency
+  const fixImageOrientation = async (file: File): Promise<string> => {
+    try {
+      // Detect if we're on a low-memory device (like iPhone SE)
+      const isLowMemoryDevice = navigator.userAgent.includes('iPhone') &&
+        (navigator.userAgent.includes('SE') || window.screen.width <= 375);
+
+      // Use createImageBitmap with imageOrientation: 'from-image' to auto-correct orientation
+      const imageBitmap = await createImageBitmap(file, {
+        imageOrientation: 'from-image'
+      });
+
+      // Calculate compressed dimensions to prevent memory issues
+      const maxDimension = isLowMemoryDevice ? 800 : 1200; // Smaller for iPhone SE
+      const { width, height } = imageBitmap;
+
+      let newWidth = width;
+      let newHeight = height;
+
+      if (width > maxDimension || height > maxDimension) {
+        const ratio = Math.min(maxDimension / width, maxDimension / height);
+        newWidth = Math.round(width * ratio);
+        newHeight = Math.round(height * ratio);
+      }
+
+      // Create canvas with compressed dimensions
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+
+      canvas.width = newWidth;
+      canvas.height = newHeight;
+
+      // Draw the correctly oriented and sized image
+      ctx?.drawImage(imageBitmap, 0, 0, newWidth, newHeight);
+
+      // Clean up the bitmap immediately
+      imageBitmap.close();
+
+      // Use higher compression for low-memory devices
+      const quality = isLowMemoryDevice ? 0.7 : 0.85;
+      return canvas.toDataURL('image/jpeg', quality);
+    } catch (error) {
+      console.warn('createImageBitmap not supported or failed, falling back to compressed original');
+      // Fallback with compression
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          try {
+            const img = new Image();
+            img.onload = () => {
+              const canvas = document.createElement('canvas');
+              const ctx = canvas.getContext('2d');
+
+              // Apply same compression logic for fallback
+              const isLowMemoryDevice = navigator.userAgent.includes('iPhone') &&
+                (navigator.userAgent.includes('SE') || window.screen.width <= 375);
+              const maxDimension = isLowMemoryDevice ? 800 : 1200;
+
+              let { width, height } = img;
+              if (width > maxDimension || height > maxDimension) {
+                const ratio = Math.min(maxDimension / width, maxDimension / height);
+                width = Math.round(width * ratio);
+                height = Math.round(height * ratio);
+              }
+
+              canvas.width = width;
+              canvas.height = height;
+              ctx?.drawImage(img, 0, 0, width, height);
+
+              const quality = isLowMemoryDevice ? 0.7 : 0.85;
+              resolve(canvas.toDataURL('image/jpeg', quality));
+            };
+            img.src = e.target?.result as string;
+          } catch (fallbackError) {
+            // Last resort: return original
+            resolve(e.target?.result as string);
+          }
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+  };
 
   // Helper function to find the best matching room
   const findMatchingRoom = (detectedRoom: string): string => {
@@ -144,10 +271,10 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
       tags: [],
       imageUrl: ''
     });
-    setShowCamera(false);
     setImageData('');
     setAiDetected(false);
-    setIsProcessingLandingAi(false);
+    setIsProcessing(false);
+    setError(null);
     setDetectedObjects([]);
     setDetectedRoom('');
     setCurrentObjectIndex(0);
@@ -166,6 +293,20 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
     setIsStreaming(false);
     setCompletedItems([]);
     setProcessingId(null);
+
+    // Reset AI processing state
+    setAiProcessing(false);
+    setAiProgress({
+      step: 'preparing',
+      message: '',
+      progress: 0
+    });
+
+    // Cleanup polling
+    if (pollingCleanupRef.current) {
+      pollingCleanupRef.current();
+      pollingCleanupRef.current = null;
+    }
   };
 
   useEffect(() => {
@@ -242,6 +383,358 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
     return () => clearInterval(interval);
   }, [processingId, isStreaming]);
 
+  // Handle file input from camera
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsProcessing(true);
+    setError(null);
+
+    try {
+      // Convert file to data URL for now (simple implementation)
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const imageData = e.target?.result as string;
+        setImageData(imageData);
+
+        // For now, just set the image and let user manually fill form
+        // TODO: Add AI processing here
+        setFormData(prev => ({
+          ...prev,
+          imageUrl: imageData
+        }));
+
+        setIsProcessing(false);
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error('Error processing image:', error);
+      setError('Failed to process image. Please try again.');
+      setIsProcessing(false);
+    }
+  };
+
+  // Update AI progress
+  const updateAiProgress = (newProgress: Partial<ProgressState>) => {
+    setAiProgress(prev => ({ ...prev, ...newProgress }));
+  };
+
+  // Helper function to infer category from item name
+  const inferCategory = (name: string): string => {
+    const categoryMap: Record<string, string[]> = {
+      'Electronics': ['phone', 'laptop', 'computer', 'tv', 'tablet', 'camera', 'speaker'],
+      'Furniture': ['chair', 'table', 'desk', 'sofa', 'bed', 'shelf', 'cabinet'],
+      'Kitchen': ['pan', 'pot', 'knife', 'plate', 'cup', 'mug', 'utensil'],
+      'Clothing': ['shirt', 'pants', 'dress', 'shoe', 'jacket', 'hat'],
+      'Books': ['book', 'magazine', 'journal', 'notebook'],
+      'Decorative': ['plant', 'frame', 'vase', 'candle', 'art'],
+      'Sports': ['ball', 'racket', 'bike', 'weight', 'mat'],
+      'Tools': ['hammer', 'screwdriver', 'drill', 'saw']
+    };
+
+    const nameLower = name.toLowerCase();
+    for (const [category, keywords] of Object.entries(categoryMap)) {
+      if (keywords.some(keyword => nameLower.includes(keyword))) {
+        return category;
+      }
+    }
+
+    return 'Other';
+  };
+
+  // AI photo processing
+  const handleAiPhotoProcessing = async (file: File, imageData: string) => {
+    try {
+      setError('');
+      setAiProcessing(true);
+
+      try {
+        // Create form data for the API with memory optimization
+        const formData = new FormData();
+
+        // Convert corrected image back to blob for upload
+        const response = await fetch(imageData);
+        const blob = await response.blob();
+
+        // Clean up the response immediately to free memory
+        if (response.body) {
+          try {
+            await response.body.cancel();
+          } catch (e) {
+            // ReadableStream might already be consumed, ignore error
+          }
+        }
+
+        const correctedFile = new File([blob], file.name, { type: 'image/jpeg' });
+        formData.append('image', correctedFile);
+
+        // Add the authenticated user's ID and token
+        if (user && supabase) {
+          formData.append('userId', user.id);
+          // Get auth token from Supabase session
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session) {
+            formData.append('authToken', session.access_token);
+          }
+        }
+
+        updateAiProgress({
+          step: 'analyzing',
+          message: 'Tori is analyzing your photo with AI...',
+          progress: 25
+        });
+
+        // Create AbortController for timeout handling
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 minute timeout
+
+        // Start the API request
+        const apiResponse = await fetch(`${env.API_URL}/api/analyze-image`, {
+          method: 'POST',
+          body: formData,
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!apiResponse.ok) {
+          throw new Error('Failed to analyze image');
+        }
+
+        // Parse the immediate GPT-4 response
+        const initialData = await apiResponse.json();
+
+        if (initialData.step === 'gpt_complete') {
+          // Show immediate feedback about what was found
+          updateAiProgress({
+            step: 'detecting',
+            message: `Found ${initialData.objects.length} items! Processing with AI...`,
+            progress: 50,
+            detectedObjects: initialData.objects.map((obj: any) => ({
+              ...obj,
+              status: 'waiting'
+            })),
+            room: initialData.room,
+            totalValue: initialData.total_estimated_value_usd
+          });
+
+          // Start polling for background processing updates
+          const cleanup = pollForProcessingUpdates(initialData.processing_id, imageData);
+          pollingCleanupRef.current = cleanup;
+        } else {
+          // Fallback for old format
+          handleLegacyResponse(initialData, imageData);
+        }
+
+      } catch (error) {
+        console.error('Recognition failed:', error);
+        if (error instanceof Error) {
+          if (error.name === 'AbortError') {
+            setError('Request timed out. AI processing takes time - try again or use a smaller image.');
+          } else {
+            setError(`Analysis failed: ${error.message}. Please try again.`);
+          }
+        } else {
+          setError('Failed to analyze image. Please try again.');
+        }
+        setAiProcessing(false);
+      }
+    } catch (error) {
+      console.error('Error handling AI photo:', error);
+      setError('Failed to process image. Please try again.');
+      setAiProcessing(false);
+    }
+  };
+
+  // Poll for background processing updates
+  const pollForProcessingUpdates = (processingId: string, imageData: string) => {
+    const maxAttempts = isLowMemoryDevice() ? 30 : 60;
+    let attempts = 0;
+    let completedItemsSet: Set<number> = new Set();
+    let hasStartedStreaming = false;
+    let lastObjectsRef: any[] = [];
+    let abortController = new AbortController();
+
+    const poll = async () => {
+      try {
+        // Memory cleanup on low memory devices
+        if (isLowMemoryDevice() && attempts % 5 === 0) {
+          requestMemoryCleanup();
+        }
+
+        const response = await fetch(`${env.API_URL}/api/processing-status/${processingId}`, {
+          signal: abortController.signal
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to get processing status');
+        }
+
+        const statusData = await response.json();
+
+        // Reuse existing object references when possible
+        const currentObjects = statusData.objects.map((newObj: any, index: number) => {
+          const existingObj = lastObjectsRef[index];
+
+          if (existingObj &&
+            existingObj.status === newObj.status &&
+            existingObj.name === newObj.name) {
+            return existingObj;
+          }
+
+          return {
+            ...newObj,
+            status: newObj.status === 'complete' ? 'complete' :
+              newObj.status === 'processing' ? 'processing' :
+                newObj.status === 'error' ? 'error' :
+                  newObj.status === 'no_detection' ? 'no_detection' : 'waiting',
+            imageUrl: isLowMemoryDevice() ? undefined : newObj.imageUrl,
+            originalCropImageUrl: isLowMemoryDevice() ? undefined : newObj.originalCropImageUrl,
+            originalFullImageUrl: isLowMemoryDevice() ? imageData : newObj.originalFullImageUrl
+          };
+        });
+
+        lastObjectsRef = currentObjects;
+
+        // Update progress
+        const progressPercentage = Math.min(90, 50 + (statusData.completedCount / statusData.totalCount) * 40);
+
+        updateAiProgress({
+          step: statusData.status === 'complete' ? 'complete' : 'processing',
+          message: statusData.status === 'complete'
+            ? 'Perfect! Your items are ready to add.'
+            : `Processing ${statusData.completedCount}/${statusData.totalCount} items...`,
+          progress: progressPercentage,
+          detectedObjects: currentObjects,
+          room: aiProgress.room,
+          totalValue: aiProgress.totalValue
+        });
+
+        // Check for newly completed items
+        const newlyCompletedIndices = statusData.objects
+          .map((obj: any, index: number) =>
+            ((obj.status === 'complete' || obj.status === 'no_detection' || obj.status === 'error') && !completedItemsSet.has(index)) ? index : -1
+          )
+          .filter((index: number) => index !== -1);
+
+        newlyCompletedIndices.forEach((index: number) => completedItemsSet.add(index));
+
+        // Start streaming when first item is ready
+        if (completedItemsSet.size >= 1 && !hasStartedStreaming) {
+          hasStartedStreaming = true;
+
+          // Convert to the format expected by handleCameraCapture
+          const recognitionData = {
+            objects: currentObjects.map((obj: any) => ({
+              name: obj.name,
+              confidence: obj.confidence || 0.9,
+              category: obj.category || inferCategory(obj.name),
+              description: obj.description || '',
+              estimated_cost_usd: obj.estimated_cost_usd,
+              imageUrl: obj.imageUrl,
+              originalCropImageUrl: obj.originalCropImageUrl,
+              originalFullImageUrl: obj.originalFullImageUrl || imageData,
+              status: obj.status,
+              ready: obj.status === 'complete' || obj.status === 'no_detection' || obj.status === 'error'
+            })),
+            room: aiProgress.room,
+            suggestedName: statusData.objects[0]?.name || '',
+            suggestedCategory: statusData.objects[0]?.category || inferCategory(statusData.objects[0]?.name || ''),
+            estimatedValue: aiProgress.totalValue,
+            isStreaming: true,
+            processingId: processingId
+          };
+
+          // Hide AI processing UI and show form with detected items
+          setAiProcessing(false);
+          handleCameraCapture(imageData, recognitionData);
+        }
+
+        // Check if complete
+        if (statusData.status === 'complete') {
+          abortController.abort();
+          setAiProcessing(false);
+          return;
+        }
+
+        attempts++;
+        if (attempts < maxAttempts) {
+          const pollInterval = isLowMemoryDevice() ? 3000 : 1000;
+          setTimeout(poll, pollInterval);
+        } else {
+          abortController.abort();
+          throw new Error('Processing timeout');
+        }
+
+      } catch (error) {
+        if (error instanceof Error && error.name === 'AbortError') {
+          return;
+        }
+
+        console.error('Error polling for updates:', error);
+        setError('Processing timed out. Please try again.');
+        setAiProcessing(false);
+      }
+    };
+
+    // Return cleanup function
+    const cleanup = () => {
+      abortController.abort();
+      lastObjectsRef = [];
+      completedItemsSet.clear();
+    };
+
+    setTimeout(poll, 2000);
+    return cleanup;
+  };
+
+  // Handle legacy response format
+  const handleLegacyResponse = (data: any, imageData: string) => {
+    updateAiProgress({
+      step: 'complete',
+      message: 'Perfect! Your items are ready to add.',
+      progress: 100,
+      detectedObjects: data.objects.map((obj: any) => ({ ...obj, status: 'complete' })),
+      room: data.room,
+      totalValue: data.total_estimated_value_usd
+    });
+
+    const recognitionData = {
+      objects: data.objects.map((obj: any) => ({
+        name: obj.name,
+        confidence: obj.confidence || 0.9,
+        category: obj.category || inferCategory(obj.name),
+        description: obj.description || '',
+        estimated_cost_usd: obj.estimated_cost_usd,
+        imageUrl: obj.imageUrl,
+        originalCropImageUrl: obj.originalCropImageUrl,
+        originalFullImageUrl: obj.originalFullImageUrl
+      })),
+      room: data.room,
+      suggestedName: data.objects[0]?.name || '',
+      suggestedCategory: data.objects[0]?.category || inferCategory(data.objects[0]?.name || ''),
+      estimatedValue: data.total_estimated_value_usd
+    };
+
+    setAiProcessing(false);
+    handleCameraCapture(imageData, recognitionData);
+  };
+
+  // Handle AI file input change
+  const handleAiFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const imageData = await fixImageOrientation(file);
+      await handleAiPhotoProcessing(file, imageData);
+    } catch (error) {
+      console.error('Error processing AI photo:', error);
+      setError('Failed to process image. Please try again.');
+    }
+  };
+
   const handleCameraCapture = async (capturedImageData: string, recognitionData: any) => {
     setImageData(capturedImageData);
 
@@ -293,7 +786,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
       }
     }
 
-    setShowCamera(false);
+    // Camera functionality integrated - no separate modal needed
   };
 
   // Debug/Simulation function
@@ -470,6 +963,40 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
     moveToNextItem();
   };
 
+  // Helper functions for AI processing UI
+  const formatValue = (value: number): string => {
+    if (value >= 1000) {
+      return `$${(value / 1000).toFixed(1)}k`;
+    }
+    return `$${value.toFixed(0)}`;
+  };
+
+  const getStatusIcon = (status?: string) => {
+    switch (status) {
+      case 'waiting': return <Package size={14} className="text-gray-400" />;
+      case 'detecting': return <Eye size={14} className="text-blue-500 animate-pulse" />;
+      case 'cropping': return <Scissors size={14} className="text-orange-500 animate-pulse" />;
+      case 'enhancing': return <Palette size={14} className="text-purple-500 animate-pulse" />;
+      case 'uploading': return <Upload size={14} className="text-indigo-500 animate-pulse" />;
+      case 'complete': return <Sparkles size={14} className="text-green-500" />;
+      case 'error': return <AlertCircle size={14} className="text-red-500" />;
+      default: return <Package size={14} className="text-gray-400" />;
+    }
+  };
+
+  const getStatusColor = (status?: string) => {
+    switch (status) {
+      case 'waiting': return 'border-gray-200 bg-gray-50';
+      case 'detecting': return 'border-blue-200 bg-blue-50';
+      case 'cropping': return 'border-orange-200 bg-orange-50';
+      case 'enhancing': return 'border-purple-200 bg-purple-50';
+      case 'uploading': return 'border-indigo-200 bg-indigo-50';
+      case 'complete': return 'border-green-200 bg-green-50';
+      case 'error': return 'border-red-200 bg-red-50';
+      default: return 'border-gray-200 bg-gray-50';
+    }
+  };
+
   // Helper function to check if there are more ready items after current one
   const hasMoreReadyItems = () => {
     if (itemQueue.length === 0) return false;
@@ -532,14 +1059,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
 
   if (!isOpen) return null;
 
-  if (showCamera) {
-    return (
-      <CameraCapture
-        onCapture={handleCameraCapture}
-        onClose={() => setShowCamera(false)}
-      />
-    );
-  }
+  // Camera functionality can be integrated here later
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-50">
@@ -591,7 +1111,144 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
 
         {/* Main Content - Scrollable */}
         <div className="flex-1 overflow-y-auto">
-          {!formData.imageUrl ? (
+          {aiProcessing ? (
+            // AI Processing state
+            <div className="bg-gradient-to-br from-emerald-50 to-teal-50 p-6 space-y-4 max-h-[28rem] overflow-y-auto overflow-x-hidden">
+              <div className="text-center">
+                <p className="font-bold text-xl mb-6 text-gray-900 flex items-center justify-center gap-2">
+                  <Brain className="animate-pulse text-emerald-500" size={24} />
+                  {aiProgress.message}
+                </p>
+              </div>
+
+              {/* Room and Total Value */}
+              {aiProgress.room && aiProgress.totalValue && (
+                <div className="bg-white rounded-2xl p-4 shadow-sm border border-emerald-200">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <MapPin size={16} className="text-emerald-600" />
+                      <span className="font-semibold text-gray-900">{aiProgress.room}</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-emerald-600 font-bold">
+                      <DollarSign size={16} />
+                      <span>{formatValue(aiProgress.totalValue)}</span>
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    Found {aiProgress.detectedObjects?.length || 0} items worth approximately {formatValue(aiProgress.totalValue)}
+                  </p>
+                </div>
+              )}
+
+              {/* Detected Objects with Real-time Status */}
+              {aiProgress.detectedObjects && aiProgress.detectedObjects.length > 0 && (
+                <div className="space-y-3">
+                  <h4 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                    <Package size={16} />
+                    Processing Items {aiProgress.currentObjectIndex !== undefined && `(${aiProgress.currentObjectIndex + 1}/${aiProgress.detectedObjects.length})`}
+                  </h4>
+                  {aiProgress.detectedObjects.map((obj, index) => (
+                    <div key={index} className={`bg-white rounded-xl p-3 shadow-sm border transition-all duration-300 ${getStatusColor(obj.status)} ${aiProgress.currentObjectIndex === index ? 'ring-2 ring-emerald-300 ring-opacity-50' : ''
+                      }`}>
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gradient-to-br from-emerald-100 to-teal-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                          {getStatusIcon(obj.status)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-gray-900 text-sm">{obj.name}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-xs text-gray-600">{obj.category}</p>
+                            {obj.detectionCount && (
+                              <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-medium">
+                                {obj.detectionCount} found
+                              </span>
+                            )}
+                            {obj.status && obj.status !== 'waiting' && (
+                              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${obj.status === 'detecting' ? 'bg-blue-100 text-blue-700' :
+                                obj.status === 'cropping' ? 'bg-orange-100 text-orange-700' :
+                                  obj.status === 'enhancing' ? 'bg-purple-100 text-purple-700' :
+                                    obj.status === 'uploading' ? 'bg-indigo-100 text-indigo-700' :
+                                      obj.status === 'complete' ? 'bg-green-100 text-green-700' :
+                                        obj.status === 'error' ? 'bg-red-100 text-red-700' :
+                                          'bg-gray-100 text-gray-700'
+                                }`}>
+                                {obj.status === 'detecting' && 'Detecting...'}
+                                {obj.status === 'cropping' && 'Cropping...'}
+                                {obj.status === 'enhancing' && 'Enhancing...'}
+                                {obj.status === 'uploading' && 'Uploading...'}
+                                {obj.status === 'complete' && 'Complete ✓'}
+                                {obj.status === 'error' && 'Error ✗'}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold text-emerald-600 text-sm">
+                            ${obj.estimated_cost_usd ? obj.estimated_cost_usd.toFixed(0) : '0'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {aiProgress.step === 'complete' && (
+                <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-2xl p-4 text-center mt-4">
+                  <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                    <Sparkles className="text-white" size={24} />
+                  </div>
+                  <p className="font-bold text-emerald-700 mb-1">Perfect!</p>
+                  <p className="text-sm text-emerald-600">Your items are ready to be added to your inventory</p>
+                </div>
+              )}
+
+              {/* Original Image Display */}
+              {aiProgress.originalFullImageUrl && (
+                <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-200">
+                  <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                    <Camera size={14} />
+                    Your photo being processed
+                  </h4>
+                  <div className="relative aspect-square bg-gray-100 rounded-xl overflow-hidden">
+                    <img
+                      src={aiProgress.originalFullImageUrl}
+                      alt="Original photo being processed"
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : isProcessing ? (
+            // Processing state
+            <div className="p-6 text-center">
+              <div className="w-20 h-20 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-3xl flex items-center justify-center mx-auto mb-4">
+                <div className="animate-spin w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full"></div>
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Processing...</h3>
+              <p className="text-gray-600 text-sm">Getting your photo ready</p>
+            </div>
+          ) : error ? (
+            // Error state
+            <div className="p-6 text-center">
+              <div className="w-20 h-20 bg-gradient-to-br from-red-100 to-red-200 rounded-3xl flex items-center justify-center mx-auto mb-4">
+                <AlertCircle size={32} className="text-red-600" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Oops!</h3>
+              <p className="text-gray-600 text-sm mb-4">{error}</p>
+              <button
+                onClick={() => {
+                  setError(null);
+                  fileInputRef.current?.click();
+                }}
+                className="bg-red-500 text-white px-6 py-3 rounded-xl hover:bg-red-600 transition-colors flex items-center gap-2 mx-auto font-semibold"
+              >
+                <RefreshCw size={16} />
+                Try Again
+              </button>
+            </div>
+          ) : !formData.imageUrl ? (
             // Camera Section
             <div className="p-6 text-center">
               <div className="w-20 h-20 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-3xl flex items-center justify-center mx-auto mb-4">
@@ -603,12 +1260,22 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
               <div className="space-y-3">
                 <button
                   type="button"
-                  onClick={() => setShowCamera(true)}
+                  onClick={() => fileInputRef.current?.click()}
                   className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-4 rounded-full font-bold hover:shadow-xl hover:shadow-indigo-500/25 transition-all duration-300 hover:scale-[1.02] flex items-center justify-center gap-3"
                 >
                   <Camera size={20} />
                   Snap it
                   <Zap size={16} className="text-amber-300" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => aiFileInputRef.current?.click()}
+                  className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-3 rounded-full font-bold hover:shadow-lg hover:shadow-emerald-500/25 transition-all duration-300 hover:scale-[1.02] flex items-center justify-center gap-2"
+                >
+                  <Sparkles size={18} />
+                  AI Snap
+                  <Zap size={16} className="text-yellow-300" />
                 </button>
 
                 <button
@@ -777,6 +1444,26 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
             </div>
           </div>
         )}
+
+        {/* Hidden file input for camera */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          onChange={handleFileChange}
+          className="hidden"
+        />
+
+        {/* Hidden file input for AI processing */}
+        <input
+          ref={aiFileInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          onChange={handleAiFileChange}
+          className="hidden"
+        />
       </div>
     </div>
   );

@@ -12,6 +12,9 @@ export const env = {
   // Environment info
   IS_DEVELOPMENT: import.meta.env.DEV,
   IS_PRODUCTION: import.meta.env.PROD,
+
+  // Force production mode if deployed (optional failsafe)
+  // FORCE_PRODUCTION: import.meta.env.VITE_FORCE_PRODUCTION === 'true',
 } as const;
 
 // Validation function to check if required env vars are set
@@ -36,8 +39,12 @@ export const validateEnv = () => {
 // Log environment status in development
 if (env.IS_DEVELOPMENT) {
   console.log('🔧 Environment Configuration:');
+  console.log('- Mode: DEVELOPMENT');
   console.log('- API URL:', env.API_URL);
   console.log('- Debug Mode:', env.DEBUG);
   console.log('- OpenAI Key:', env.OPENAI_API_KEY ? '✅ Set' : '❌ Missing');
   console.log('- Landing AI Key:', env.LANDING_AI_API_KEY ? '✅ Set' : '❌ Missing');
+  console.log('🚀 Development Mode: Supabase queries BYPASSED (images, stats, inventory) to save egress and avoid timeouts');
+} else {
+  console.log('🚀 Production Mode: Using real Supabase data');
 }

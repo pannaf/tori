@@ -276,24 +276,37 @@ function App() {
                 Tori
               </div>
 
-              <h1 className="text-3xl font-bold text-gray-900 mb-3 leading-tight">
+              <h1 className="text-3xl font-bold text-gray-900 mb-0 leading-tight">
                 {inventoryLoading || statsLoading ? (
                   <>Loading your inventory...</>
                 ) : stats.totalCount === 0 ? (
-                  <>Your home, effortlessly organized</>
+                  <>Home Inventory</>
                 ) : (
-                  <>Your home, effortlessly organized</>
+                  <>Home Inventory</>
                 )}
               </h1>
 
-              <p className="text-gray-600 leading-relaxed">
-                {inventoryLoading || statsLoading
-                  ? "Getting everything ready for you"
-                  : stats.totalCount === 0
-                    ? "Let's get started by adding your first item with AI-powered photo recognition"
-                    : `Let's go! You've got ${stats.totalCount} items inventoried`
-                }
-              </p>
+              {(inventoryLoading || statsLoading || stats.totalCount === 0) && (
+                <p className="text-gray-600 leading-relaxed">
+                  {inventoryLoading || statsLoading
+                    ? "Getting everything ready for you"
+                    : "Let's get started by adding your first item with AI-powered photo recognition"
+                  }
+                </p>
+              )}
+
+              {/* Stats right after header with minimal spacing */}
+              {!statsLoading && stats.totalCount > 0 && (
+                <div className="mt-4">
+                  <StatsOverview
+                    totalCount={stats.totalCount}
+                    totalValue={stats.totalValue}
+                    recentCount={stats.recentCount}
+                    totalRooms={stats.totalRooms}
+                    variant="compact"
+                  />
+                </div>
+              )}
             </div>
 
             {/* Click outside to close user menu */}
@@ -301,16 +314,6 @@ function App() {
               <div
                 className="fixed inset-0 z-5"
                 onClick={() => setShowUserMenu(false)}
-              />
-            )}
-
-            {!statsLoading && stats.totalCount > 0 && (
-              <StatsOverview
-                totalCount={stats.totalCount}
-                totalValue={stats.totalValue}
-                recentCount={stats.recentCount}
-                totalRooms={stats.totalRooms}
-                variant="compact"
               />
             )}
 
@@ -383,8 +386,8 @@ function App() {
             </div>
 
             <div className="text-center py-6">
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">Find Your Stuff</h1>
-              <p className="text-gray-600">Search your home inventory</p>
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">Home Search</h1>
+              <p className="text-gray-600">Find items in your inventory</p>
             </div>
 
             <SearchAndFilters
@@ -456,7 +459,7 @@ function App() {
             </div>
 
             <div className="text-center py-6">
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">Your Home Stats</h1>
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">Home Stats</h1>
               <p className="text-gray-600">See how organized you are!</p>
             </div>
 

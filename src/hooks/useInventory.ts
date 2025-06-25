@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { InventoryItem, Room, Category } from '../types/inventory';
+import { env } from '../config/env';
+
+// Placeholder image for development mode
+const PLACEHOLDER_IMAGE = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiB2aWV3Qm94PSIwIDAgMjAwIDIwMCI+CiAgPHJlY3Qgd2lkdGg9IjIwMCIgaGVpZ2h0PSIyMDAiIGZpbGw9IiNmM2Y0ZjYiLz4KICA8Y2lyY2xlIGN4PSIxMDAiIGN5PSI4MCIgcj0iMjUiIGZpbGw9IiNkMWQ1ZGIiLz4KICA8cmVjdCB4PSI3NSIgeT0iMTIwIiB3aWR0aD0iNTAiIGhlaWdodD0iMzAiIHJ4PSI1IiBmaWxsPSIjZDFkNWRiIi8+CiAgPHRleHQgeD0iMTAwIiB5PSIxNzAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiM5Y2EzYWYiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxMiI+Tm8gSW1hZ2U8L3RleHQ+Cjwvc3ZnPg==';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -89,10 +93,71 @@ export const useInventory = (user: User | null = null, authLoading: boolean = fa
       if (!append) setLoading(true);
       setSearchLoading(true);
 
-      // Build query
+      // Skip database queries in development to avoid Supabase timeouts
+      if (env.IS_DEVELOPMENT) {
+        console.log('🚀 Development Mode: Using mock inventory data');
+
+        // Mock inventory data
+        const mockItems: InventoryItem[] = [
+          {
+            id: '1',
+            name: 'MacBook Pro 13"',
+            category: 'Electronics',
+            room: 'Office',
+            description: 'M2 MacBook Pro for work',
+            condition: 'excellent' as const,
+            estimatedValue: 1299,
+            tags: ['laptop', 'apple', 'work'],
+            dateAdded: new Date().toISOString(),
+            imageUrl: PLACEHOLDER_IMAGE
+          },
+          {
+            id: '2',
+            name: 'Coffee Maker',
+            category: 'Kitchen',
+            room: 'Kitchen',
+            description: 'Breville espresso machine',
+            condition: 'good' as const,
+            estimatedValue: 299,
+            tags: ['appliance', 'coffee'],
+            dateAdded: new Date().toISOString(),
+            imageUrl: PLACEHOLDER_IMAGE
+          },
+          {
+            id: '3',
+            name: 'Desk Chair',
+            category: 'Furniture',
+            room: 'Office',
+            description: 'Ergonomic office chair',
+            condition: 'good' as const,
+            estimatedValue: 199,
+            tags: ['furniture', 'office'],
+            dateAdded: new Date().toISOString(),
+            imageUrl: PLACEHOLDER_IMAGE
+          }
+        ];
+
+        setItems(mockItems);
+        setPagination(prev => ({
+          ...prev,
+          currentPage: page,
+          totalCount: mockItems.length,
+          hasMore: false
+        }));
+
+        setLoading(false);
+        setSearchLoading(false);
+        return;
+      }
+
+      // Build query - skip image loading in development to save on Supabase egress
+      const selectFields = env.IS_DEVELOPMENT
+        ? 'id, name, category, room, description, condition, estimated_value, tags, created_at'
+        : 'id, name, category, room, description, condition, estimated_value, tags, created_at, crop_image_data';
+
       let query = supabase
         .from('inventory_items')
-        .select('id, name, category, room, description, condition, estimated_value, tags, created_at, crop_image_data', { count: 'exact' })
+        .select(selectFields, { count: 'exact' })
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .range(page * pagination.itemsPerPage, (page + 1) * pagination.itemsPerPage - 1);
@@ -115,13 +180,13 @@ export const useInventory = (user: User | null = null, authLoading: boolean = fa
         if (!append) setItems([]);
       } else {
         // Transform Supabase data to match our interface
-        const transformedItems = data.map(item => ({
+        const transformedItems = data.map((item: any) => ({
           id: item.id,
           name: item.name,
           category: item.category,
           room: item.room,
           description: item.description || '',
-          imageUrl: item.crop_image_data,
+          imageUrl: env.IS_DEVELOPMENT ? PLACEHOLDER_IMAGE : item.crop_image_data,
           dateAdded: item.created_at,
           tags: item.tags || [],
           condition: item.condition || 'good',
@@ -175,9 +240,14 @@ export const useInventory = (user: User | null = null, authLoading: boolean = fa
   // Get item details with full image data (only when needed)
   const getItemDetails = async (itemId: string): Promise<InventoryItem | null> => {
     try {
+      // Skip image loading in development to save on Supabase egress
+      const selectFields = env.IS_DEVELOPMENT
+        ? 'id, name, category, room, description, condition, estimated_value, tags, created_at'
+        : '*';
+
       const { data, error } = await supabase
         .from('inventory_items')
-        .select('*')
+        .select(selectFields)
         .eq('id', itemId)
         .eq('user_id', user?.id)
         .single();
@@ -188,18 +258,18 @@ export const useInventory = (user: User | null = null, authLoading: boolean = fa
       }
 
       return {
-        id: data.id,
-        name: data.name,
-        category: data.category,
-        room: data.room,
-        description: data.description || '',
-        imageUrl: data.crop_image_data || data.image_data,
-        originalCropImageUrl: data.original_crop_image_url,
-        originalFullImageUrl: data.original_full_image_url,
-        dateAdded: data.created_at,
-        tags: data.tags || [],
-        condition: data.condition || 'good',
-        estimatedValue: data.estimated_value,
+        id: (data as any).id,
+        name: (data as any).name,
+        category: (data as any).category,
+        room: (data as any).room,
+        description: (data as any).description || '',
+        imageUrl: env.IS_DEVELOPMENT ? PLACEHOLDER_IMAGE : ((data as any).crop_image_data || (data as any).image_data),
+        originalCropImageUrl: env.IS_DEVELOPMENT ? undefined : (data as any).original_crop_image_url,
+        originalFullImageUrl: env.IS_DEVELOPMENT ? undefined : (data as any).original_full_image_url,
+        dateAdded: (data as any).created_at,
+        tags: (data as any).tags || [],
+        condition: (data as any).condition || 'good',
+        estimatedValue: (data as any).estimated_value,
       };
     } catch (error) {
       console.error('Error in getItemDetails:', error);
@@ -211,6 +281,16 @@ export const useInventory = (user: User | null = null, authLoading: boolean = fa
   const getItemStats = async () => {
     try {
       if (!user) return { totalCount: 0, totalValue: 0, recentCount: 0 };
+
+      // Skip database queries in development to avoid Supabase timeouts
+      if (env.IS_DEVELOPMENT) {
+        console.log('🚀 Development Mode: Skipping stats query');
+        return {
+          totalCount: 14,
+          totalValue: 8750,
+          recentCount: 3
+        };
+      }
 
       // Get total count and sum of estimated values
       const { data, error } = await supabase
@@ -245,6 +325,17 @@ export const useInventory = (user: User | null = null, authLoading: boolean = fa
     try {
       if (!user) return [];
 
+      // Skip database queries in development to avoid Supabase timeouts
+      if (env.IS_DEVELOPMENT) {
+        console.log('🚀 Development Mode: Skipping room distribution query');
+        return [
+          { room: 'Living Room', count: 5, percentage: 35 },
+          { room: 'Kitchen', count: 4, percentage: 28 },
+          { room: 'Bedroom', count: 3, percentage: 21 },
+          { room: 'Office', count: 2, percentage: 14 }
+        ];
+      }
+
       const { data, error } = await supabase
         .from('inventory_items')
         .select('room')
@@ -276,6 +367,17 @@ export const useInventory = (user: User | null = null, authLoading: boolean = fa
   const getCategoryDistribution = async () => {
     try {
       if (!user) return [];
+
+      // Skip database queries in development to avoid Supabase timeouts
+      if (env.IS_DEVELOPMENT) {
+        console.log('🚀 Development Mode: Skipping category distribution query');
+        return [
+          { category: 'Electronics', count: 6, percentage: 43 },
+          { category: 'Furniture', count: 4, percentage: 29 },
+          { category: 'Kitchen', count: 2, percentage: 14 },
+          { category: 'Books', count: 2, percentage: 14 }
+        ];
+      }
 
       const { data, error } = await supabase
         .from('inventory_items')
@@ -309,9 +411,57 @@ export const useInventory = (user: User | null = null, authLoading: boolean = fa
     try {
       if (!user) return [];
 
+      // Development mode bypass - return mock data
+      if (env.IS_DEVELOPMENT) {
+        console.log('🚀 Development Mode: Using mock recent items data');
+        return [
+          {
+            id: 'recent-1',
+            name: 'MacBook Pro',
+            category: 'Electronics',
+            room: 'Office',
+            description: '13-inch laptop for work',
+            imageUrl: PLACEHOLDER_IMAGE,
+            dateAdded: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
+            tags: ['work', 'computer'],
+            condition: 'excellent' as const,
+            estimatedValue: 1200,
+          },
+          {
+            id: 'recent-2',
+            name: 'Coffee Maker',
+            category: 'Kitchen',
+            room: 'Kitchen',
+            description: 'Automatic drip coffee maker',
+            imageUrl: PLACEHOLDER_IMAGE,
+            dateAdded: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
+            tags: ['appliance'],
+            condition: 'good' as const,
+            estimatedValue: 80,
+          },
+          {
+            id: 'recent-3',
+            name: 'Desk Chair',
+            category: 'Furniture',
+            room: 'Office',
+            description: 'Ergonomic office chair',
+            imageUrl: PLACEHOLDER_IMAGE,
+            dateAdded: new Date(Date.now() - 259200000).toISOString(), // 3 days ago
+            tags: ['furniture', 'office'],
+            condition: 'good' as const,
+            estimatedValue: 150,
+          },
+        ];
+      }
+
+      // Skip image loading in development to save on Supabase egress
+      const selectFields = env.IS_DEVELOPMENT
+        ? 'id, name, category, room, description, condition, estimated_value, tags, created_at'
+        : 'id, name, category, room, description, condition, estimated_value, tags, created_at, crop_image_data';
+
       const { data, error } = await supabase
         .from('inventory_items')
-        .select('id, name, category, room, description, condition, estimated_value, tags, created_at, crop_image_data')
+        .select(selectFields)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(6);
@@ -321,13 +471,13 @@ export const useInventory = (user: User | null = null, authLoading: boolean = fa
         return [];
       }
 
-      return data.map(item => ({
+      return data.map((item: any) => ({
         id: item.id,
         name: item.name,
         category: item.category,
         room: item.room,
         description: item.description || '',
-        imageUrl: item.crop_image_data,
+        imageUrl: env.IS_DEVELOPMENT ? PLACEHOLDER_IMAGE : item.crop_image_data,
         dateAdded: item.created_at,
         tags: item.tags || [],
         condition: item.condition || 'good',
@@ -344,9 +494,45 @@ export const useInventory = (user: User | null = null, authLoading: boolean = fa
     try {
       if (!user) return [];
 
+      // Development mode bypass - return mock data
+      if (env.IS_DEVELOPMENT) {
+        console.log('🚀 Development Mode: Using mock maintenance items data');
+        return [
+          {
+            id: 'maint-1',
+            name: 'MacBook Pro',
+            category: 'Electronics',
+            room: 'Office',
+            description: '13-inch laptop for work',
+            imageUrl: PLACEHOLDER_IMAGE,
+            dateAdded: new Date(Date.now() - 86400000).toISOString(),
+            tags: ['work', 'computer'],
+            condition: 'excellent' as const,
+            estimatedValue: 1200,
+          },
+          {
+            id: 'maint-2',
+            name: 'Coffee Maker',
+            category: 'Kitchen',
+            room: 'Kitchen',
+            description: 'Automatic drip coffee maker',
+            imageUrl: PLACEHOLDER_IMAGE,
+            dateAdded: new Date(Date.now() - 172800000).toISOString(),
+            tags: ['appliance'],
+            condition: 'good' as const,
+            estimatedValue: 80,
+          },
+        ];
+      }
+
+      // Skip image loading in development to save on Supabase egress
+      const selectFields = env.IS_DEVELOPMENT
+        ? 'id, name, category, room, description, condition, estimated_value, tags, created_at'
+        : 'id, name, category, room, description, condition, estimated_value, tags, created_at, crop_image_data';
+
       const { data, error } = await supabase
         .from('inventory_items')
-        .select('id, name, category, room, description, condition, estimated_value, tags, created_at, crop_image_data')
+        .select(selectFields)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
@@ -355,13 +541,13 @@ export const useInventory = (user: User | null = null, authLoading: boolean = fa
         return [];
       }
 
-      return data.map(item => ({
+      return data.map((item: any) => ({
         id: item.id,
         name: item.name,
         category: item.category,
         room: item.room,
         description: item.description || '',
-        imageUrl: item.crop_image_data,
+        imageUrl: env.IS_DEVELOPMENT ? PLACEHOLDER_IMAGE : item.crop_image_data,
         dateAdded: item.created_at,
         tags: item.tags || [],
         condition: item.condition || 'good',
