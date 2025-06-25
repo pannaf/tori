@@ -78,23 +78,13 @@ function App() {
   const [itemsAddedInSession, setItemsAddedInSession] = useState(0);
 
   // Get rooms and categories that exist in the data, with default fallback for new ones
-  // In development mode or when adding new items, always show all rooms
+  // Always show all rooms and categories for consistency in both dev and production
   const roomsWithData = new Set(roomDistribution.map(dist => dist.room).filter(Boolean));
-  const rooms = env.IS_DEVELOPMENT
-    ? defaultRooms // Always show all rooms in development
-    : roomDistribution.map(dist => {
-      const existing = defaultRooms.find(r => r.name === dist.room);
-      return existing || { id: dist.room.toLowerCase().replace(/\s+/g, '-'), name: dist.room, icon: 'package', color: '#6B7280' };
-    });
+  const rooms = defaultRooms; // Always show all rooms
 
-  // For categories, always use the full default list to ensure consistency
-  // In development mode or when adding new items, always show all categories
+  // Always show all categories for consistency
   const categoriesWithData = new Set(categoryDistribution.map(dist => dist.category).filter(Boolean));
-  const categories = env.IS_DEVELOPMENT
-    ? defaultCategories // Always show all categories in development
-    : defaultCategories.filter(cat =>
-      categoriesWithData.has(cat.name) || categoriesWithData.size === 0 // Show all if no data yet
-    );
+  const categories = defaultCategories; // Always show all categories
 
   // Search state
   const [filteredItems, setFilteredItems] = useState<InventoryItem[]>([]);
