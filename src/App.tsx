@@ -489,7 +489,12 @@ function App() {
       // For AI mode with multiple items, defer refresh until modal closes
       if (itemsAddedInSession === 0) {
         // This is the first item in the session - likely manual addition
-        refreshStats();
+        console.log('🔄 Manual item added, refreshing stats after short delay...');
+        // Add a small delay to ensure database transaction is fully committed
+        setTimeout(() => {
+          console.log('🔄 Executing stats refresh for manual item...');
+          refreshStats();
+        }, 200);
       }
       // For subsequent items (AI mode), let the modal close handler refresh once
     } catch (error) {
