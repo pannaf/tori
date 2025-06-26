@@ -153,30 +153,36 @@ export const MaintenanceInterface: React.FC<MaintenanceInterfaceProps> = ({
 
   if (embedded) {
     return (
-      <div className="space-y-5">
-        {/* Beautiful Stats Cards - Fixed mobile spacing */}
-        <div className="grid grid-cols-3 gap-3">
+      <div className="space-y-4">
+        {/* Compact Stats Cards */}
+        <div className="grid grid-cols-3 gap-3 mb-4">
           <div className="bg-gradient-to-br from-red-50 to-pink-50 border border-red-200 rounded-2xl p-3 text-center shadow-sm">
-            <div className="w-8 h-8 bg-gradient-to-r from-red-500 to-pink-600 rounded-xl flex items-center justify-center mx-auto mb-2 shadow-lg shadow-red-500/25">
-              <AlertTriangle size={16} className="text-white" />
+            <div className="flex items-center justify-center gap-2 mb-1">
+              <div className="w-6 h-6 bg-gradient-to-r from-red-500 to-pink-600 rounded-lg flex items-center justify-center shadow-lg shadow-red-500/25">
+                <AlertTriangle size={12} className="text-white" />
+              </div>
+              <p className="text-lg font-bold text-red-700">{overdueCount}</p>
             </div>
-            <p className="text-xl font-bold text-red-700 mb-1">{overdueCount}</p>
             <p className="text-xs font-semibold text-red-600">Overdue</p>
           </div>
 
           <div className="bg-gradient-to-br from-yellow-50 to-orange-50 border border-yellow-200 rounded-2xl p-3 text-center shadow-sm">
-            <div className="w-8 h-8 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center mx-auto mb-2 shadow-lg shadow-yellow-500/25">
-              <Clock size={16} className="text-white" />
+            <div className="flex items-center justify-center gap-2 mb-1">
+              <div className="w-6 h-6 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-lg flex items-center justify-center shadow-lg shadow-yellow-500/25">
+                <Clock size={12} className="text-white" />
+              </div>
+              <p className="text-lg font-bold text-yellow-700">{upcomingCount}</p>
             </div>
-            <p className="text-xl font-bold text-yellow-700 mb-1">{upcomingCount}</p>
             <p className="text-xs font-semibold text-yellow-600">Week</p>
           </div>
 
           <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-2xl p-3 text-center shadow-sm">
-            <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl flex items-center justify-center mx-auto mb-2 shadow-lg shadow-green-500/25">
-              <CheckCircle size={16} className="text-white" />
+            <div className="flex items-center justify-center gap-2 mb-1">
+              <div className="w-6 h-6 bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg flex items-center justify-center shadow-lg shadow-green-500/25">
+                <CheckCircle size={12} className="text-white" />
+              </div>
+              <p className="text-lg font-bold text-green-700">{completedReminders.length}</p>
             </div>
-            <p className="text-xl font-bold text-green-700 mb-1">{completedReminders.length}</p>
             <p className="text-xs font-semibold text-green-600">Done</p>
           </div>
         </div>
@@ -258,7 +264,10 @@ export const MaintenanceInterface: React.FC<MaintenanceInterfaceProps> = ({
                   key={reminder.id}
                   className={`border rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-lg ${priorityBgColors[reminder.priority]}`}
                 >
-                  <div className="p-4">
+                  <div
+                    className="p-4 cursor-pointer"
+                    onClick={() => setExpandedReminder(isExpanded ? null : reminder.id)}
+                  >
                     {/* Header Row - Always visible and stable */}
                     <div className="flex items-start gap-3">
                       {/* Item Category Icon - Fixed position */}
@@ -297,12 +306,9 @@ export const MaintenanceInterface: React.FC<MaintenanceInterfaceProps> = ({
                             <div className={`w-8 h-8 bg-gradient-to-r ${priorityColors[reminder.priority]} rounded-xl flex items-center justify-center shadow-lg`}>
                               <TypeIcon size={16} className="text-white" />
                             </div>
-                            <button
-                              onClick={() => setExpandedReminder(isExpanded ? null : reminder.id)}
-                              className="text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-100 rounded-lg"
-                            >
+                            <div className="text-gray-400 transition-colors">
                               {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
-                            </button>
+                            </div>
                           </div>
                         </div>
 
