@@ -19,6 +19,11 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
+// Placeholder images for different states  
+const LOADING_IMAGE = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiB2aWV3Qm94PSIwIDAgMjAwIDIwMCI+CiAgPCEtLSBCYWNrZ3JvdW5kIC0tPgogIDxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjZjhmYWZjIi8+CiAgCiAgPCEtLSBNYWluIGltYWdlIHBsYWNlaG9sZGVyIC0tPgogIDxyZWN0IHg9IjUwIiB5PSI1MCIgd2lkdGg9IjEwMCIgaGVpZ2h0PSI3NSIgcng9IjEyIiBmaWxsPSIjZTJlOGYwIiBzdHJva2U9IiNjYmQ1ZTEiIHN0cm9rZS13aWR0aD0iMiIvPgogIAogIDwhLS0gSW1hZ2UgaWNvbiAtLT4KICA8Y2lyY2xlIGN4PSI3NSIgY3k9IjgwIiByPSI4IiBmaWxsPSIjOTRhM2I4Ii8+CiAgPHBvbHlnb24gcG9pbnRzPSI5MCw5NSAxMTAsNzUgMTMwLDg1IDE0MCw3NSAxNDAsMTA1IDkwLDEwNSIgZmlsbD0iIzk0YTNiOCIvPgogIAogIDwhLS0gQW5pbWF0ZWQgc2hpbW1lciBlZmZlY3QgLS0+CiAgPHJlY3QgeD0iNTAiIHk9IjUwIiB3aWR0aD0iMTAwIiBoZWlnaHQ9Ijc1IiByeD0iMTIiIGZpbGw9InVybCgjc2hpbW1lcikiIG9wYWNpdHk9IjAuNyI+CiAgICA8YW5pbWF0ZSBhdHRyaWJ1dGVOYW1lPSJvcGFjaXR5IiB2YWx1ZXM9IjAuMzswLjg7MC4zIiBkdXI9IjEuNXMiIHJlcGVhdENvdW50PSJpbmRlZmluaXRlIi8+CiAgPC9yZWN0PgogIAogIDwhLS0gR3JhZGllbnQgZGVmaW5pdGlvbiAtLT4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0ic2hpbW1lciIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojZjFmNWY5O3N0b3Atb3BhY2l0eTowIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iNTAlIiBzdHlsZT0ic3RvcC1jb2xvcjojZTJlOGYwO3N0b3Atb3BhY2l0eToxIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3R5bGU9InN0b3AtY29sb3I6I2YxZjVmOTtzdG9wLW9wYWNpdHk6MCIvPgogICAgICA8YW5pbWF0ZVRyYW5zZm9ybSBhdHRyaWJ1dGVOYW1lPSJncmFkaWVudFRyYW5zZm9ybSIgdHlwZT0idHJhbnNsYXRlIiB2YWx1ZXM9Ii0yMDAgMDsyMDAgMDstMjAwIDAiIGR1cj0iMnMiIHJlcGVhdENvdW50PSJpbmRlZmluaXRlIi8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICAKICA8IS0tIExvYWRpbmcgdGV4dCAtLT4KICA8dGV4dCB4PSIxMDAiIHk9IjE2MCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzY0NzQ4YiIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjEyIiBmb250LXdlaWdodD0iNTAwIj5Mb2FkaW5nIGltYWdlLi4uPC90ZXh0Pgo8L3N2Zz4K';
+
+const NO_IMAGE_PLACEHOLDER = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiB2aWV3Qm94PSIwIDAgMjAwIDIwMCI+CiAgPHJlY3Qgd2lkdGg9IjIwMCIgaGVpZ2h0PSIyMDAiIGZpbGw9IiNmM2Y0ZjYiLz4KICA8cmVjdCB4PSI2MCIgeT0iNjAiIHdpZHRoPSI4MCIgaGVpZ2h0PSI2MCIgcng9IjgiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2QxZDVkYiIgc3Ryb2tlLXdpZHRoPSIzIi8+CiAgPGxpbmUgeDE9Ijc1IiB5MT0iNzUiIHgyPSIxMjUiIHkyPSIxMDUiIHN0cm9rZT0iI2QxZDVkYiIgc3Ryb2tlLXdpZHRoPSIyIi8+CiAgPGNpcmNsZSBjeD0iODUiIGN5PSI4NSIgcj0iNCIgZmlsbD0iI2QxZDVkYiIvPgogIDx0ZXh0IHg9IjEwMCIgeT0iMTYwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjOWNhM2FmIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTIiPk5vIEltYWdlPC90ZXh0Pgo8L3N2Zz4=';
+
 // Default rooms and categories
 const defaultRooms = [
   { id: '1', name: 'Living Room', icon: 'sofa', color: '#6366F1' },
@@ -97,33 +102,6 @@ function App() {
   // Debounce timer for search
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Load images for specific items (for search display)
-  const loadItemImages = useCallback(async (items: InventoryItem[]): Promise<InventoryItem[]> => {
-    if (!user || items.length === 0) return items;
-
-    try {
-      const itemIds = items.map(item => item.id);
-      const { data, error } = await supabase
-        .from('inventory_items')
-        .select('id, crop_image_data')
-        .in('id', itemIds);
-
-      if (!error && data) {
-        return items.map(item => {
-          const imageData = data.find(d => d.id === item.id);
-          return {
-            ...item,
-            imageUrl: imageData?.crop_image_data || item.imageUrl // Keep placeholder if no image
-          };
-        });
-      }
-    } catch (error) {
-      console.error('Error loading item images:', error);
-    }
-
-    return items; // Return original items if error
-  }, [user]);
-
   // Filter items based on search criteria
   const filterItems = useCallback((query: string, room: string, category: string) => {
     let filtered = [...allItems];
@@ -148,28 +126,26 @@ function App() {
     return filtered;
   }, [allItems]);
 
-  // Update displayed items with images progressively
+  // Optimistic loading for search results - show immediately, load images progressively
   const updateDisplayedItems = useCallback(async (filtered: InventoryItem[], loadImages = true, isInitialLoad = false) => {
     const initialItems = filtered.slice(0, 8);
 
-    if (!loadImages || initialItems.length === 0) {
-      setDisplayedItems(initialItems);
-      setShowLoadMore(filtered.length > 8 && !isInitialLoad);
-      if (isInitialLoad) setInitialSearchComplete(true);
+    // Always show items immediately for instant UI feedback (with loading placeholders)
+    const itemsWithLoadingPlaceholders = initialItems.map(item => ({
+      ...item,
+      imageUrl: (item.imageUrl && item.imageUrl.includes('f3f4f6')) ? LOADING_IMAGE : (item.imageUrl || LOADING_IMAGE)
+    }));
+    setDisplayedItems(itemsWithLoadingPlaceholders);
+    setShowLoadMore(filtered.length > 8);
+    if (isInitialLoad) setInitialSearchComplete(true);
+
+    // Skip image loading if not needed
+    if (!loadImages || initialItems.length === 0 || !user) {
       return;
     }
 
-    // For initial load, show items without images first, then update with images
-    if (isInitialLoad) {
-      setDisplayedItems(initialItems);
-    }
-
-    // Load images progressively - update items in place to avoid flickering
-    const itemsInProgress = [...initialItems];
-    setDisplayedItems(itemsInProgress);
-
-    for (let i = 0; i < initialItems.length; i++) {
-      const item = initialItems[i];
+    // Load images progressively in background without blocking UI
+    for (const item of initialItems) {
       try {
         const { data, error } = await supabase
           .from('inventory_items')
@@ -177,29 +153,36 @@ function App() {
           .eq('id', item.id)
           .single();
 
-        const imageUrl = (!error && data?.crop_image_data) ? data.crop_image_data : item.imageUrl;
-
-        // Update only this specific item in place
+        if (!error && data?.crop_image_data) {
+          // Update with actual image
+          setDisplayedItems(currentItems =>
+            currentItems.map(currentItem =>
+              currentItem.id === item.id
+                ? { ...currentItem, imageUrl: data.crop_image_data }
+                : currentItem
+            )
+          );
+        } else {
+          // No image available - update to "No Image" placeholder
+          setDisplayedItems(currentItems =>
+            currentItems.map(currentItem =>
+              currentItem.id === item.id
+                ? { ...currentItem, imageUrl: NO_IMAGE_PLACEHOLDER }
+                : currentItem
+            )
+          );
+        }
+      } catch (error) {
+        console.error('Error loading image for item:', item.id, error);
+        // Update to "No Image" placeholder on error
         setDisplayedItems(currentItems =>
           currentItems.map(currentItem =>
             currentItem.id === item.id
-              ? { ...currentItem, imageUrl }
+              ? { ...currentItem, imageUrl: NO_IMAGE_PLACEHOLDER }
               : currentItem
           )
         );
-      } catch (error) {
-        console.error('Error loading image for item:', item.id, error);
       }
-    }
-
-    // Only show load more button after initial load is complete
-    if (isInitialLoad) {
-      setInitialSearchComplete(true);
-      setTimeout(() => {
-        setShowLoadMore(filtered.length > 8);
-      }, 300); // Small delay to avoid jarring appearance
-    } else {
-      setShowLoadMore(filtered.length > 8);
     }
   }, [user]);
 
@@ -257,15 +240,63 @@ function App() {
     setSearchLoading(false);
   }, [filterItems, updateDisplayedItems]);
 
-  // Load more items
+  // Optimistic load more - show items immediately, load images progressively
   const handleLoadMore = useCallback(async () => {
     setLoadingMore(true);
     const nextItems = filteredItems.slice(displayedItems.length, displayedItems.length + 8);
-    const itemsWithImages = await loadItemImages(nextItems);
-    setDisplayedItems(prev => [...prev, ...itemsWithImages]);
+
+    // Show items immediately with loading placeholders
+    const nextItemsWithLoadingPlaceholders = nextItems.map(item => ({
+      ...item,
+      imageUrl: LOADING_IMAGE
+    }));
+    setDisplayedItems(prev => [...prev, ...nextItemsWithLoadingPlaceholders]);
     setShowLoadMore(filteredItems.length > displayedItems.length + nextItems.length);
     setLoadingMore(false);
-  }, [filteredItems, displayedItems.length, loadItemImages]);
+
+    // Load images progressively in background
+    if (user) {
+      for (const item of nextItems) {
+        try {
+          const { data, error } = await supabase
+            .from('inventory_items')
+            .select('id, crop_image_data')
+            .eq('id', item.id)
+            .single();
+
+          if (!error && data?.crop_image_data) {
+            // Update with actual image
+            setDisplayedItems(current =>
+              current.map(currentItem =>
+                currentItem.id === item.id
+                  ? { ...currentItem, imageUrl: data.crop_image_data }
+                  : currentItem
+              )
+            );
+          } else {
+            // No image available - update to "No Image" placeholder
+            setDisplayedItems(current =>
+              current.map(currentItem =>
+                currentItem.id === item.id
+                  ? { ...currentItem, imageUrl: NO_IMAGE_PLACEHOLDER }
+                  : currentItem
+              )
+            );
+          }
+        } catch (error) {
+          console.error('Error loading image for load more item:', item.id, error);
+          // Update to "No Image" placeholder on error
+          setDisplayedItems(current =>
+            current.map(currentItem =>
+              currentItem.id === item.id
+                ? { ...currentItem, imageUrl: NO_IMAGE_PLACEHOLDER }
+                : currentItem
+            )
+          );
+        }
+      }
+    }
+  }, [filteredItems, displayedItems.length, user]);
 
   // Initialize filtered items when allItems changes, but only when on search tab
   React.useEffect(() => {
@@ -403,16 +434,36 @@ function App() {
   };
 
   const handleItemClick = async (item: InventoryItem) => {
-    const fullItem = await getItemDetails(item.id);
-    setSelectedItem(fullItem || item);
+    // Show modal immediately with existing data for snappy UX
+    setSelectedItem(item);
     setShowItemDetail(true);
+
+    // Load full details in background (for image switching features)
+    getItemDetails(item.id).then(fullItem => {
+      if (fullItem) {
+        setSelectedItem(fullItem);
+      }
+    }).catch(error => {
+      console.error('Error loading full item details:', error);
+      // Modal still works with basic data
+    });
   };
 
   const handleItemEdit = async (item: InventoryItem) => {
-    const fullItem = await getItemDetails(item.id);
-    setSelectedItem(fullItem || item);
+    // Show edit modal immediately with existing data for snappy UX
+    setSelectedItem(item);
     setShowItemDetail(false);
     setShowEditModal(true);
+
+    // Load full details in background (for image previews if needed)
+    getItemDetails(item.id).then(fullItem => {
+      if (fullItem) {
+        setSelectedItem(fullItem);
+      }
+    }).catch(error => {
+      console.error('Error loading full item details:', error);
+      // Modal still works with basic data
+    });
   };
 
   const handleItemDelete = async (id: string) => {

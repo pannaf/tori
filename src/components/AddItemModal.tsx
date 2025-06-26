@@ -1509,7 +1509,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
                       required
                     >
                       <option value="" disabled className="text-gray-400">Category</option>
-                      {categories.map((category) => (
+                      {[...categories].sort((a, b) => a.name.localeCompare(b.name)).map((category) => (
                         <option key={category.id} value={category.name} className="text-gray-900">{category.name}</option>
                       ))}
                     </select>
@@ -1521,7 +1521,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
                       required
                     >
                       <option value="" disabled className="text-gray-400">Location</option>
-                      {rooms.map((room) => (
+                      {[...rooms].sort((a, b) => a.name.localeCompare(b.name)).map((room) => (
                         <option key={room.id} value={room.name} className="text-gray-900">{room.name}</option>
                       ))}
                     </select>
@@ -1529,15 +1529,20 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
 
                   {/* Value & Condition in a row */}
                   <div className="grid grid-cols-2 gap-3">
-                    <input
-                      type="number"
-                      value={formData.estimatedValue}
-                      onChange={(e) => setFormData({ ...formData, estimatedValue: e.target.value })}
-                      className={`w-full px-3 py-3 border rounded-full focus:border-indigo-500 focus:outline-none transition-colors text-base ${aiDetected ? 'border-indigo-300 bg-indigo-50' : 'border-gray-300'}`}
-                      placeholder="Estimated Value"
-                      step="0.01"
-                      min="0"
-                    />
+                    <div className="relative">
+                      <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none">
+                        $
+                      </div>
+                      <input
+                        type="number"
+                        value={formData.estimatedValue}
+                        onChange={(e) => setFormData({ ...formData, estimatedValue: e.target.value })}
+                        className={`w-full pl-8 pr-3 py-3 border rounded-full focus:border-indigo-500 focus:outline-none transition-colors text-base ${aiDetected ? 'border-indigo-300 bg-indigo-50' : 'border-gray-300'}`}
+                        placeholder="0.00"
+                        step="0.01"
+                        min="0"
+                      />
+                    </div>
 
                     <select
                       value={formData.condition}

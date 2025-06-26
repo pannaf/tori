@@ -7,8 +7,13 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// Placeholder image for development mode
-const PLACEHOLDER_IMAGE = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiB2aWV3Qm94PSIwIDAgMjAwIDIwMCI+CiAgPHJlY3Qgd2lkdGg9IjIwMCIgaGVpZ2h0PSIyMDAiIGZpbGw9IiNmM2Y0ZjYiLz4KICA8Y2lyY2xlIGN4PSIxMDAiIGN5PSI4MCIgcj0iMjUiIGZpbGw9IiNkMWQ1ZGIiLz4KICA8cmVjdCB4PSI3NSIgeT0iMTIwIiB3aWR0aD0iNTAiIGhlaWdodD0iMzAiIHJ4PSI1IiBmaWxsPSIjZDFkNWRiIi8+CiAgPHRleHQgeD0iMTAwIiB5PSIxNzAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiM5Y2EzYWYiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxMiI+Tm8gSW1hZ2U8L3RleHQ+Cjwvc3ZnPg==';
+// Placeholder images for different states
+const LOADING_IMAGE = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiB2aWV3Qm94PSIwIDAgMjAwIDIwMCI+CiAgPCEtLSBCYWNrZ3JvdW5kIC0tPgogIDxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjZjhmYWZjIi8+CiAgCiAgPCEtLSBNYWluIGltYWdlIHBsYWNlaG9sZGVyIC0tPgogIDxyZWN0IHg9IjUwIiB5PSI1MCIgd2lkdGg9IjEwMCIgaGVpZ2h0PSI3NSIgcng9IjEyIiBmaWxsPSIjZTJlOGYwIiBzdHJva2U9IiNjYmQ1ZTEiIHN0cm9rZS13aWR0aD0iMiIvPgogIAogIDwhLS0gSW1hZ2UgaWNvbiAtLT4KICA8Y2lyY2xlIGN4PSI3NSIgY3k9IjgwIiByPSI4IiBmaWxsPSIjOTRhM2I4Ii8+CiAgPHBvbHlnb24gcG9pbnRzPSI5MCw5NSAxMTAsNzUgMTMwLDg1IDE0MCw3NSAxNDAsMTA1IDkwLDEwNSIgZmlsbD0iIzk0YTNiOCIvPgogIAogIDwhLS0gQW5pbWF0ZWQgc2hpbW1lciBlZmZlY3QgLS0+CiAgPHJlY3QgeD0iNTAiIHk9IjUwIiB3aWR0aD0iMTAwIiBoZWlnaHQ9Ijc1IiByeD0iMTIiIGZpbGw9InVybCgjc2hpbW1lcikiIG9wYWNpdHk9IjAuNyI+CiAgICA8YW5pbWF0ZSBhdHRyaWJ1dGVOYW1lPSJvcGFjaXR5IiB2YWx1ZXM9IjAuMzswLjg7MC4zIiBkdXI9IjEuNXMiIHJlcGVhdENvdW50PSJpbmRlZmluaXRlIi8+CiAgPC9yZWN0PgogIAogIDwhLS0gR3JhZGllbnQgZGVmaW5pdGlvbiAtLT4KICA8ZGVmcz4KICAgIDxsaW5lYXJHcmFkaWVudCBpZD0ic2hpbW1lciIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMCUiPgogICAgICA8c3RvcCBvZmZzZXQ9IjAlIiBzdHlsZT0ic3RvcC1jb2xvcjojZjFmNWY5O3N0b3Atb3BhY2l0eTowIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iNTAlIiBzdHlsZT0ic3RvcC1jb2xvcjojZTJlOGYwO3N0b3Atb3BhY2l0eToxIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3R5bGU9InN0b3AtY29sb3I6I2YxZjVmOTtzdG9wLW9wYWNpdHk6MCIvPgogICAgICA8YW5pbWF0ZVRyYW5zZm9ybSBhdHRyaWJ1dGVOYW1lPSJncmFkaWVudFRyYW5zZm9ybSIgdHlwZT0idHJhbnNsYXRlIiB2YWx1ZXM9Ii0yMDAgMDsyMDAgMDstMjAwIDAiIGR1cj0iMnMiIHJlcGVhdENvdW50PSJpbmRlZmluaXRlIi8+CiAgICA8L2xpbmVhckdyYWRpZW50PgogIDwvZGVmcz4KICAKICA8IS0tIExvYWRpbmcgdGV4dCAtLT4KICA8dGV4dCB4PSIxMDAiIHk9IjE2MCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzY0NzQ4YiIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjEyIiBmb250LXdlaWdodD0iNTAwIj5Mb2FkaW5nIGltYWdlLi4uPC90ZXh0Pgo8L3N2Zz4K';
+
+const NO_IMAGE_PLACEHOLDER = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiB2aWV3Qm94PSIwIDAgMjAwIDIwMCI+CiAgPHJlY3Qgd2lkdGg9IjIwMCIgaGVpZ2h0PSIyMDAiIGZpbGw9IiNmM2Y0ZjYiLz4KICA8cmVjdCB4PSI2MCIgeT0iNjAiIHdpZHRoPSI4MCIgaGVpZ2h0PSI2MCIgcng9IjgiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2QxZDVkYiIgc3Ryb2tlLXdpZHRoPSIzIi8+CiAgPGxpbmUgeDE9Ijc1IiB5MT0iNzUiIHgyPSIxMjUiIHkyPSIxMDUiIHN0cm9rZT0iI2QxZDVkYiIgc3Ryb2tlLXdpZHRoPSIyIi8+CiAgPGNpcmNsZSBjeD0iODUiIGN5PSI4NSIgcj0iNCIgZmlsbD0iI2QxZDVkYiIvPgogIDx0ZXh0IHg9IjEwMCIgeT0iMTYwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjOWNhM2FmIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTIiPk5vIEltYWdlPC90ZXh0Pgo8L3N2Zz4=';
+
+// For backwards compatibility, use loading image as default
+const PLACEHOLDER_IMAGE = LOADING_IMAGE;
 
 interface User {
     id: string;
@@ -127,7 +132,7 @@ export const useInventoryStats = (user: User | null) => {
                     category: item.category,
                     room: item.room,
                     description: item.description || '',
-                    imageUrl: PLACEHOLDER_IMAGE, // Use placeholder - images loaded separately when needed
+                    imageUrl: LOADING_IMAGE, // Use loading placeholder - images loaded separately when needed
                     dateAdded: item.created_at,
                     tags: item.tags || [],
                     condition: item.condition || 'good',
@@ -228,47 +233,66 @@ export const useInventoryStats = (user: User | null) => {
             .slice(0, 4); // Take top 4 most recent
     }, [allItems]);
 
-    // Load images only for recent items (small set, safe to fetch)
+    // Optimistic loading for recent items - show immediately, load images progressively
     const [recentItemsWithImages, setRecentItemsWithImages] = useState<InventoryItem[]>([]);
 
     useEffect(() => {
-        const loadRecentImages = async () => {
+        // Show items immediately with placeholders for instant UI
+        setRecentItemsWithImages(recentItems);
+
+        // Load images progressively in background
+        const loadRecentImagesProgressively = async () => {
             if (!user || recentItems.length === 0) {
-                setRecentItemsWithImages([]);
                 return;
             }
 
             if (env.IS_DEVELOPMENT) {
-                setRecentItemsWithImages(recentItems); // Use placeholders in dev
-                return;
+                return; // Use placeholders in dev
             }
 
-            try {
-                const recentIds = recentItems.map(item => item.id);
-                const { data, error } = await supabase
-                    .from('inventory_items')
-                    .select('id, crop_image_data')
-                    .in('id', recentIds);
+            // Load images one by one to avoid blocking
+            for (const item of recentItems) {
+                try {
+                    const { data, error } = await supabase
+                        .from('inventory_items')
+                        .select('id, crop_image_data')
+                        .eq('id', item.id)
+                        .single();
 
-                if (!error && data) {
-                    const itemsWithImages = recentItems.map(item => {
-                        const imageData = data.find(d => d.id === item.id);
-                        return {
-                            ...item,
-                            imageUrl: imageData?.crop_image_data || PLACEHOLDER_IMAGE
-                        };
-                    });
-                    setRecentItemsWithImages(itemsWithImages);
-                } else {
-                    setRecentItemsWithImages(recentItems); // Fallback to placeholders
+                    if (!error && data?.crop_image_data) {
+                        // Update with actual image
+                        setRecentItemsWithImages(current =>
+                            current.map(currentItem =>
+                                currentItem.id === item.id
+                                    ? { ...currentItem, imageUrl: data.crop_image_data }
+                                    : currentItem
+                            )
+                        );
+                    } else {
+                        // No image available - update to "No Image" placeholder
+                        setRecentItemsWithImages(current =>
+                            current.map(currentItem =>
+                                currentItem.id === item.id
+                                    ? { ...currentItem, imageUrl: NO_IMAGE_PLACEHOLDER }
+                                    : currentItem
+                            )
+                        );
+                    }
+                } catch (error) {
+                    console.error('Error loading image for recent item:', item.id, error);
+                    // Update to "No Image" placeholder on error
+                    setRecentItemsWithImages(current =>
+                        current.map(currentItem =>
+                            currentItem.id === item.id
+                                ? { ...currentItem, imageUrl: NO_IMAGE_PLACEHOLDER }
+                                : currentItem
+                        )
+                    );
                 }
-            } catch (error) {
-                console.error('Error loading recent item images:', error);
-                setRecentItemsWithImages(recentItems); // Fallback to placeholders
             }
         };
 
-        loadRecentImages();
+        loadRecentImagesProgressively();
     }, [recentItems, user]);
 
     const allItemsForMaintenance = useMemo(() => {

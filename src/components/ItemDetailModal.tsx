@@ -56,7 +56,6 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
     if (onEdit) {
       onEdit(item);
     }
-    onClose();
   };
 
   const handleDeleteClick = () => {
