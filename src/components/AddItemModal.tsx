@@ -560,9 +560,75 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
           }
         }
 
+        // Random AI analysis messages for variety
+        const analysisMessages = [
+          'Woah! That looks great. Give me a moment to catalog.',
+          'Nice! Let me take a closer look at what you\'ve got here.',
+          'Ooh, interesting! My detective mode is activating...',
+          'Hold up, this looks promising. Let me analyze everything.',
+          'Sweet! Give me a sec to identify all these goodies.',
+          'Looking good! Time for me to work some magic.',
+          'Awesome shot! Let me catalog what I see here.',
+          'Perfect! I\'m scanning for all the details now.',
+          'Great photo! Give me a moment to break this down.',
+          'Nice collection! Let me see what treasures are hiding.',
+          'Excellent! I\'m putting on my detective hat...',
+          'Fantastic! Time to catalog these beauties.',
+          'Impressive! Let me identify everything in frame.',
+          'Cool stuff! My analysis mode is engaged.',
+          'Beautiful! Give me a moment to process all this.',
+          'Wonderful! Let me catalog each item I spot.',
+          'Amazing! I\'m getting to work on this inventory.',
+          'Spectacular! Time to identify all your items.',
+          'Brilliant! Let me analyze what you\'ve captured.',
+          'Outstanding! I\'m ready to catalog everything.',
+          'Fun fact: The average home has 300,000 items! Let me see what\'s in yours...',
+          'Did you know? Marie Kondo says we should only keep things that spark joy. Let\'s see what sparks!',
+          'Pro tip: Labeling everything makes finding stuff 10x easier. Speaking of which...',
+          'Here\'s a joke: Why don\'t items ever get lost? Because they always know their place in inventory! 📦',
+          'Inventory wisdom: A place for everything, and everything in its place. Let me find those places!',
+          'Fun fact: The word "inventory" comes from Latin meaning "to find." That\'s exactly what I do!',
+          'Storage hack: Vertical space is your best friend. Now let me catalog your treasures...',
+          'Did you know? The first known inventory was kept on clay tablets 5,000 years ago. We\'ve come far!',
+          'Joke time: What\'s an organizer\'s favorite type of music? Heavy metal... shelving! 🎵',
+          'Pro organizing tip: Group similar items together. Let me see what groups I can spot here!',
+          'Random fact: Humans spend 12 years of their lives looking for misplaced items. Not on my watch! 🔍',
+          'Plot twist: I can identify objects faster than you can say "where did I put that thing?"',
+          'Weird but true: The most organized person in history was probably a librarian named Melvil Dewey. Respect! 📚',
+          'Dad joke alert: Why did the storage container go to therapy? It had too many issues to unpack! 😂',
+          'Mind blown: Ancient Egyptians invented the first storage containers... for their afterlife stuff! 🏺',
+          'Life hack: If you can\'t find something, it\'s probably in the last place you\'d look. Literally.',
+          'Surprise fact: IKEA names their storage products after Swedish places. Skubb = a town! 🇸🇪',
+          'Deep thought: Is a junk drawer really junk, or is it a carefully curated chaos collection? 🤔',
+          'Fun discovery: The Japanese have a word "tsundoku" for buying books and not reading them. Relatable!',
+          'Reality check: 80% of what we own, we only use 20% of the time. Let\'s see what\'s actually useful!',
+          'Confession: I secretly judge people by how they organize their kitchen utensils. Don\'t worry, you\'re safe! 🍴',
+          'Trivia time: The Container Store has over 10,000 different storage products. I know them all! 📦',
+          'Philosophical question: If a tree falls in a forest and no one inventories it, does it make a sound?',
+          'Breaking news: Studies show organized people live longer. Correlation or causation? You decide! ⏰',
+          'Guilty pleasure: I get genuinely excited about finding the perfect storage solution for weird-shaped items.',
+          'Urban legend: There\'s supposedly a person who has never lost their keys. I\'m still searching for them.',
+          'Science fact: Your brain releases dopamine when you organize things. I\'m basically a happiness dealer! 🧠',
+          'Comedy gold: Why don\'t storage units ever get lonely? They\'re always full of stuff! 🏠',
+          'Shocking truth: The average person owns 62 pairs of shoes but only wears 7 regularly. Shoe math is wild! 👠',
+          'Zen moment: Marie Kondo\'s cat is probably the most organized cat in the world. Goals.',
+          'Historical note: Vikings were surprisingly organized. They had to fit everything in longboats! ⛵',
+          'Modern mystery: How do hair ties disappear faster than socks in the dryer? 🤷‍♀️',
+          'Productivity secret: A messy desk is a sign of a creative mind. A really messy desk is a sign of a really creative mind!',
+          'Food for thought: If you organize your spice rack alphabetically, are you living your best life? 🌶️',
+          'Random observation: People who organize their books by color are either artists or psychopaths. No in-between.',
+          'Life lesson: The person who invented the junk drawer deserves a Nobel Prize for understanding human nature.',
+          'Conspiracy theory: Tupperware lids are actually interdimensional beings. That\'s why they never match! 🥡',
+          'Gentle reminder: Behind every organized person is a substantial amount of coffee. ☕',
+          'Universal truth: The lighter the object, the harder it is to find when you need it most.',
+          'Existential crisis: Is organizing just moving mess from one place to another? Let\'s find out!',
+        ];
+
+        const randomMessage = analysisMessages[Math.floor(Math.random() * analysisMessages.length)];
+
         updateAiProgress({
           step: 'analyzing',
-          message: 'Tori is analyzing your photo with AI...',
+          message: randomMessage,
           progress: 25
         });
 
@@ -1225,11 +1291,24 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
             {aiProcessing ? (
               // AI Processing state
               <div className="bg-gradient-to-br from-emerald-50 to-teal-50 p-6 space-y-4 max-h-[28rem] overflow-y-auto overflow-x-hidden sm:rounded-b-3xl">
-                <div className="text-center">
-                  <p className="font-bold text-xl mb-6 text-gray-900 flex items-center justify-center gap-2">
+                <div className="text-center space-y-4">
+                  <div className="flex items-center justify-center gap-2 mb-4">
                     <Brain className="animate-pulse text-emerald-500" size={24} />
-                    {aiProgress.message}
-                  </p>
+                    <span className="font-bold text-xl text-gray-900">Analyzing your photo...</span>
+                  </div>
+
+                  {/* Fun fact/tip display */}
+                  <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-4 border border-emerald-200">
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <Sparkles size={14} className="text-white" />
+                      </div>
+                      <div className="text-left">
+                        <p className="text-sm font-semibold text-emerald-700 mb-1">While I'm analyzing, here's a thought:</p>
+                        <p className="text-sm text-gray-700 leading-relaxed">{aiProgress.message}</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Room and Total Value */}
