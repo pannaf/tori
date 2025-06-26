@@ -56,7 +56,7 @@ export const SearchAndFilters: React.FC<SearchAndFiltersProps> = ({
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
           onKeyPress={handleKeyPress}
-          className="w-full pl-12 pr-4 py-4 bg-white border border-gray-200 rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors shadow-sm"
+          className="w-full pl-12 pr-4 py-4 bg-white border border-gray-300 rounded-full focus:border-indigo-500 focus:outline-none transition-colors shadow-sm"
         />
       </div>
 
@@ -81,7 +81,7 @@ export const SearchAndFilters: React.FC<SearchAndFiltersProps> = ({
         <select
           value={selectedRoom}
           onChange={(e) => onRoomChange(e.target.value)}
-          className="px-4 py-3 bg-white border border-gray-200 rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors text-sm appearance-none"
+          className="px-4 py-3 bg-white border border-gray-300 rounded-full focus:border-indigo-500 focus:outline-none transition-colors text-sm appearance-none"
         >
           <option value="">All rooms</option>
           {rooms.map(room => (
@@ -92,7 +92,7 @@ export const SearchAndFilters: React.FC<SearchAndFiltersProps> = ({
         <select
           value={selectedCategory}
           onChange={(e) => onCategoryChange(e.target.value)}
-          className="px-4 py-3 bg-white border border-gray-200 rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors text-sm appearance-none"
+          className="px-4 py-3 bg-white border border-gray-300 rounded-full focus:border-indigo-500 focus:outline-none transition-colors text-sm appearance-none"
         >
           <option value="">All categories</option>
           {categories.map(category => (

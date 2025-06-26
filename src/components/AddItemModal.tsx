@@ -1297,18 +1297,20 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
                     <span className="font-bold text-xl text-gray-900">Analyzing your photo...</span>
                   </div>
 
-                  {/* Fun fact/tip display */}
-                  <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-4 border border-emerald-200">
-                    <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <Sparkles size={14} className="text-white" />
-                      </div>
-                      <div className="text-left">
-                        <p className="text-sm font-semibold text-emerald-700 mb-1">While I'm analyzing, here's a thought:</p>
-                        <p className="text-sm text-gray-700 leading-relaxed">{aiProgress.message}</p>
+                  {/* Fun fact/tip display - only during initial analysis */}
+                  {aiProgress.step === 'analyzing' && (
+                    <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-4 border border-emerald-200">
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <Sparkles size={14} className="text-white" />
+                        </div>
+                        <div className="text-left">
+                          <p className="text-sm font-semibold text-emerald-700 mb-1">While I'm analyzing, here's a thought:</p>
+                          <p className="text-sm text-gray-700 leading-relaxed">{aiProgress.message}</p>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
                 </div>
 
                 {/* Room and Total Value */}
