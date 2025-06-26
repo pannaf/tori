@@ -92,59 +92,55 @@ export const EditMaintenanceModal: React.FC<EditMaintenanceModalProps> = ({
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={handleSubmit} className="space-y-3">
                     {/* Title */}
                     <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                            Title
+                        <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                            Task Name
                         </label>
                         <input
                             type="text"
                             value={formData.title}
                             onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                            placeholder="What needs to be done?"
+                            className="w-full px-3 py-2.5 border border-orange-200 rounded-full focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors text-sm bg-white/70 backdrop-blur-sm"
+                            placeholder="Clean and dust, Oil change, Filter replacement..."
                             required
                         />
                     </div>
 
                     {/* Description */}
                     <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                            Description
+                        <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                            Instructions (Optional)
                         </label>
                         <textarea
                             value={formData.description}
                             onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none"
-                            rows={3}
-                            placeholder="Additional details about this maintenance task..."
+                            className="w-full px-3 py-2.5 border border-orange-200 rounded-2xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors text-sm bg-white/70 backdrop-blur-sm resize-none"
+                            rows={2}
+                            placeholder="Any specific steps or notes for this maintenance task..."
                         />
                     </div>
 
                     {/* Interval */}
-                    <div className="grid grid-cols-2 gap-3">
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                Every
-                            </label>
+                    <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                            Repeat Every
+                        </label>
+                        <div className="grid grid-cols-2 gap-2">
                             <input
                                 type="number"
-                                min="1"
                                 value={formData.intervalValue}
                                 onChange={(e) => setFormData(prev => ({ ...prev, intervalValue: parseInt(e.target.value) || 1 }))}
-                                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                                className="px-3 py-2.5 border border-orange-200 rounded-full focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors text-sm bg-white/70 backdrop-blur-sm"
+                                min="1"
+                                placeholder="How many?"
                                 required
                             />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                Period
-                            </label>
                             <select
                                 value={formData.intervalType}
                                 onChange={(e) => setFormData(prev => ({ ...prev, intervalType: e.target.value as any }))}
-                                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                                className="px-3 py-2.5 border border-orange-200 rounded-full focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors text-sm bg-white/70 backdrop-blur-sm appearance-none"
                             >
                                 <option value="days">Days</option>
                                 <option value="weeks">Weeks</option>
@@ -156,23 +152,26 @@ export const EditMaintenanceModal: React.FC<EditMaintenanceModalProps> = ({
 
                     {/* Priority */}
                     <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                            Priority
+                        <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                            Priority Level
                         </label>
-                        <div className="grid grid-cols-4 gap-2">
-                            {[
-                                { key: 'low', label: 'Low', color: 'from-blue-500 to-indigo-500' },
-                                { key: 'medium', label: 'Medium', color: 'from-yellow-500 to-orange-500' },
-                                { key: 'high', label: 'High', color: 'from-orange-500 to-red-500' },
-                                { key: 'urgent', label: 'Urgent', color: 'from-red-500 to-pink-600' },
-                            ].map(({ key, label, color }) => (
+                        <div className="flex gap-2">
+                            {([
+                                { key: 'low', label: 'Low' },
+                                { key: 'medium', label: 'Medium' },
+                                { key: 'high', label: 'High' },
+                                { key: 'urgent', label: 'Urgent' },
+                            ] as const).map(({ key, label }) => (
                                 <button
                                     key={key}
                                     type="button"
-                                    onClick={() => setFormData(prev => ({ ...prev, priority: key as any }))}
-                                    className={`px-3 py-2 rounded-xl text-xs font-bold transition-all duration-300 ${formData.priority === key
-                                        ? `bg-gradient-to-r ${color} text-white shadow-lg scale-105`
-                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:scale-105'
+                                    onClick={() => setFormData(prev => ({ ...prev, priority: key }))}
+                                    className={`flex-1 py-2 px-3 rounded-full text-xs font-medium transition-all duration-200 border ${formData.priority === key
+                                        ? key === 'low' ? 'bg-green-500 text-white border-green-500 shadow-lg shadow-green-500/25' :
+                                            key === 'medium' ? 'bg-yellow-500 text-white border-yellow-500 shadow-lg shadow-yellow-500/25' :
+                                                key === 'high' ? 'bg-orange-500 text-white border-orange-500 shadow-lg shadow-orange-500/25' :
+                                                    'bg-red-500 text-white border-red-500 shadow-lg shadow-red-500/25'
+                                        : 'bg-white/70 text-gray-600 border-orange-200 hover:border-orange-300 hover:bg-white'
                                         }`}
                                 >
                                     {label}
@@ -183,14 +182,14 @@ export const EditMaintenanceModal: React.FC<EditMaintenanceModalProps> = ({
 
                     {/* Next Due Date */}
                     <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        <label className="block text-xs font-medium text-gray-700 mb-1.5">
                             Next Due Date
                         </label>
                         <input
                             type="date"
                             value={formData.nextDueDate}
                             onChange={(e) => setFormData(prev => ({ ...prev, nextDueDate: e.target.value }))}
-                            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                            className="w-full px-3 py-2.5 border border-orange-200 rounded-full focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors text-sm bg-white/70 backdrop-blur-sm"
                             required
                         />
                     </div>
@@ -200,14 +199,14 @@ export const EditMaintenanceModal: React.FC<EditMaintenanceModalProps> = ({
                         <button
                             type="button"
                             onClick={onClose}
-                            className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-colors"
+                            className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-full font-semibold hover:bg-gray-200 transition-colors"
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
                             disabled={loading}
-                            className="flex-1 bg-gradient-to-r from-orange-500 to-red-500 text-white py-3 px-4 rounded-xl font-bold hover:shadow-lg hover:shadow-orange-500/25 transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:scale-100"
+                            className="flex-1 bg-gradient-to-r from-orange-500 to-red-500 text-white py-3 px-4 rounded-full font-bold hover:shadow-lg hover:shadow-orange-500/25 transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:scale-100"
                         >
                             {loading ? 'Saving...' : 'Save Changes'}
                         </button>
