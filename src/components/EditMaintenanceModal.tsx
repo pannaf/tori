@@ -102,7 +102,7 @@ export const EditMaintenanceModal: React.FC<EditMaintenanceModalProps> = ({
                             type="text"
                             value={formData.title}
                             onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                            className="w-full px-3 py-2.5 border border-orange-200 rounded-full focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors text-sm bg-white/70 backdrop-blur-sm"
+                            className="w-full px-3 py-2.5 border border-orange-200 rounded-full focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors text-base bg-white/70 backdrop-blur-sm"
                             placeholder="Clean and dust, Oil change, Filter replacement..."
                             required
                         />
@@ -116,7 +116,7 @@ export const EditMaintenanceModal: React.FC<EditMaintenanceModalProps> = ({
                         <textarea
                             value={formData.description}
                             onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                            className="w-full px-3 py-2.5 border border-orange-200 rounded-2xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors text-sm bg-white/70 backdrop-blur-sm resize-none"
+                            className="w-full px-3 py-2.5 border border-orange-200 rounded-2xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors text-base bg-white/70 backdrop-blur-sm resize-none"
                             rows={2}
                             placeholder="Any specific steps or notes for this maintenance task..."
                         />
@@ -132,7 +132,7 @@ export const EditMaintenanceModal: React.FC<EditMaintenanceModalProps> = ({
                                 type="number"
                                 value={formData.intervalValue}
                                 onChange={(e) => setFormData(prev => ({ ...prev, intervalValue: parseInt(e.target.value) || 1 }))}
-                                className="px-3 py-2.5 border border-orange-200 rounded-full focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors text-sm bg-white/70 backdrop-blur-sm"
+                                className="px-3 py-2.5 border border-orange-200 rounded-full focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors text-base bg-white/70 backdrop-blur-sm"
                                 min="1"
                                 placeholder="How many?"
                                 required
@@ -140,7 +140,7 @@ export const EditMaintenanceModal: React.FC<EditMaintenanceModalProps> = ({
                             <select
                                 value={formData.intervalType}
                                 onChange={(e) => setFormData(prev => ({ ...prev, intervalType: e.target.value as any }))}
-                                className="px-3 py-2.5 border border-orange-200 rounded-full focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors text-sm bg-white/70 backdrop-blur-sm appearance-none"
+                                className="px-3 py-2.5 border border-orange-200 rounded-full focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors text-base bg-white/70 backdrop-blur-sm appearance-none"
                             >
                                 <option value="days">Days</option>
                                 <option value="weeks">Weeks</option>
@@ -189,7 +189,7 @@ export const EditMaintenanceModal: React.FC<EditMaintenanceModalProps> = ({
                             type="date"
                             value={formData.nextDueDate}
                             onChange={(e) => setFormData(prev => ({ ...prev, nextDueDate: e.target.value }))}
-                            className="w-full px-3 py-2.5 border border-orange-200 rounded-full focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors text-sm bg-white/70 backdrop-blur-sm"
+                            className="w-full px-3 py-2.5 border border-orange-200 rounded-full focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors text-base bg-white/70 backdrop-blur-sm"
                             required
                         />
                     </div>
