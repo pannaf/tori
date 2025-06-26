@@ -286,6 +286,11 @@ function App() {
     };
   }, []);
 
+  // Scroll to top when changing tabs
+  React.useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [activeTab]);
+
   // Get item details (for viewing/editing individual items)
   const getItemDetails = async (itemId: string): Promise<InventoryItem | null> => {
     try {
