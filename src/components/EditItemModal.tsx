@@ -229,7 +229,7 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
               required
               value={formData.name}
               onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-              className="w-full px-4 py-3 border border-gray-300 rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors text-base"
+              className="w-full px-4 py-3 border border-gray-300 rounded-full focus:border-indigo-500 focus:outline-none transition-colors text-base"
               placeholder="Item Name"
             />
 
@@ -239,7 +239,7 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
                 required
                 value={formData.category}
                 onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
-                className={`w-full px-3 py-3 border border-gray-300 rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors appearance-none bg-white text-base ${!formData.category ? 'text-gray-400' : 'text-gray-900'}`}
+                className={`w-full px-3 py-3 border border-gray-300 rounded-full focus:border-indigo-500 focus:outline-none transition-colors appearance-none bg-white text-base ${!formData.category ? 'text-gray-400' : 'text-gray-900'}`}
               >
                 <option value="" disabled className="text-gray-400">Category</option>
                 {categories.map((category) => (
@@ -251,7 +251,7 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
                 required
                 value={formData.room}
                 onChange={(e) => setFormData(prev => ({ ...prev, room: e.target.value }))}
-                className={`w-full px-3 py-3 border border-gray-300 rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors appearance-none bg-white text-base ${!formData.room ? 'text-gray-400' : 'text-gray-900'}`}
+                className={`w-full px-3 py-3 border border-gray-300 rounded-full focus:border-indigo-500 focus:outline-none transition-colors appearance-none bg-white text-base ${!formData.room ? 'text-gray-400' : 'text-gray-900'}`}
               >
                 <option value="" disabled className="text-gray-400">Location</option>
                 {rooms.map((room) => (
@@ -266,7 +266,7 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
                 type="number"
                 value={formData.estimatedValue}
                 onChange={(e) => setFormData(prev => ({ ...prev, estimatedValue: e.target.value }))}
-                className="w-full px-3 py-3 border border-gray-300 rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors text-base"
+                className="w-full px-3 py-3 border border-gray-300 rounded-full focus:border-indigo-500 focus:outline-none transition-colors text-base"
                 placeholder="Estimated Value"
                 step="0.01"
                 min="0"
@@ -275,7 +275,7 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
               <select
                 value={formData.condition}
                 onChange={(e) => setFormData(prev => ({ ...prev, condition: e.target.value as any }))}
-                className={`w-full px-3 py-3 border border-gray-300 rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors appearance-none text-base ${!formData.condition ? 'text-gray-400' : 'text-gray-900'} bg-white`}
+                className={`w-full px-3 py-3 border border-gray-300 rounded-full focus:border-indigo-500 focus:outline-none transition-colors appearance-none text-base ${!formData.condition ? 'text-gray-400' : 'text-gray-900'} bg-white`}
               >
                 <option value="" disabled className="text-gray-400">Condition</option>
                 <option value="excellent" className="text-gray-900">Excellent</option>
@@ -290,7 +290,7 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
               type="text"
               value={formData.tags}
               onChange={(e) => setFormData(prev => ({ ...prev, tags: e.target.value }))}
-              className="w-full px-4 py-3 border border-gray-300 rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors text-base"
+              className="w-full px-4 py-3 border border-gray-300 rounded-full focus:border-indigo-500 focus:outline-none transition-colors text-base"
               placeholder="Tags (vintage, gift, favorite...)"
             />
 
@@ -302,7 +302,7 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
               <textarea
                 value={formData.description}
                 onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                className="w-full mt-2 px-3 py-3 border border-gray-300 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors resize-none text-base"
+                className="w-full mt-2 px-3 py-3 border border-gray-300 rounded-2xl focus:border-indigo-500 focus:outline-none transition-colors resize-none text-base"
                 rows={2}
                 placeholder="Description (optional)"
               />
@@ -417,7 +417,18 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
                     </div>
                     <button
                       type="button"
-                      onClick={() => setNewMaintenanceEnabled(!newMaintenanceEnabled)}
+                      onClick={() => {
+                        setNewMaintenanceEnabled(!newMaintenanceEnabled);
+                        // Scroll to show bottom of maintenance section when enabled
+                        if (!newMaintenanceEnabled) {
+                          setTimeout(() => {
+                            maintenanceRef.current?.scrollIntoView({
+                              behavior: 'smooth',
+                              block: 'end'
+                            });
+                          }, 600); // Wait for expand animation to complete
+                        }
+                      }}
                       className={`relative w-10 h-5 rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-orange-500/20 flex-shrink-0 ml-2 ${newMaintenanceEnabled ? 'bg-orange-500' : 'bg-gray-300'
                         }`}
                     >
@@ -438,7 +449,7 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
                           type="text"
                           value={newMaintenanceData.title}
                           onChange={(e) => setNewMaintenanceData({ ...newMaintenanceData, title: e.target.value })}
-                          className="w-full px-3 py-2.5 border border-orange-200 rounded-full focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors text-sm bg-white/70 backdrop-blur-sm"
+                          className="w-full px-3 py-2.5 border border-orange-200 rounded-full focus:border-orange-500 focus:outline-none transition-colors text-base bg-white/70 backdrop-blur-sm"
                           placeholder="Clean and dust, Oil change, Filter replacement..."
                         />
                       </div>
@@ -453,14 +464,14 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
                             type="number"
                             value={newMaintenanceData.intervalValue}
                             onChange={(e) => setNewMaintenanceData({ ...newMaintenanceData, intervalValue: parseInt(e.target.value) || 1 })}
-                            className="px-3 py-2.5 border border-orange-200 rounded-full focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors text-sm bg-white/70 backdrop-blur-sm"
+                            className="px-3 py-2.5 border border-orange-200 rounded-full focus:border-orange-500 focus:outline-none transition-colors text-base bg-white/70 backdrop-blur-sm"
                             min="1"
                             placeholder="How many?"
                           />
                           <select
                             value={newMaintenanceData.intervalType}
                             onChange={(e) => setNewMaintenanceData({ ...newMaintenanceData, intervalType: e.target.value as any })}
-                            className="px-3 py-2.5 border border-orange-200 rounded-full focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors text-sm bg-white/70 backdrop-blur-sm appearance-none"
+                            className="px-3 py-2.5 border border-orange-200 rounded-full focus:border-orange-500 focus:outline-none transition-colors text-base bg-white/70 backdrop-blur-sm appearance-none"
                           >
                             <option value="days">Days</option>
                             <option value="weeks">Weeks</option>
@@ -503,7 +514,7 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
                         <textarea
                           value={newMaintenanceData.description}
                           onChange={(e) => setNewMaintenanceData({ ...newMaintenanceData, description: e.target.value })}
-                          className="w-full px-3 py-2.5 border border-orange-200 rounded-2xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors text-sm bg-white/70 backdrop-blur-sm resize-none"
+                          className="w-full px-3 py-2.5 border border-orange-200 rounded-2xl focus:border-orange-500 focus:outline-none transition-colors text-base bg-white/70 backdrop-blur-sm resize-none"
                           rows={2}
                           placeholder="Any specific steps or notes for this maintenance task..."
                         />

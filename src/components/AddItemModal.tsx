@@ -1640,7 +1640,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
                             type="text"
                             value={maintenanceData.title}
                             onChange={(e) => setMaintenanceData({ ...maintenanceData, title: e.target.value })}
-                            className="w-full px-3 py-2.5 border border-orange-200 rounded-full focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors text-sm bg-white/70 backdrop-blur-sm"
+                            className="w-full px-3 py-2.5 border border-orange-200 rounded-full focus:border-orange-500 focus:outline-none transition-colors text-base bg-white/70 backdrop-blur-sm"
                             placeholder="Clean and dust, Oil change, Filter replacement..."
                           />
                         </div>
@@ -1655,14 +1655,14 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
                               type="number"
                               value={maintenanceData.intervalValue}
                               onChange={(e) => setMaintenanceData({ ...maintenanceData, intervalValue: parseInt(e.target.value) || 1 })}
-                              className="px-3 py-2.5 border border-orange-200 rounded-full focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors text-sm bg-white/70 backdrop-blur-sm"
+                              className="px-3 py-2.5 border border-orange-200 rounded-full focus:border-orange-500 focus:outline-none transition-colors text-base bg-white/70 backdrop-blur-sm"
                               min="1"
                               placeholder="How many?"
                             />
                             <select
                               value={maintenanceData.intervalType}
                               onChange={(e) => setMaintenanceData({ ...maintenanceData, intervalType: e.target.value as any })}
-                              className="px-3 py-2.5 border border-orange-200 rounded-full focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors text-sm bg-white/70 backdrop-blur-sm appearance-none"
+                              className="px-3 py-2.5 border border-orange-200 rounded-full focus:border-orange-500 focus:outline-none transition-colors text-base bg-white/70 backdrop-blur-sm appearance-none"
                             >
                               <option value="days">Days</option>
                               <option value="weeks">Weeks</option>
@@ -1705,7 +1705,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
                           <textarea
                             value={maintenanceData.description}
                             onChange={(e) => setMaintenanceData({ ...maintenanceData, description: e.target.value })}
-                            className="w-full px-3 py-2.5 border border-orange-200 rounded-2xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors text-sm bg-white/70 backdrop-blur-sm resize-none"
+                            className="w-full px-3 py-2.5 border border-orange-200 rounded-2xl focus:border-orange-500 focus:outline-none transition-colors text-base bg-white/70 backdrop-blur-sm resize-none"
                             rows={2}
                             placeholder="Any specific steps or notes for this maintenance task..."
                           />
