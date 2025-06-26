@@ -11,7 +11,8 @@ import {
   Plus,
   Filter,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Edit3
 } from 'lucide-react';
 import {
   IconDeviceLaptop,
@@ -29,6 +30,7 @@ import {
 } from '@tabler/icons-react';
 import { InventoryItem, MaintenanceReminder } from '../types/inventory';
 import { useMaintenance } from '../hooks/useMaintenance';
+import { EditMaintenanceModal } from './EditMaintenanceModal';
 import { env } from '../config/env';
 
 interface MaintenanceInterfaceProps {
@@ -46,6 +48,7 @@ export const MaintenanceInterface: React.FC<MaintenanceInterfaceProps> = ({
     completedReminders,
     loading,
     completeReminder,
+    updateReminder,
     dismissReminder,
     getUpcomingReminders,
     getOverdueReminders,
@@ -59,6 +62,8 @@ export const MaintenanceInterface: React.FC<MaintenanceInterfaceProps> = ({
   const [activeFilter, setActiveFilter] = useState<'all' | 'urgent' | 'high' | 'medium' | 'low'>('all');
   const [showCompleted, setShowCompleted] = useState(false);
   const [expandedReminder, setExpandedReminder] = useState<string | null>(null);
+  const [editingReminder, setEditingReminder] = useState<MaintenanceReminder | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   const priorityColors = {
     urgent: 'from-red-500 to-pink-600',
@@ -141,6 +146,28 @@ export const MaintenanceInterface: React.FC<MaintenanceInterfaceProps> = ({
 
   const handleCompleteReminder = (reminderId: string) => {
     completeReminder(reminderId, 'Completed via maintenance interface');
+  };
+
+  const handleEditReminder = (reminder: MaintenanceReminder) => {
+    // Don't allow editing replacement suggestions
+    if (reminder.id.startsWith('replacement-')) {
+      return;
+    }
+    setEditingReminder(reminder);
+    setShowEditModal(true);
+  };
+
+  const handleSaveEdit = async (reminderId: string, updates: {
+    title: string;
+    description: string;
+    intervalType: 'days' | 'weeks' | 'months' | 'years';
+    intervalValue: number;
+    priority: 'low' | 'medium' | 'high' | 'urgent';
+    nextDueDate: string;
+  }) => {
+    await updateReminder(reminderId, updates);
+    setShowEditModal(false);
+    setEditingReminder(null);
   };
 
   // Show loading state while items are being loaded
@@ -334,6 +361,16 @@ export const MaintenanceInterface: React.FC<MaintenanceInterfaceProps> = ({
                           <CheckCircle size={16} />
                           Done
                         </button>
+                        {/* Only show edit button for actual maintenance schedules, not replacement suggestions */}
+                        {!reminder.id.startsWith('replacement-') && (
+                          <button
+                            onClick={() => handleEditReminder(reminder)}
+                            className="px-4 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl font-semibold hover:shadow-lg hover:shadow-orange-500/25 transition-all duration-300 hover:scale-105 flex items-center justify-center gap-2"
+                          >
+                            <Edit3 size={16} />
+                            Edit
+                          </button>
+                        )}
                         <button
                           onClick={() => dismissReminder(reminder.id)}
                           className="px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-colors"
@@ -437,6 +474,17 @@ export const MaintenanceInterface: React.FC<MaintenanceInterfaceProps> = ({
           )}
         </div>
       )}
+
+      {/* Edit Maintenance Modal */}
+      <EditMaintenanceModal
+        reminder={editingReminder}
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false);
+          setEditingReminder(null);
+        }}
+        onSave={handleSaveEdit}
+      />
     </div>
   );
 };

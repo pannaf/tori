@@ -274,9 +274,56 @@ export const useMaintenanceDB = (user: User | null = null) => {
         }
     }, [user]);
 
+    // Update a maintenance schedule
+    const updateMaintenanceSchedule = useCallback(async (
+        scheduleId: string,
+        updates: Partial<Omit<MaintenanceSchedule, 'id' | 'itemId' | 'userId' | 'createdAt' | 'updatedAt'>>
+    ): Promise<boolean> => {
+        if (!user) {
+            console.warn('User not authenticated');
+            return false;
+        }
+
+        setLoading(true);
+        try {
+            const updateData: any = {
+                updated_at: new Date().toISOString(),
+            };
+
+            // Map frontend fields to database fields
+            if (updates.title !== undefined) updateData.title = updates.title;
+            if (updates.description !== undefined) updateData.description = updates.description;
+            if (updates.intervalType !== undefined) updateData.interval_type = updates.intervalType;
+            if (updates.intervalValue !== undefined) updateData.interval_value = updates.intervalValue;
+            if (updates.nextDueDate !== undefined) updateData.next_due_date = updates.nextDueDate;
+            if (updates.priority !== undefined) updateData.priority = updates.priority;
+            if (updates.isActive !== undefined) updateData.is_active = updates.isActive;
+
+            const { error } = await supabase
+                .from('maintenance_schedules')
+                .update(updateData)
+                .eq('id', scheduleId)
+                .eq('user_id', user.id);
+
+            if (error) {
+                console.error('Error updating maintenance schedule:', error);
+                return false;
+            }
+
+            console.log('🔧 DB: Maintenance schedule updated successfully');
+            return true;
+        } catch (error) {
+            console.error('Error in updateMaintenanceSchedule:', error);
+            return false;
+        } finally {
+            setLoading(false);
+        }
+    }, [user]);
+
     return {
         loading,
         createMaintenanceSchedule,
+        updateMaintenanceSchedule,
         getItemMaintenanceSchedules,
         getAllMaintenanceSchedules,
         completeMaintenanceTask,

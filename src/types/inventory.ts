@@ -62,6 +62,9 @@ export interface MaintenanceReminder {
   isCompleted: boolean;
   completedDate?: string;
   notes?: string;
+  // Add interval information for editing
+  intervalType?: 'days' | 'weeks' | 'months' | 'years';
+  intervalValue?: number;
 }
 
 export interface Room {

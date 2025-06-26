@@ -17,7 +17,7 @@ export const useMaintenance = (items: InventoryItem[], user: User | null = null)
   const [completedReminders, setCompletedReminders] = useState<MaintenanceReminder[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const { getAllMaintenanceSchedules, completeMaintenanceTask } = useMaintenanceDB(user);
+  const { getAllMaintenanceSchedules, completeMaintenanceTask, updateMaintenanceSchedule } = useMaintenanceDB(user);
 
   // Generate reminders from database maintenance schedules
   useEffect(() => {
@@ -71,6 +71,9 @@ export const useMaintenance = (items: InventoryItem[], user: User | null = null)
               dueDate: schedule.nextDueDate,
               priority: daysUntilDue < 0 ? 'urgent' : daysUntilDue <= 7 ? 'high' : schedule.priority,
               isCompleted: false,
+              // Include interval information for editing
+              intervalType: schedule.intervalType,
+              intervalValue: schedule.intervalValue,
             });
           }
         });
@@ -250,6 +253,47 @@ export const useMaintenance = (items: InventoryItem[], user: User | null = null)
     );
   };
 
+  const updateReminder = async (
+    reminderId: string,
+    updates: {
+      title: string;
+      description: string;
+      intervalType: 'days' | 'weeks' | 'months' | 'years';
+      intervalValue: number;
+      priority: 'low' | 'medium' | 'high' | 'urgent';
+      nextDueDate: string;
+    }
+  ) => {
+    try {
+      console.log('🔧 Updating reminder:', reminderId, updates);
+
+      // Only update actual maintenance schedules, not replacement suggestions
+      if (!reminderId.startsWith('replacement-')) {
+        const success = await updateMaintenanceSchedule(reminderId, updates);
+
+        if (!success) {
+          console.error('Failed to update maintenance schedule in database');
+          return;
+        }
+
+        // Update the reminder in local state immediately for better UX
+        setReminders(prev => prev.map(reminder =>
+          reminder.id === reminderId
+            ? {
+              ...reminder,
+              title: updates.title,
+              description: updates.description,
+              priority: updates.priority,
+              dueDate: updates.nextDueDate,
+            }
+            : reminder
+        ));
+      }
+    } catch (error) {
+      console.error('Error updating reminder:', error);
+    }
+  };
+
   const refreshReminders = () => {
     // Trigger a re-fetch by updating a dependency
     setLoading(true);
@@ -260,6 +304,7 @@ export const useMaintenance = (items: InventoryItem[], user: User | null = null)
     completedReminders,
     loading,
     completeReminder,
+    updateReminder,
     dismissReminder,
     getUpcomingReminders,
     getOverdueReminders,
