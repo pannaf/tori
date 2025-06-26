@@ -706,6 +706,9 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
         if (completedItemsSet.size >= 1 && !hasStartedStreaming) {
           hasStartedStreaming = true;
 
+          console.log('🔄 Starting streaming - aiProgress.room:', aiProgress.room);
+          console.log('🔄 Starting streaming - statusData.room:', statusData.room);
+
           // Convert to the format expected by handleCameraCapture
           const recognitionData = {
             objects: currentObjects.map((obj: any) => ({
@@ -720,13 +723,15 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
               status: obj.status,
               ready: obj.status === 'complete' || obj.status === 'no_detection' || obj.status === 'error'
             })),
-            room: aiProgress.room,
+            room: statusData.room || aiProgress.room, // Use statusData.room first, then fallback to aiProgress.room
             suggestedName: statusData.objects[0]?.name || '',
             suggestedCategory: statusData.objects[0]?.category || inferCategory(statusData.objects[0]?.name || ''),
             estimatedValue: calculateActualTotal(currentObjects),
             isStreaming: true,
             processingId: processingId
           };
+
+          console.log('🔄 Created recognitionData with room:', recognitionData.room);
 
           // Hide AI processing UI and show form with detected items
           setAiProcessing(false);
