@@ -52,6 +52,7 @@ export interface MaintenanceReminder {
   itemId: string;
   itemName: string;
   itemRoom: string;
+  itemCategory?: string;
   itemImageUrl?: string;
   type: 'maintenance' | 'warranty' | 'replacement';
   title: string;

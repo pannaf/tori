@@ -13,6 +13,20 @@ import {
   ChevronDown,
   ChevronRight
 } from 'lucide-react';
+import {
+  IconDeviceLaptop,
+  IconWashMachine,
+  IconArmchair,
+  IconChefHat,
+  IconHammer,
+  IconBarbell,
+  IconBook,
+  IconShirt,
+  IconPalette,
+  IconHeart,
+  IconStar,
+  IconPackage
+} from '@tabler/icons-react';
 import { InventoryItem, MaintenanceReminder } from '../types/inventory';
 import { useMaintenance } from '../hooks/useMaintenance';
 import { env } from '../config/env';
@@ -70,6 +84,25 @@ export const MaintenanceInterface: React.FC<MaintenanceInterfaceProps> = ({
     maintenance: Wrench,
     warranty: Shield,
     replacement: RefreshCw,
+  };
+
+  // Category icon mapping with beautiful Tabler Icons
+  const getCategoryIcon = (category: string) => {
+    const categoryMap: Record<string, { icon: any; color: string }> = {
+      'Electronics': { icon: IconDeviceLaptop, color: '#6366F1' },
+      'Appliances': { icon: IconWashMachine, color: '#8B5CF6' },
+      'Furniture': { icon: IconArmchair, color: '#EC4899' },
+      'Kitchenware': { icon: IconChefHat, color: '#F59E0B' },
+      'Tools': { icon: IconHammer, color: '#EF4444' },
+      'Sports & Recreation': { icon: IconBarbell, color: '#F97316' },
+      'Books & Media': { icon: IconBook, color: '#10B981' },
+      'Clothing & Accessories': { icon: IconShirt, color: '#14B8A6' },
+      'Decorations': { icon: IconPalette, color: '#84CC16' },
+      'Personal Care': { icon: IconHeart, color: '#F43F5E' },
+      'Collectibles & Mementos': { icon: IconStar, color: '#A855F7' },
+      'Other': { icon: IconPackage, color: '#6B7280' },
+    };
+    return categoryMap[category] || categoryMap['Other'];
   };
 
   const filteredReminders = activeFilter === 'all'
@@ -228,20 +261,22 @@ export const MaintenanceInterface: React.FC<MaintenanceInterfaceProps> = ({
                   <div className="p-4">
                     {/* Header Row - Always visible and stable */}
                     <div className="flex items-start gap-3">
-                      {/* Item Image - Fixed position */}
-                      {reminder.itemImageUrl && (
-                        <div className="w-12 h-12 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0 shadow-sm">
-                          <img
-                            src={
-                              reminder.itemImageUrl.startsWith('data:') ? reminder.itemImageUrl :
-                                reminder.itemImageUrl.startsWith('http') ? reminder.itemImageUrl :
-                                  `${env.API_URL}${reminder.itemImageUrl}`
-                            }
-                            alt={reminder.itemName}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                      )}
+                      {/* Item Category Icon - Fixed position */}
+                      {(() => {
+                        const categoryInfo = getCategoryIcon(reminder.itemCategory || 'Other');
+                        const CategoryIcon = categoryInfo.icon;
+                        return (
+                          <div
+                            className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm"
+                            style={{ backgroundColor: `${categoryInfo.color}15` }}
+                          >
+                            <CategoryIcon
+                              size={20}
+                              style={{ color: categoryInfo.color }}
+                            />
+                          </div>
+                        );
+                      })()}
 
                       {/* Content Area - Fixed position */}
                       <div className="flex-1 min-w-0">
@@ -329,20 +364,22 @@ export const MaintenanceInterface: React.FC<MaintenanceInterfaceProps> = ({
             {completedReminders.slice(0, 5).map((reminder) => (
               <div key={reminder.id} className="bg-green-50 border border-green-200 rounded-xl p-4 transition-all duration-300">
                 <div className="flex items-center gap-3">
-                  {/* Item Image */}
-                  {reminder.itemImageUrl && (
-                    <div className="w-12 h-12 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0 shadow-sm">
-                      <img
-                        src={
-                          reminder.itemImageUrl.startsWith('data:') ? reminder.itemImageUrl :
-                            reminder.itemImageUrl.startsWith('http') ? reminder.itemImageUrl :
-                              `${env.API_URL}${reminder.itemImageUrl}`
-                        }
-                        alt={reminder.itemName}
-                        className="w-full h-full object-cover opacity-75"
-                      />
-                    </div>
-                  )}
+                  {/* Item Category Icon */}
+                  {(() => {
+                    const categoryInfo = getCategoryIcon(reminder.itemCategory || 'Other');
+                    const CategoryIcon = categoryInfo.icon;
+                    return (
+                      <div
+                        className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm opacity-75"
+                        style={{ backgroundColor: `${categoryInfo.color}15` }}
+                      >
+                        <CategoryIcon
+                          size={20}
+                          style={{ color: categoryInfo.color }}
+                        />
+                      </div>
+                    );
+                  })()}
 
                   {/* Content */}
                   <div className="flex-1 min-w-0">
