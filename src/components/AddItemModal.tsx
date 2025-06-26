@@ -259,22 +259,34 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
 
   // Helper function to find the best matching room
   const findMatchingRoom = (detectedRoom: string): string => {
-    if (!detectedRoom || !rooms.length) return '';
+    console.log('🏠 findMatchingRoom called with:', detectedRoom);
+    if (!detectedRoom || !rooms.length) {
+      console.log('🏠 No detected room or no rooms available, returning empty string');
+      return '';
+    }
 
     const detectedLower = detectedRoom.toLowerCase().trim();
+    console.log('🏠 Searching for room match with:', detectedLower);
 
     // First try exact match
     const exactMatch = rooms.find(room => room.name.toLowerCase() === detectedLower);
-    if (exactMatch) return exactMatch.name;
+    if (exactMatch) {
+      console.log('🏠 Found exact match:', exactMatch.name);
+      return exactMatch.name;
+    }
 
     // Then try partial match
     const partialMatch = rooms.find(room =>
       room.name.toLowerCase().includes(detectedLower) ||
       detectedLower.includes(room.name.toLowerCase())
     );
-    if (partialMatch) return partialMatch.name;
+    if (partialMatch) {
+      console.log('🏠 Found partial match:', partialMatch.name);
+      return partialMatch.name;
+    }
 
     // If no match found, return the detected room anyway (user can change it)
+    console.log('🏠 No match found, returning original:', detectedRoom);
     return detectedRoom;
   };
 
@@ -414,10 +426,15 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
           // If we're showing empty form (waiting) and current item is now ready, load it
           if (!formData.name && updatedCurrentItem && updatedCurrentItem.ready &&
             !completedItems.includes(updatedCurrentItem.name)) {
+            const preservedRoom = formData.room || findMatchingRoom(detectedRoom) || detectedRoom;
+            console.log('🔄 Polling update - preserving room:', preservedRoom);
+            console.log('🔄 Current detectedRoom:', detectedRoom);
+            console.log('🔄 Previous form room:', formData.room);
+
             setFormData(prev => ({
               ...prev,
               imageUrl: updatedCurrentItem.imageUrl || imageData,
-              room: prev.room || findMatchingRoom(detectedRoom) || detectedRoom,
+              room: preservedRoom,
               name: updatedCurrentItem.name || '',
               category: updatedCurrentItem.category || '',
               description: updatedCurrentItem.description || '',
@@ -802,6 +819,9 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
   };
 
   const handleCameraCapture = async (capturedImageData: string, recognitionData: any) => {
+    console.log('📸 handleCameraCapture called with recognitionData:', recognitionData);
+    console.log('📸 Room data received:', recognitionData.room);
+
     setImageData(capturedImageData);
 
     if (recognitionData.objects && recognitionData.objects.length > 0) {
@@ -824,6 +844,9 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
       setDetectedRoom(recognitionData.room || '');
       setOriginalDetectedRoom(recognitionData.room || ''); // Store original for persistence
 
+      console.log('📸 Set detectedRoom to:', recognitionData.room || '');
+      console.log('📸 Set originalDetectedRoom to:', recognitionData.room || '');
+
       // Find first ready item or start with first item if streaming
       const firstReadyIndex = processedObjects.findIndex((obj: any) => obj.ready);
       const startIndex = firstReadyIndex >= 0 ? firstReadyIndex : 0;
@@ -833,10 +856,13 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
       // Set up form with first available item
       const firstItem = processedObjects[startIndex];
       if (firstItem) {
+        const matchedRoom = findMatchingRoom(recognitionData.room || '');
+        console.log('📸 Setting form room to:', matchedRoom);
+
         setFormData(prev => ({
           ...prev,
           imageUrl: firstItem.imageUrl || capturedImageData,
-          room: findMatchingRoom(recognitionData.room || ''),
+          room: matchedRoom,
           name: firstItem.name || '',
           category: firstItem.category || '',
           description: firstItem.description || '',

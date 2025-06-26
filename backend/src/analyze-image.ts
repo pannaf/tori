@@ -185,10 +185,17 @@ router.post('/analyze-image', upload.single('image'), async (req, res) => {
             throw new Error('No response content from GPT-4o-mini');
         }
 
+        console.log('🤖 Raw GPT-4 Vision response content:', content);
+
         // Parse GPT-4 results
         let result: AnalysisResult;
         try {
             result = JSON.parse(content) as AnalysisResult;
+
+            console.log('🤖 Parsed GPT-4 Vision result:', JSON.stringify(result, null, 2));
+            console.log('🏠 Room detected by GPT-4:', result.room);
+            console.log('💰 Total value from GPT-4:', result.total_estimated_value_usd);
+            console.log('📦 Objects detected:', result.objects.length);
 
             // Upload original full image to Supabase
             console.log('Uploading original full image to Supabase...');
@@ -209,6 +216,9 @@ router.post('/analyze-image', upload.single('image'), async (req, res) => {
                 total_estimated_value_usd: result.total_estimated_value_usd,
                 processing_id: Date.now().toString() // Unique ID for this processing session
             };
+
+            console.log('🚀 Sending immediate response to frontend:', JSON.stringify(immediateResponse, null, 2));
+            console.log('🏠 Room being sent to frontend:', immediateResponse.room);
 
             // Send immediate response
             res.json(immediateResponse);
@@ -253,6 +263,8 @@ async function processObjectsInBackground(
     totalValue?: number
 ) {
     console.log(`Starting background processing for session ${processingId} (PARALLEL mode)`);
+    console.log(`🏠 Room passed to background processing: "${room}"`);
+    console.log(`💰 Total value passed to background processing: ${totalValue}`);
     console.log(`Image file exists: ${fs.existsSync(imagePath)}, path: ${imagePath}`);
 
     // Initialize session tracking
@@ -264,6 +276,9 @@ async function processObjectsInBackground(
         room: room,
         totalValue: totalValue
     });
+
+    console.log(`🏠 Session ${processingId} initialized with room: "${room}"`);
+    console.log(`📊 Session data:`, processingSessions.get(processingId));
 
     // Check if file exists before starting
     if (!fs.existsSync(imagePath)) {
@@ -374,6 +389,8 @@ async function processObjectsInBackground(
             fs.unlinkSync(imagePath);
             console.log(`Cleaned up temporary file: ${imagePath}`);
         }
+    }).catch((error: any) => {
+        console.error('Error in background processing completion handler:', error);
     });
 }
 
@@ -383,8 +400,15 @@ router.get('/processing-status/:processingId', (req, res) => {
     const sessionData = processingSessions.get(processingId);
 
     if (!sessionData) {
+        console.log(`❌ Processing session not found: ${processingId}`);
         return res.status(404).json({ error: 'Processing session not found' });
     }
+
+    console.log(`📊 Returning processing status for session ${processingId}:`);
+    console.log(`🏠 Room in session data: "${sessionData.room}"`);
+    console.log(`💰 Total value in session data: ${sessionData.totalValue}`);
+    console.log(`📈 Progress: ${sessionData.completedCount}/${sessionData.totalCount}`);
+    console.log(`🔄 Status: ${sessionData.status}`);
 
     res.json(sessionData);
 });
