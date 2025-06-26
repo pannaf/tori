@@ -162,8 +162,11 @@ export const useInventoryStats = (user: User | null) => {
             new Date(item.dateAdded) > sevenDaysAgo
         ).length;
 
-        // Count unique rooms
-        const uniqueRooms = new Set(allItems.map(item => item.room));
+        // Count unique rooms, excluding "Uncategorized" from actual room count
+        const uniqueRooms = new Set(allItems
+            .map(item => item.room && item.room.trim() ? item.room : null)
+            .filter(room => room !== null)
+        );
         const totalRooms = uniqueRooms.size;
 
         return { totalCount, totalValue, recentCount, totalRooms };
@@ -174,14 +177,24 @@ export const useInventoryStats = (user: User | null) => {
 
         const roomCounts: { [key: string]: number } = {};
         allItems.forEach(item => {
-            roomCounts[item.room] = (roomCounts[item.room] || 0) + 1;
+            // Handle empty, null, or undefined room values as "Uncategorized"
+            const room = item.room && item.room.trim() ? item.room : 'Uncategorized';
+            roomCounts[room] = (roomCounts[room] || 0) + 1;
         });
 
-        return Object.entries(roomCounts).map(([room, count]) => ({
-            room,
-            count,
-            percentage: (count / allItems.length) * 100
-        }));
+        return Object.entries(roomCounts)
+            .map(([room, count]) => ({
+                room,
+                count,
+                percentage: (count / allItems.length) * 100
+            }))
+            .sort((a, b) => {
+                // Always put "Uncategorized" at the bottom
+                if (a.room === 'Uncategorized') return 1;
+                if (b.room === 'Uncategorized') return -1;
+                // Sort others alphabetically
+                return a.room.localeCompare(b.room);
+            });
     }, [allItems]);
 
     const categoryDistribution = useMemo((): CategoryDistribution[] => {
@@ -189,14 +202,24 @@ export const useInventoryStats = (user: User | null) => {
 
         const categoryCounts: { [key: string]: number } = {};
         allItems.forEach(item => {
-            categoryCounts[item.category] = (categoryCounts[item.category] || 0) + 1;
+            // Handle empty, null, or undefined category values as "Uncategorized"
+            const category = item.category && item.category.trim() ? item.category : 'Uncategorized';
+            categoryCounts[category] = (categoryCounts[category] || 0) + 1;
         });
 
-        return Object.entries(categoryCounts).map(([category, count]) => ({
-            category,
-            count,
-            percentage: (count / allItems.length) * 100
-        }));
+        return Object.entries(categoryCounts)
+            .map(([category, count]) => ({
+                category,
+                count,
+                percentage: (count / allItems.length) * 100
+            }))
+            .sort((a, b) => {
+                // Always put "Uncategorized" at the bottom
+                if (a.category === 'Uncategorized') return 1;
+                if (b.category === 'Uncategorized') return -1;
+                // Sort others alphabetically
+                return a.category.localeCompare(b.category);
+            });
     }, [allItems]);
 
     const recentItems = useMemo(() => {

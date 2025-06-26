@@ -352,14 +352,24 @@ export const useInventory = (user: User | null = null, authLoading: boolean = fa
       // Count items per room
       const roomCounts: { [key: string]: number } = {};
       data.forEach(item => {
-        roomCounts[item.room] = (roomCounts[item.room] || 0) + 1;
+        // Handle empty, null, or undefined room values as "Uncategorized"
+        const room = item.room && item.room.trim() ? item.room : 'Uncategorized';
+        roomCounts[room] = (roomCounts[room] || 0) + 1;
       });
 
-      return Object.entries(roomCounts).map(([room, count]) => ({
-        room,
-        count,
-        percentage: data.length > 0 ? (count / data.length) * 100 : 0
-      }));
+      return Object.entries(roomCounts)
+        .map(([room, count]) => ({
+          room,
+          count,
+          percentage: data.length > 0 ? (count / data.length) * 100 : 0
+        }))
+        .sort((a, b) => {
+          // Always put "Uncategorized" at the bottom
+          if (a.room === 'Uncategorized') return 1;
+          if (b.room === 'Uncategorized') return -1;
+          // Sort others alphabetically
+          return a.room.localeCompare(b.room);
+        });
     } catch (error) {
       console.error('Error in getRoomDistribution:', error);
       return [];
@@ -397,14 +407,24 @@ export const useInventory = (user: User | null = null, authLoading: boolean = fa
       // Count items per category
       const categoryCounts: { [key: string]: number } = {};
       data.forEach(item => {
-        categoryCounts[item.category] = (categoryCounts[item.category] || 0) + 1;
+        // Handle empty, null, or undefined category values as "Uncategorized"
+        const category = item.category && item.category.trim() ? item.category : 'Uncategorized';
+        categoryCounts[category] = (categoryCounts[category] || 0) + 1;
       });
 
-      return Object.entries(categoryCounts).map(([category, count]) => ({
-        category,
-        count,
-        percentage: data.length > 0 ? (count / data.length) * 100 : 0
-      }));
+      return Object.entries(categoryCounts)
+        .map(([category, count]) => ({
+          category,
+          count,
+          percentage: data.length > 0 ? (count / data.length) * 100 : 0
+        }))
+        .sort((a, b) => {
+          // Always put "Uncategorized" at the bottom
+          if (a.category === 'Uncategorized') return 1;
+          if (b.category === 'Uncategorized') return -1;
+          // Sort others alphabetically
+          return a.category.localeCompare(b.category);
+        });
     } catch (error) {
       console.error('Error in getCategoryDistribution:', error);
       return [];
