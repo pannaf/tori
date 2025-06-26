@@ -916,15 +916,10 @@ function App() {
               <p className="text-gray-600">Keep things in perfect condition</p>
             </div>
 
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-              <MaintenanceInterface
-                items={allItemsForMaintenance}
-                isOpen={true}
-                onClose={() => setActiveTab('home')}
-                embedded={true}
-                user={user}
-              />
-            </div>
+            <MaintenanceInterface
+              items={allItemsForMaintenance}
+              user={user}
+            />
           </div>
         );
 
