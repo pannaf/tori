@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Save, Camera, Wrench, Calendar, Clock, Sparkles } from 'lucide-react';
+import { X, Save, Wrench, Calendar, Clock, Sparkles } from 'lucide-react';
 import { Room, Category, InventoryItem } from '../types/inventory';
 import { env } from '../config/env';
 import { useMaintenanceDB } from '../hooks/useMaintenanceDB';
@@ -200,26 +200,21 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
         <div className="flex-1 overflow-y-auto">
           <form onSubmit={handleSubmit} className="p-4 space-y-3">
             {/* Image Preview */}
-            {item.imageUrl && (
-              <div className="relative aspect-square bg-gray-100 rounded-2xl overflow-hidden">
+            {(item.originalCropImageUrl || item.originalFullImageUrl || item.imageUrl) && (
+              <div className="aspect-square bg-gray-100 rounded-2xl overflow-hidden">
                 <img
                   src={
-                    item.imageUrl.startsWith('data:') ? item.imageUrl :
-                      item.imageUrl.startsWith('http') ? item.imageUrl :
-                        `${env.API_URL}${item.imageUrl}`
+                    (() => {
+                      // Prefer original crop image, then enhanced, then fallback to original full image
+                      const imageUrl = item.originalCropImageUrl || item.imageUrl || item.originalFullImageUrl;
+                      return imageUrl?.startsWith('data:') ? imageUrl :
+                        imageUrl?.startsWith('http') ? imageUrl :
+                          `${env.API_URL}${imageUrl}`;
+                    })()
                   }
                   alt={item.name}
                   className="w-full h-full object-contain"
                 />
-                <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                  <button
-                    type="button"
-                    className="bg-white text-gray-700 px-4 py-2 rounded-xl font-semibold flex items-center gap-2 hover:bg-gray-50 transition-colors"
-                  >
-                    <Camera size={16} />
-                    Change Photo
-                  </button>
-                </div>
               </div>
             )}
 

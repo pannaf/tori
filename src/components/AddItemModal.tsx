@@ -1493,7 +1493,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
                     type="text"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className={`w-full px-4 py-3 border rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors text-base ${aiDetected ? 'border-indigo-300 bg-indigo-50' : 'border-gray-300'}`}
+                    className={`w-full px-4 py-3 border rounded-full focus:border-indigo-500 focus:outline-none transition-colors text-base ${aiDetected ? 'border-indigo-300 bg-indigo-50' : 'border-gray-300'}`}
                     placeholder="Item Name"
                     required
                   />
@@ -1503,7 +1503,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
                     <select
                       value={formData.category}
                       onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                      className={`w-full px-3 py-3 border rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors appearance-none bg-white text-base ${aiDetected ? 'border-indigo-300 bg-indigo-50' : 'border-gray-300'} ${!formData.category ? 'text-gray-400' : 'text-gray-900'}`}
+                      className={`w-full px-3 py-3 border rounded-full focus:border-indigo-500 focus:outline-none transition-colors appearance-none bg-white text-base ${aiDetected ? 'border-indigo-300 bg-indigo-50' : 'border-gray-300'} ${!formData.category ? 'text-gray-400' : 'text-gray-900'}`}
                       required
                     >
                       <option value="" disabled className="text-gray-400">Category</option>
@@ -1515,7 +1515,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
                     <select
                       value={formData.room}
                       onChange={(e) => setFormData({ ...formData, room: e.target.value })}
-                      className={`w-full px-3 py-3 border rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors appearance-none bg-white text-base ${aiDetected ? 'border-indigo-300 bg-indigo-50' : 'border-gray-300'} ${!formData.room ? 'text-gray-400' : 'text-gray-900'}`}
+                      className={`w-full px-3 py-3 border rounded-full focus:border-indigo-500 focus:outline-none transition-colors appearance-none bg-white text-base ${aiDetected ? 'border-indigo-300 bg-indigo-50' : 'border-gray-300'} ${!formData.room ? 'text-gray-400' : 'text-gray-900'}`}
                       required
                     >
                       <option value="" disabled className="text-gray-400">Location</option>
@@ -1531,7 +1531,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
                       type="number"
                       value={formData.estimatedValue}
                       onChange={(e) => setFormData({ ...formData, estimatedValue: e.target.value })}
-                      className={`w-full px-3 py-3 border rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors text-base ${aiDetected ? 'border-indigo-300 bg-indigo-50' : 'border-gray-300'}`}
+                      className={`w-full px-3 py-3 border rounded-full focus:border-indigo-500 focus:outline-none transition-colors text-base ${aiDetected ? 'border-indigo-300 bg-indigo-50' : 'border-gray-300'}`}
                       placeholder="Estimated Value"
                       step="0.01"
                       min="0"
@@ -1540,7 +1540,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
                     <select
                       value={formData.condition}
                       onChange={(e) => setFormData({ ...formData, condition: e.target.value as any })}
-                      className={`w-full px-3 py-3 border rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors appearance-none text-base ${aiDetected ? 'border-indigo-300 bg-indigo-50' : 'border-gray-300 bg-white'} ${!formData.condition ? 'text-gray-400' : 'text-gray-900'}`}
+                      className={`w-full px-3 py-3 border rounded-full focus:border-indigo-500 focus:outline-none transition-colors appearance-none text-base ${aiDetected ? 'border-indigo-300 bg-indigo-50' : 'border-gray-300 bg-white'} ${!formData.condition ? 'text-gray-400' : 'text-gray-900'}`}
                     >
                       <option value="" disabled className="text-gray-400">Condition</option>
                       <option value="excellent" className="text-gray-900">Excellent</option>
@@ -1558,7 +1558,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
                     <textarea
                       value={formData.description || ''}
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      className={`w-full mt-2 px-3 py-3 border rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors resize-none text-base ${aiDetected ? 'border-indigo-300 bg-indigo-50' : 'border-gray-300'}`}
+                      className={`w-full mt-2 px-3 py-3 border rounded-2xl focus:border-indigo-500 focus:outline-none transition-colors resize-none text-base ${aiDetected ? 'border-indigo-300 bg-indigo-50' : 'border-gray-300'}`}
                       rows={2}
                       placeholder="Description (optional)"
                     />
