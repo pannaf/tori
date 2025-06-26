@@ -126,6 +126,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [detectedObjects, setDetectedObjects] = useState<any[]>([]);
   const [detectedRoom, setDetectedRoom] = useState('');
+  const [originalDetectedRoom, setOriginalDetectedRoom] = useState(''); // Store the original room for persistence
   const [currentObjectIndex, setCurrentObjectIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -334,6 +335,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
     setError(null);
     setDetectedObjects([]);
     setDetectedRoom('');
+    setOriginalDetectedRoom('');
     setCurrentObjectIndex(0);
     setMaintenanceEnabled(false);
     setMaintenanceData({
@@ -415,7 +417,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
             setFormData(prev => ({
               ...prev,
               imageUrl: updatedCurrentItem.imageUrl || imageData,
-              room: findMatchingRoom(detectedRoom) || prev.room,
+              room: prev.room || findMatchingRoom(detectedRoom) || detectedRoom,
               name: updatedCurrentItem.name || '',
               category: updatedCurrentItem.category || '',
               description: updatedCurrentItem.description || '',
@@ -569,16 +571,17 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
 
         if (initialData.step === 'gpt_complete') {
           // Show immediate feedback about what was found
+          const detectedObjects = initialData.objects.map((obj: any) => ({
+            ...obj,
+            status: 'waiting'
+          }));
           updateAiProgress({
             step: 'detecting',
             message: `Found ${initialData.objects.length} items! Processing with AI...`,
             progress: 50,
-            detectedObjects: initialData.objects.map((obj: any) => ({
-              ...obj,
-              status: 'waiting'
-            })),
+            detectedObjects: detectedObjects,
             room: initialData.room,
-            totalValue: initialData.total_estimated_value_usd
+            totalValue: calculateActualTotal(detectedObjects)
           });
 
           // Start polling for background processing updates
@@ -670,7 +673,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
           progress: progressPercentage,
           detectedObjects: currentObjects,
           room: statusData.room || aiProgress.room,
-          totalValue: statusData.totalValue || aiProgress.totalValue
+          totalValue: calculateActualTotal(currentObjects)
         });
 
         // Check for newly completed items
@@ -703,7 +706,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
             room: aiProgress.room,
             suggestedName: statusData.objects[0]?.name || '',
             suggestedCategory: statusData.objects[0]?.category || inferCategory(statusData.objects[0]?.name || ''),
-            estimatedValue: aiProgress.totalValue,
+            estimatedValue: calculateActualTotal(currentObjects),
             isStreaming: true,
             processingId: processingId
           };
@@ -753,13 +756,14 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
 
   // Handle legacy response format
   const handleLegacyResponse = (data: any, imageData: string) => {
+    const detectedObjects = data.objects.map((obj: any) => ({ ...obj, status: 'complete' }));
     updateAiProgress({
       step: 'complete',
       message: 'Perfect! Your items are ready to add.',
       progress: 100,
-      detectedObjects: data.objects.map((obj: any) => ({ ...obj, status: 'complete' })),
+      detectedObjects: detectedObjects,
       room: data.room,
-      totalValue: data.total_estimated_value_usd
+      totalValue: calculateActualTotal(detectedObjects)
     });
 
     const recognitionData = {
@@ -776,7 +780,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
       room: data.room,
       suggestedName: data.objects[0]?.name || '',
       suggestedCategory: data.objects[0]?.category || inferCategory(data.objects[0]?.name || ''),
-      estimatedValue: data.total_estimated_value_usd
+      estimatedValue: calculateActualTotal(detectedObjects)
     };
 
     setAiProcessing(false);
@@ -818,6 +822,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
       setItemQueue(processedObjects);
       setDetectedObjects(processedObjects);
       setDetectedRoom(recognitionData.room || '');
+      setOriginalDetectedRoom(recognitionData.room || ''); // Store original for persistence
 
       // Find first ready item or start with first item if streaming
       const firstReadyIndex = processedObjects.findIndex((obj: any) => obj.ready);
@@ -916,6 +921,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
     setItemQueue(mockObjects);
     setDetectedObjects(mockObjects);
     setDetectedRoom('Living Room');
+    setOriginalDetectedRoom('Living Room');
     setCurrentQueueIndex(0);
 
     // Set up form with first item
@@ -1010,7 +1016,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
       setFormData(prev => ({
         ...prev,
         imageUrl: nextItem.imageUrl || imageData,
-        room: findMatchingRoom(detectedRoom) || prev.room, // Preserve the detected room
+        room: prev.room || findMatchingRoom(originalDetectedRoom) || originalDetectedRoom,
         name: nextItem.name || '',
         category: nextItem.category || '',
         description: nextItem.description || '',
@@ -1034,6 +1040,11 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
       return `$${(value / 1000).toFixed(1)}k`;
     }
     return `$${value.toFixed(0)}`;
+  };
+
+  // Calculate actual sum of individual items
+  const calculateActualTotal = (objects: DetectedObject[]): number => {
+    return objects.reduce((sum, obj) => sum + (obj.estimated_cost_usd || 0), 0);
   };
 
   const getStatusIcon = (status?: string) => {
@@ -1113,6 +1124,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
       setFormData(prev => ({
         ...prev,
         imageUrl: nextObject.imageUrl || imageData,
+        room: prev.room || findMatchingRoom(originalDetectedRoom) || originalDetectedRoom, // Preserve room
         name: nextObject.name || '',
         category: nextObject.category || '',
         estimatedValue: nextObject.estimatedValue?.toString() || '',
@@ -1198,7 +1210,6 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
                         <span className="font-semibold text-gray-900">{aiProgress.room}</span>
                       </div>
                       <div className="flex items-center gap-1 text-emerald-600 font-bold">
-                        <DollarSign size={16} />
                         <span>{formatValue(aiProgress.totalValue)}</span>
                       </div>
                     </div>
