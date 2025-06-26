@@ -1009,10 +1009,14 @@ function App() {
         <AddItemModal
           isOpen={showAddModal}
           onClose={() => {
-            // Refresh stats if multiple items were added (AI mode)
-            // Single items are refreshed immediately, multiple items are batched here
-            if (itemsAddedInSession > 1) {
-              refreshStats();
+            // Refresh stats if any items were added in this session
+            if (itemsAddedInSession > 0) {
+              console.log('🔄 AI session completed, refreshing stats after delay for', itemsAddedInSession, 'items...');
+              // Add a delay to ensure the last database transaction is fully committed
+              setTimeout(() => {
+                console.log('🔄 Executing stats refresh for AI session...');
+                refreshStats();
+              }, 100);
             }
             setItemsAddedInSession(0);
             setShowAddModal(false);
