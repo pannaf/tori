@@ -73,7 +73,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-12 pr-6 py-4 border border-gray-300 rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
+                className="w-full pl-12 pr-6 py-4 border border-gray-300 rounded-full focus:border-indigo-500 focus:border-transparent transition-colors"
                 placeholder="your@email.com"
               />
             </div>
@@ -90,7 +90,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-12 pr-6 py-4 border border-gray-300 rounded-full focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
+                className="w-full pl-12 pr-6 py-4 border border-gray-300 rounded-full focus:border-indigo-500 focus:border-transparent transition-colors"
                 placeholder="••••••••"
               />
             </div>
