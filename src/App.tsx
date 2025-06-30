@@ -482,6 +482,8 @@ function App() {
   const handleSignIn = async (email: string, password: string) => {
     await signIn(email, password);
     setShowAuthModal(false);
+    // scroll up after signing in
+    window.scrollTo(0, 0);
   };
 
   const handleSignUp = async (email: string, password: string) => {
