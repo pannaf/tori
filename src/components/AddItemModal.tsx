@@ -616,7 +616,6 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
           'Modern mystery: How do hair ties disappear faster than socks in the dryer? 🤷‍♀️',
           'Productivity secret: A messy desk is a sign of a creative mind. A really messy desk is a sign of a really creative mind!',
           'Food for thought: If you organize your spice rack alphabetically, are you living your best life? 🌶️',
-          'Random observation: People who organize their books by color are either artists or psychopaths. No in-between.',
           'Life lesson: The person who invented the junk drawer deserves a Nobel Prize for understanding human nature.',
           'Conspiracy theory: Tupperware lids are actually interdimensional beings. That\'s why they never match! 🥡',
           'Gentle reminder: Behind every organized person is a substantial amount of coffee. ☕',
