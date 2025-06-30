@@ -201,8 +201,8 @@ router.post('/analyze-image', upload.single('image'), async (req, res) => {
             console.log('Uploading original full image to Supabase...');
             const originalFullImageUrl = await uploadImageFileToSupabase(req.file!.path, `original_full_${Date.now()}.jpg`);
 
-            // Process only the first 3 objects
-            const objectsToProcess = result.objects.slice(0, 3);
+            // Process only the first 10 objects
+            const objectsToProcess = result.objects.slice(0, 10);
 
             // Step 2: Return GPT-4 results immediately with processing status
             const immediateResponse = {
