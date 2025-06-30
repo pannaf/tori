@@ -598,7 +598,6 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
           'Dad joke alert: Why did the storage container go to therapy? It had too many issues to unpack! 😂',
           'Mind blown: Ancient Egyptians invented the first storage containers... for their afterlife stuff! 🏺',
           'Life hack: If you can\'t find something, it\'s probably in the last place you\'d look. Literally.',
-          'Surprise fact: IKEA names their storage products after Swedish places. Skubb = a town! 🇸🇪',
           'Deep thought: Is a junk drawer really junk, or is it a carefully curated chaos collection? 🤔',
           'Fun discovery: The Japanese have a word "tsundoku" for buying books and not reading them. Relatable!',
           'Reality check: 80% of what we own, we only use 20% of the time. Let\'s see what\'s actually useful!',
